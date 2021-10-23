@@ -1434,8 +1434,10 @@ function Vehicle.findNearest(caller_id,target_id,owner_id)
 	end
 	if id ~= -1 then
 		return id or nil
+	elseif owner_id then
+		server.announce("FAILED", string.format("No vehicles for player %s found", Player.prettyName(owner_id)),caller_id)
 	else
-		server.announce("FAILED", string.format("No vehicles for player %s found", Player.prettyName(caller_id)),caller_id)
+		server.announce("FAILED","No player vehicles found",caller_id)
 	end
 end
 
