@@ -2059,7 +2059,7 @@ COMMANDS = {
 	},
 	revokeRole = {
 		func = function(caller_id, target_id, role)
-			if Role.exists(target_id,role) then
+			if Role.exists(caller_id,role) then
 				Player.removeRole(caller_id, target_id, role)
 			end
 		end,
