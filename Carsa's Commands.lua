@@ -2,6 +2,8 @@ local debugMessages = true
 local ownerAlwaysAccessToCommand = true
 
 
+-- TODO: Increment autosave value, saving last version number to g_savedata
+-- TODO: If your equipment is already full, giving yourself
 
 --! For export, but should be harmless
 server = server or {}
@@ -1300,7 +1302,7 @@ function Role.setAccessToCommand(caller_id, role_name, command_name, value)
 		return
 	end
 
-	if role_name == "Admin" then
+	if role_name == "Owner" then
 		server.announce("DENIED", "You cannot edit the owner role", caller_id)
 		return
 	end
@@ -1341,7 +1343,7 @@ end
 ---@return string pretty_name the nicely formatted name of the vehicle with it's id appended
 function Vehicle.prettyName(vehicle_id)
 	local name, success = server.getVehicleName(vehicle_id)
-	return string.format("%s(%d)", name and success or "Name Unknown", vehicle_id)
+	return string.format("%s(%d)", success and name or "Name Unknown", vehicle_id)
 end
 
 --- returns if the vehicle_id is valid and the vehicle exists
