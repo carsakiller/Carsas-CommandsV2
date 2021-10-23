@@ -1422,6 +1422,23 @@ function Vehicle.printList(target_id)
 	server.announce(" ", LINE, target_id)
 end
 
+function Vehicle.findNearest(caller_id,target_id,owner_id)
+	local dist = math.huge
+	local id = -1
+	for a,b in pairs(g_vehicleList) do
+		local matrixdist = matrix.distance((server.getPlayerPos(target_id)),(server.getVehiclePos(a)))
+		if matrixdist < dist and (b.owner == owner_id or (not owner_id)) then
+			dist = matrixdist
+			id = a
+		end
+	end
+	if id ~= -1 then
+		return id or nil
+	else
+		server.announce("FAILED", string.format("No vehicles for player %s found", Player.prettyName(caller_id)),caller_id)
+	end
+end
+
 
 
 --- ADMINISTRATIVE --
@@ -1926,7 +1943,10 @@ COMMANDS = {
 		description = "Shows the list of banned players."
 	},
 	clearRadiation = {
-		func = server.clearRadiation,
+		func = function(caller_id)
+			server.clearRadiation()
+			server.announce("SUCCESS","Radiation cleared",caller_id)
+		end,
 		description = "Cleans up all radiated areas on the map."
 	},
 
@@ -2130,6 +2150,9 @@ COMMANDS = {
 	clearVehicle = {
 		func = function(caller_id, ...)
 			local ids = {...}
+			if ids[1] == nil then
+				ids[1] = Vehicle.findNearest(caller_id,caller_id)
+			end
 			for k, v in ipairs(ids) do
 				if Vehicle.exists(caller_id, v) then
 					Vehicle.delete(caller_id, v)
@@ -2226,7 +2249,6 @@ COMMANDS = {
 		func = function(caller_id, target_id, amount)
 			local target = target_id or caller_id
 			local amount = amount or 100
-			server.announce("test",amount)
 
 			local character_id, success = server.getPlayerCharacterID(target)
 			local character_data = server.getCharacterData(character_id)
@@ -2842,9 +2864,15 @@ COMMANDS = {
 		func = function(caller_id)
 			local game_settings = server.getGameSettings()
 			local alphabetical = sortKeys(game_settings)
-			server.announce(" ", "---------------------------  GAME SETTINGS  --------------------------", caller_id)
+			server.announce(" ", "------------------------  GAME SETTINGS  -----------------------", caller_id)
 			for k, v in ipairs(alphabetical) do
-				server.announce(v, game_settings[v], caller_id)
+				if game_settings[v] == true then
+					server.announce(v, "true", caller_id)
+				elseif game_settings[v] == false then
+					server.announce(v, "false", caller_id)
+				else
+					server.announce(v, game_settings[v], caller_id)
+				end
 			end
 			server.announce(" ", LINE, caller_id)
 		end,
