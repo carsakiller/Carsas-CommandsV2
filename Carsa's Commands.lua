@@ -2,9 +2,6 @@ local debugMessages = true
 local ownerAlwaysAccessToCommand = true
 
 
--- TODO: Increment autosave value, saving last version number to g_savedata
--- TODO: If your equipment is already full, giving yourself
-
 
 --! For export, but should be harmless
 server = server or {}
@@ -403,9 +400,17 @@ local EQUIPMENT_SLOTS = {
 local EQUIPMENT_SIZE_NAMES = {"Large", "Small", "Outfit"}
 
 local EQUIPMENT_DATA = {
-		{name = "diving suit", size = 3},
+		{name = "diving suit", size = 3, data =
+			{
+				float = {name = "% filled", type = "float", default = 100}
+			}
+		},
 		{name = "firefighter", size = 3},
-		{name = "scuba suit", size = 3},
+		{name = "scuba suit", size = 3, data =
+			{
+				float = {name = "% filled", type = "float", default = 100}
+			}
+		},
 		{name = "parachute", size = 3, data =
 			{
 				int = {name = "deployed", type = "int", default = 1}
@@ -1103,7 +1108,7 @@ end
 ---@param peer_id number The target player's peer_id
 ---@param role string The name of the role to remove from the player
 function Player.removeRole(caller_id, peer_id, role)
-	if not g_playerData[peer_id].roles[role] then
+	if not Player.getData(peer_id).roles[role] then
 		server.announce("FAILED", string.format("Player does not have %s role"), caller_id)
 	end
 	Player.getData(peer_id).roles[role] = nil
@@ -1295,7 +1300,7 @@ function Role.setAccessToCommand(caller_id, role_name, command_name, value)
 		return
 	end
 
-	if role_name == "Owner" then
+	if role_name == "Admin" then
 		server.announce("DENIED", "You cannot edit the owner role", caller_id)
 		return
 	end
@@ -1336,7 +1341,7 @@ end
 ---@return string pretty_name the nicely formatted name of the vehicle with it's id appended
 function Vehicle.prettyName(vehicle_id)
 	local name, success = server.getVehicleName(vehicle_id)
-	return string.format("%s(%d)", success and name or "Name Unknown", vehicle_id)
+	return string.format("%s(%d)", name and success or "Name Unknown", vehicle_id)
 end
 
 --- returns if the vehicle_id is valid and the vehicle exists
@@ -2040,7 +2045,7 @@ COMMANDS = {
 	},
 	giveRole = {
 		func = function(caller_id, target_id, role)
-			if Role.exists(role) then
+			if Role.exists(caller_id,role) then
 				Player.giveRole(caller_id, target_id, role)
 			end
 		end,
@@ -2052,7 +2057,7 @@ COMMANDS = {
 	},
 	revokeRole = {
 		func = function(caller_id, target_id, role)
-			if Role.exists(role) then
+			if Role.exists(target_id,role) then
 				Player.removeRole(caller_id, target_id, role)
 			end
 		end,
@@ -2188,7 +2193,7 @@ COMMANDS = {
 		func = function(caller_id, target_id)
 			local target_id = target_id or caller_id
 			server.announce("ROLE LIST", string.format("%s has the following roles:", Player.prettyName(target_id)), caller_id)
-			for k, v in pairs(Player.roles) do
+			for k, v in pairs(Player.getData(target_id).roles) do
 				server.announce(" ", k, caller_id)
 			end
 			server.announce(" ", LINE, caller_id)
@@ -2219,6 +2224,7 @@ COMMANDS = {
 		func = function(caller_id, target_id, amount)
 			local target = target_id or caller_id
 			local amount = amount or 100
+			server.announce("test",amount)
 
 			local character_id, success = server.getPlayerCharacterID(target)
 			local character_data = server.getCharacterData(character_id)
@@ -2558,7 +2564,10 @@ COMMANDS = {
 	equipmentIDs = {
 		func = function(caller_id, equipment_type)
 			local sorted = {}
-			local nearest = fuzzyStringInTable(equipment_type, EQUIPMENT_SIZE_NAMES, false)
+			local nearest
+			if equipment_type then
+				nearest = fuzzyStringInTable(equipment_type, EQUIPMENT_SIZE_NAMES, false)
+			end
 
 			-- create a table for each size category of equipment
 			for k, v in ipairs(EQUIPMENT_SIZE_NAMES) do
@@ -2569,7 +2578,7 @@ COMMANDS = {
 			for k, v in ipairs(EQUIPMENT_DATA) do
 				-- if the player requested a specific size, confirm the current item is of the same size
 				-- if the player did not request a specific size, append everything
-				if equipment_type and EQUIPMENT_SIZE_NAMES[v.size] == nearest or true then
+				if equipment_type and EQUIPMENT_SIZE_NAMES[v.size] == nearest or (not equipment_type) then
 					table.insert(sorted[v.size], {id = k, name = v.name})
 				end
 			end
@@ -2578,7 +2587,7 @@ COMMANDS = {
 			for k, v in ipairs(sorted) do
 				-- add empty line if printing multiple size categories and it is not the first category
 				if not equipment_type and k > 1 then server.announce(" ", " ", caller_id) end
-				server.announce(" ", EQUIPMENT_SIZE_NAMES[k], caller_id) -- print category type heading
+				if v[1] ~= nil then server.announce(" ", EQUIPMENT_SIZE_NAMES[k], caller_id) end -- print category type heading
 
 				-- print each item's id, name, and data slots
 				for j, c in ipairs(v) do
