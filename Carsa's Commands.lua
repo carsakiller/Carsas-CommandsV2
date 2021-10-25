@@ -1422,17 +1422,17 @@ function Vehicle.printList(target_id)
 	server.announce(" ", LINE, target_id)
 end
 
-function Vehicle.findNearest(caller_id,target_id,owner_id)
+function Vehicle.findNearest(caller_id, target_id, owner_id)
 	local dist = math.huge
-	local id = -1
-	for a,b in pairs(g_vehicleList) do
-		local matrixdist = matrix.distance((server.getPlayerPos(target_id)),(server.getVehiclePos(a)))
-		if matrixdist < dist and (b.owner == owner_id or (not owner_id)) then
+	local id
+	for vehicle_id, data in pairs(g_vehicleList) do
+		local matrixdist = matrix.distance((server.getPlayerPos(target_id)), (server.getVehiclePos(vehicle_id)))
+		if matrixdist < dist and (data.owner == owner_id or not owner_id) then
 			dist = matrixdist
-			id = a
+			id = vehicle_id
 		end
 	end
-	if id ~= -1 then
+	if id then
 		return id or nil
 	elseif owner_id then
 		server.announce("FAILED", string.format("No vehicles for player %s found", Player.prettyName(owner_id)),caller_id)
@@ -1947,7 +1947,7 @@ COMMANDS = {
 	clearRadiation = {
 		func = function(caller_id)
 			server.clearRadiation()
-			server.announce("SUCCESS","Radiation cleared",caller_id)
+			server.announce("SUCCESS", "Radiation cleared", caller_id)
 		end,
 		description = "Cleans up all radiated areas on the map."
 	},
@@ -2153,7 +2153,7 @@ COMMANDS = {
 		func = function(caller_id, ...)
 			local ids = {...}
 			if ids[1] == nil then
-				ids[1] = Vehicle.findNearest(caller_id,caller_id)
+				ids[1] = Vehicle.findNearest(caller_id, caller_id)
 			end
 			for k, v in ipairs(ids) do
 				if Vehicle.exists(caller_id, v) then
