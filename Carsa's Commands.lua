@@ -2477,19 +2477,12 @@ COMMANDS = {
 					server.announce("FAILED", "You have not spawned any vehicles or the last vehicle you spawned has been despawned", caller_id)
 				end
 			elseif arg1 == "n" or arg1 == nil then
-				local player_matrix, success = server.getPlayerPos(caller_id)
-				local distances = {}
-				for vehicleID, vehicleData in pairs(g_vehicleList) do
-					local vehicle_matrix, success = server.getVehiclePos(vehicleID)
-					if success then
-						table.insert(distances, {matrix.distance(player_matrix, vehicle_matrix), vehicleID})
-					end
-				end
-				if #distances == 0 then
+				local nearest = Player.nearestVehicle(caller_id)
+				if not nearest then
 					server.announce("FAILED", "There are no vehicles in the world", caller_id)
+					return
 				end
-				table.sort(distances, function(a, b) return a[1] < b[1] end)
-				vehicle_id = distances[1][2]
+				vehicle_id = nearest
 			end
 
 			server.setCharacterSeated(character_id, vehicle_id, seat_name)
