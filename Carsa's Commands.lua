@@ -1209,6 +1209,25 @@ function Player.updateVehicleIdUi(peer_id)
 	end
 end
 
+--- Returns the id of the vehicle nearest to the provided player
+---@param peer_id number the peer_id of the player to search from
+---@param owner_id number the peer_id of the owner of the target vehicle (optional)
+---@return any id The id of the nearest vehicle or nil if there is no vehicle
+function Player.nearestVehicle(peer_id, owner_id)
+	local dist = math.huge
+	local id
+
+	for vehicle_id, data in pairs(g_vehicleList) do
+		local matrixdist = matrix.distance((server.getPlayerPos(peer_id)), (server.getVehiclePos(vehicle_id)))
+		if matrixdist < dist and (data.owner == owner_id or not owner_id) then
+			dist = matrixdist
+			id = vehicle_id
+		end
+	end
+
+	return id
+end
+
 
 
 
@@ -1420,25 +1439,6 @@ function Vehicle.printList(target_id)
 		end
 	end
 	server.announce(" ", LINE, target_id)
-end
-
-function Vehicle.findNearest(caller_id, target_id, owner_id)
-	local dist = math.huge
-	local id
-	for vehicle_id, data in pairs(g_vehicleList) do
-		local matrixdist = matrix.distance((server.getPlayerPos(target_id)), (server.getVehiclePos(vehicle_id)))
-		if matrixdist < dist and (data.owner == owner_id or not owner_id) then
-			dist = matrixdist
-			id = vehicle_id
-		end
-	end
-	if id then
-		return id or nil
-	elseif owner_id then
-		server.announce("FAILED", string.format("No vehicles for player %s found", Player.prettyName(owner_id)),caller_id)
-	else
-		server.announce("FAILED","No player vehicles found",caller_id)
-	end
 end
 
 
@@ -2153,7 +2153,12 @@ COMMANDS = {
 		func = function(caller_id, ...)
 			local ids = {...}
 			if ids[1] == nil then
-				ids[1] = Vehicle.findNearest(caller_id, caller_id)
+				local nearest = Player.nearestVehicle(caller_id, caller_id)
+				if not nearest then
+					server.announce("FAILED", "You do not have any vehicles", caller_id)
+					return
+				end
+				ids[1] = nearest
 			end
 			for k, v in ipairs(ids) do
 				if Vehicle.exists(caller_id, v) then
@@ -2164,7 +2169,7 @@ COMMANDS = {
 		args = {
 			{name = "vehicleID", type = {"vehicleID"}, repeatable = true}
 		},
-		description = "Removes vehicles by their id. If no ids are given, it will remove the nearest vehicle."
+		description = "Removes vehicles by their id. If no ids are given, it will remove your nearest vehicle."
 	},
 	setEditable = {
 		func = function(caller_id, vehicle_id, state)
