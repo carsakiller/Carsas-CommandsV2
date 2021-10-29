@@ -879,10 +879,20 @@ function Player.unban(admin_peer_id, steam_id)
 end
 
 --- Formats the player's name and peer_id nicely for printing to users
----@param peer_id number The target player's peer_id
+---@param id number The target player's peer_id or steam_id
 ---@return string name The player's name and peer_id formatted nicely
-function Player.prettyName(peer_id)
-	return string.format("%s(%.0f)", server.getPlayerName(peer_id), peer_id)
+function Player.prettyName(id)
+	local id_type = type(id)
+	if id_type == "number" then
+		return string.format("%s(%d)", server.getPlayerName(id), id)
+	elseif id_type == "string" then
+		local player_data = g_playerData[id]
+		if PLAYER_LIST[player_data.peer_id] then -- player is on server still
+			return string.format("%s(%d)", player_data.name, player_data.peer_id)
+		else -- player is offline
+			return player_data.name .. "(offline)"
+		end
+	end
 end
 
 --- Gets the inventory of the player
@@ -1205,7 +1215,7 @@ function Player.updateVehicleIdUi(peer_id)
 			throwError(string.format("The vehicle %s(%d) could not be located when drawing popups for player %s", v.name, k, Player.prettyName(peer_id)), peer_id)
 			return
 		end
-		server.setPopup(peer_id, v.ui_id, "", true, string.format("%s\n%s", Vehicle.prettyName(k), Player.prettyName(peer_id)), vehicle_position[13], vehicle_position[14], vehicle_position[15], 50)
+		server.setPopup(peer_id, v.ui_id, "", true, string.format("%s\n%s", Vehicle.prettyName(k), Player.prettyName(v.owner)), vehicle_position[13], vehicle_position[14], vehicle_position[15], 50)
 	end
 end
 
@@ -1361,19 +1371,15 @@ end
 ---@param vehicle_id number the id of the vehicle
 ---@return string pretty_name the nicely formatted name of the vehicle with it's id appended
 function Vehicle.prettyName(vehicle_id)
-	local name, success = server.getVehicleName(vehicle_id)
-	return string.format("%s(%d)", success and name or "Name Unknown", vehicle_id)
+	local name = g_vehicleList[vehicle_id].name
+	return string.format("%s(%d)", name ~= "Error" and name or "Unknown", vehicle_id)
 end
 
 --- returns if the vehicle_id is valid and the vehicle exists
----@param caller_id number the peer_id of the player calling the command
 ---@param vehicle_id number The id of the vehicle to check
 ---@return boolean vehicle_exists if the vehicle exists
-function Vehicle.exists(caller_id, vehicle_id)
-	local name, exists = server.getVehicleName(vehicle_id)
-	if not exists then
-		server.announce("FAILED", string.format("%d is not a valid vehicle id. You can use ?vehicle_list to see the vehicles in the world", vehicle_id), caller_id)
-	end
+function Vehicle.exists(vehicle_id)
+	local _, exists = server.getVehicleName(vehicle_id)
 	return exists
 end
 
@@ -1384,23 +1390,12 @@ function Vehicle.delete(caller_id, vehicle_id)
 	local vehicle_id = vehicle_id -- if no vehicle_id is provided, this is overwritten. Prevents variable from leaking from local space
 
 	if not vehicle_id then -- no vehicle_id was specified
-		local vehicle_distances = {}
-		local player_matrix = server.getPlayerPos(caller_id)
+		local vehicle_id = Player.nearestVehicle(caller_id)
 
-		-- get distance from player to each vehicle
-		for k, v in pairs(g_vehicleList) do
-			local vehicle_matrix = server.getVehiclePos(vehicle_id)
-			local distance = matrix.distance(player_matrix, vehicle_matrix)
-			table.insert(vehicle_distances, {distance, vehicle_id})
-		end
-
-		if #vehicle_distances == 0 then -- there are no vehicles in the world
+		if not vehicle_id then -- there are no vehicles in the world
 			server.announce("FAILED", "There are no vehicles in the world", caller_id)
 			return false
 		end
-
-		table.sort(vehicle_distances, function(a, b) return a[1] < b[1] end) -- sort table by first key (distance)
-		vehicle_id = table.remove(vehicle_distances) -- pop last vehicle from list (nearest one)
 	end
 
 	-- ensure the vehicle exists
@@ -1429,8 +1424,9 @@ function Vehicle.printList(target_id)
 	server.announce(" ", "--------------------------  VEHICLE LIST  --------------------------", target_id)
 	for vehicle_id, vehicle_data in pairs(g_vehicleList) do
 		if Vehicle.exists(vehicle_id) then
-			local vehicle_name, is_success = server.getVehicleName(vehicle_id)
-			vehicle_name = is_success and vehicle_name or "unknown"
+			local vehicle_name = vehicle_data.name
+
+			vehicle_name = vehicle_name ~= "Error" and vehicle_name or "Unknown"
 			server.announce(" ", string.format("%d | %s | %s", vehicle_id, vehicle_name, Player.prettyName(vehicle_data.owner)), target_id)
 		else
 			-- remove vehicle as it doesn't actually exist
@@ -1617,6 +1613,8 @@ function onPlayerJoin(steam_id, name, peer_id, admin, auth)
 		g_uniquePlayers = g_uniquePlayers + 1
 	end
 
+	g_playerData[steam_id].peer_id = peer_id -- update player's peer_id
+
 	-- give every player the "Everyone" role
 	if not Player.hasRole(peer_id, "Everyone") then
 		Player.giveRole(peer_id, peer_id, "Everyone")
@@ -1653,12 +1651,13 @@ function onPlayerLeave(steam_id, name, peer_id, is_admin, is_auth)
 	if g_preferences.removeVehicleOnLeave then
 		local removed_ids = {}
 		for k, v in pairs(g_vehicleList) do
-			if v.owner == peer_id then
+			if v.owner == Player.getSteamID(peer_id) then
 				server.despawnVehicle(k, false) -- despawn vehicle when unloaded. onVehicleDespawn should handle removing the ids from g_vehicleList
 			end
 		end
 	end
 	PLAYER_LIST[peer_id] = nil
+	Player.getData(peer_id).peer_id = nil
 end
 
 function onPlayerDie(steam_id, name, peer_id, is_admin, is_auth)
@@ -1703,7 +1702,7 @@ function onVehicleSpawn(vehicle_id, peer_id, x, y, z, cost)
 		end
 		local vehicle_name, success = server.getVehicleName(vehicle_id)
 		vehicle_name = success and vehicle_name or "unknown"
-		g_vehicleList[vehicle_id] = {owner = peer_id, name = vehicle_name, ui_id = server.getMapID()}
+		g_vehicleList[vehicle_id] = {owner = Player.getSteamID(peer_id), name = vehicle_name, ui_id = server.getMapID()}
 		PLAYER_LIST[peer_id].latest_spawn = vehicle_id
 	end
 end
@@ -2161,8 +2160,10 @@ COMMANDS = {
 				ids[1] = nearest
 			end
 			for k, v in ipairs(ids) do
-				if Vehicle.exists(caller_id, v) then
+				if Vehicle.exists(v) then
 					Vehicle.delete(caller_id, v)
+				else
+					server.announce("FAILED", v .. " is not a valid vehicle_id", caller_id)
 				end
 			end
 		end,
@@ -2173,8 +2174,10 @@ COMMANDS = {
 	},
 	setEditable = {
 		func = function(caller_id, vehicle_id, state)
-			if Vehicle.exists(caller_id, vehicle_id) then
+			if Vehicle.exists(vehicle_id) then
 				Vehicle.setEditable(caller_id, vehicle_id, state)
+			else
+				server.announce("FAILED", vehicle_id .. " is not a valid vehicle_id", caller_id)
 			end
 		end,
 		args = {
