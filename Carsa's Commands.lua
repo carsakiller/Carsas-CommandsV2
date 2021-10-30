@@ -947,7 +947,7 @@ local slotNumberToLetter = {}
 for k,v in pairs(slotLetterToSlotNumber) do slotNumberToLetter[v] = k end
 
 --- Equips the target player with the requested item
----@param peer_id integer The peer id of the player who initated the equip command
+---@param peer_id integer The peer id of the player who initiated the equip command
 ---@param target_peer_id integer The peer id of the player who is being equipped
 ---@param slot string The slot the item is going in (refer to EQUIPMENT_SLOTS)
 ---@param item_id integer The id of the item to give to the player
@@ -1121,7 +1121,7 @@ end
 ---@param role string The name of the role to remove from the player
 function Player.removeRole(caller_id, peer_id, role)
 	if not Player.getData(peer_id).roles[role] then
-		server.announce("FAILED", string.format("Player does not have %s role"), caller_id)
+		server.announce("FAILED", string.format("Player does not have %s role", role), caller_id)
 	end
 	Player.getData(peer_id).roles[role] = nil
 	g_roles[role].members[Player.getSteamID(peer_id)] = nil
@@ -2067,26 +2067,26 @@ COMMANDS = {
 		description = "Sets which commands a role has access to.",
 	},
 	giveRole = {
-		func = function(caller_id, target_id, role)
+		func = function(caller_id, role, target_id)
 			if Role.exists(caller_id,role) then
-				Player.giveRole(caller_id, target_id, role)
+				Player.giveRole(caller_id, target_id or caller_id, role)
 			end
 		end,
 		args = {
-			{name = "playerID", type = {"playerID"}, required = true},
-			{name = "role", type = {"string"}, required = true}
+			{name = "role", type = {"string"}, required = true},
+			{name = "playerID", type = {"playerID"}}
 		},
 		description = "Assigns a role to a player."
 	},
 	revokeRole = {
-		func = function(caller_id, target_id, role)
+		func = function(caller_id, role, target_id)
 			if Role.exists(caller_id,role) then
-				Player.removeRole(caller_id, target_id, role)
+				Player.removeRole(caller_id, target_id or caller_id, role)
 			end
 		end,
 		args = {
-			{name = "playerID", type = {"playerID"}, required = true},
-			{name = "role", type = {"string"}, required = true}
+			{name = "role", type = {"string"}, required = true},
+			{name = "playerID", type = {"playerID"}}
 		},
 		description = "Revokes a role from a player."
 	},
@@ -2491,7 +2491,7 @@ COMMANDS = {
 			server.setCharacterSeated(character_id, vehicle_id, seat_name)
 		end,
 		args = {
-			{name = "r/n/vehicleID", type = {"string", "vehicleID"}},
+			{name = "r/n/vehicleID", type = {"vehicleID", "string"}},
 			{name = "seat name", type = {"string"}}
 		},
 		description = "Teleports you to a seat on a vehicle. You can use \"r\" (vehicle you last spawned) or \"n\" (nearest vehicle) for the first argument. If no vehicle and seat name is specified, you will be teleported to the nearest seat."
