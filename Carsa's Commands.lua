@@ -1,9 +1,4 @@
 local debugMessages = true
-local ownerAlwaysAccessToCommand = true
-
-
--- TODO: Increment autosave value, saving last version number to g_savedata
--- TODO: If your equipment is already full, giving yourself
 
 --! For export, but should be harmless
 server = server or {}
@@ -178,14 +173,15 @@ end
 local ScriptVersion = "2.0.0"
 local SaveDataVersion = "2.0.0"
 
---- Flag used to notify
+--- Flag used to notify of an outdated version
 local invalid_version
 
 local ABOUT = {
 	{title = "ScriptVersion:", text = ScriptVersion},
 	{title = "SaveDataVersion:", text = SaveDataVersion},
-	{title = "Github:", text = "/carsakiller/Carsas-Commands"},
-	{title = "More Info:", text = "For more info, you can check out the steam or github page"}
+	{title = "Created By:", text = "Carsa, CrazyFluffyPony, Dargino, Leopard"},
+	{title = "Github:", text = "https://github.com/carsakiller/Carsas-Commands"},
+	{title = "More Info:", text = "For more info, I recommend checking out the github page"}
 }
 
 local SAVE_NAME = "CC_Autosave"
@@ -193,15 +189,16 @@ local SAVE_NAME = "CC_Autosave"
 local DEV_STEAM_IDS = {
 	["76561197976988654"] = true, --Deltars
 	["76561198022256973"] = true, --Bones
-	["76561198041033774"] = true, -- Jon
-	["76561198080294966"] = true, -- Antie
+	["76561198041033774"] = true, --Jon
+	["76561198080294966"] = true, --Antie
 
-	["76561197991344551"] = true, -- Beginner
-	["76561197965180640"] = true, -- Trapdoor
+	["76561197991344551"] = true, --Beginner
+	["76561197965180640"] = true, --Trapdoor
+
+	["76561198038082317"] = true, --NJersey
 }
 
 local PREFERENCE_DEFAULTS = {
-	cheats = {value = false, type = "bool"},
 	equipOnRespawn = {value = true, type = "bool"},
 	keepInventory = {value = false, type = "bool"},
 	removeVehicleOnLeave = {value = true, type = "bool"},
@@ -224,7 +221,6 @@ local DEFAULT_ROLES = {
 	Owner = {
 		-- users with this role will receive notices when something important is changed
 		commands = {
-			aaa = true,
 			banPlayer = true,
 			unban = true,
 			banned = true,
@@ -369,9 +365,6 @@ local GAME_SETTING_OPTIONS = {
 	"map_show_vehicles",
 	"show_3d_waypoints",
 	"show_name_plates",
-	nil, -- day/night length
-	nil, -- sunrise
-	nil, -- sunset
 	"infinite_money",
 	"settings_menu",
 	"unlock_all_islands",
@@ -387,7 +380,11 @@ local GAME_SETTING_OPTIONS = {
 	"respawning",
 	"settings_menu_lock",
 	"despawn_on_leave",
-	"unlock_all_components"
+	"unlock_all_components",
+	"ceasefire",
+	-- day/night length
+	-- sunrise
+	-- sunset
 }
 
 local EQUIPMENT_SLOTS = {
@@ -402,129 +399,305 @@ local EQUIPMENT_SLOTS = {
 local EQUIPMENT_SIZE_NAMES = {"Large", "Small", "Outfit"}
 
 local EQUIPMENT_DATA = {
-		{name = "diving suit", size = 3, data =
-			{
-				float = {name = "% filled", type = "float", default = 100}
+	{
+		name = "diving suit",
+		size = 3,
+		data = {
+			float = {
+				name = "% filled",
+				type = "float",
+				default = 100
 			}
-		},
-		{name = "firefighter", size = 3},
-		{name = "scuba suit", size = 3, data =
-			{
-				float = {name = "% filled", type = "float", default = 100}
+		}
+	},
+	{
+		name = "firefighter",
+		size = 3
+	},
+	{
+		name = "scuba suit",
+		size = 3,
+		data = {
+			float = {
+				name = "% filled",
+				type = "float",
+				default = 100
 			}
-		},
-		{name = "parachute", size = 3, data =
-			{
-				int = {name = "deployed", type = "int", default = 1}
+		}
+	},
+	{
+		name = "parachute",
+		size = 3,
+		data = {
+			int = {
+				name = "deployed",
+				type = "int",
+				default = 1
 			}
-		},
-		{name = "parka", size = 3},
-		{name = "binoculars", size = 2},
-		{name = "cable", size = 1},
-		{name = "compass", size = 2},
-		{name = "defibrillator", size = 1, data =
-			{
-				int = {name = "charges", type = "int", default = 4}
+		}
+	},
+	{
+		name = "parka",
+		size = 3
+	},
+	{
+		name = "binoculars",
+		size = 2
+	},
+	{
+		name = "cable",
+		size = 1
+	},
+	{
+		name = "compass",
+		size = 2
+	},
+	{
+		name = "defibrillator",
+		size = 1,
+		data = {
+			int = {
+				name = "charges",
+				type = "int",
+				default = 4
 			}
-		},
-		{name = "fire extinguisher", size = 1, data =
-			{
-				float = {name = "% filled", type = "float", default = 9}
+		}
+	},
+	{
+		name = "fire extinguisher",
+		size = 1,
+		data = {
+			float = {
+				name = "% filled",
+				type = "float",
+				default = 9
 			}
-		}, -- 10
-		{name = "first aid", size = 2, data =
-			{
-				int = {name = "uses", type = "int", default = 4}
+		}
+	}, -- 10
+	{
+		name = "first aid",
+		size = 2,
+		data = {
+			int = {
+				name = "uses",
+				type = "int",
+				default = 4
 			}
-		},
-		{name = "flare", size = 2, data =
-			{
-				int = {name = "uses", type = "int", default = 4}
+		}
+	},
+	{
+		name = "flare",
+		size = 2,
+		data = {
+			int = {
+				name = "uses",
+				type = "int",
+				default = 4
 			}
-		},
-		{name = "flaregun", size = 2, data =
-			{
-				int = {name = "ammo", type = "int", default = 1}
+		}
+	},
+	{
+		name = "flaregun",
+		size = 2,
+		data = {
+			int = {
+				name = "ammo",
+				type = "int",
+				default = 1
 			}
-		},
-		{name = "flaregun ammo", size = 2, data =
-			{
-				int = {name = "refills", type = "int", default = 3}
+		}
+	},
+	{
+		name = "flaregun ammo",
+		size = 2,
+		data = {
+			int = {
+				name = "refills",
+				type = "int",
+				default = 3
 			}
-		},
-		{name = "flashlight", size = 2, data =
-			{
-				float = {name = "battery %", type = "float", default = 100}
+		}
+	},
+	{
+		name = "flashlight",
+		size = 2,
+		data = {
+			float = {
+				name = "battery %",
+				type = "float",
+				default = 100
 			}
-		},
-		{name = "hose", size = 1, data =
-			{
-				int = {name = "on/off", type = "bool", default = 0}
+		}
+	},
+	{
+		name = "hose",
+		size = 1,
+		data = {
+			int = {
+				name = "on/off",
+				type = "bool",
+				default = 0
 			}
-		},
-		{name = "night vision binoculars", size = 2, data =
-			{
-				float = {name = "battery %", type = "float", default = 100}
+		}
+	},
+	{
+		name = "night vision binoculars",
+		size = 2,
+		data = {
+			float = {
+				name = "battery %",
+				type = "float",
+				default = 100
 			}
-		},
-		{name = "oxygen mask", size = 2, data =
-			{
-				float = {name = "% filled", type = "float", default = 100}
+		}
+	},
+	{
+		name = "oxygen mask",
+		size = 2,
+		data = {
+			float = {
+				name = "% filled",
+				type = "float",
+				default = 100
 			}
-		},
-		{name = "radio", size = 2, data =
-			{
-				int = {name = "channel", type = "int", default = 0},
-				float = {name = "battery %", type = "float", default = 100}
+		}
+	},
+	{
+		name = "radio",
+		size = 2,
+		data = {
+			int = {
+				name = "channel",
+				type = "int",
+				default = 0
+			},
+			float = {
+				name = "battery %",
+				type = "float",
+				default = 100
 			}
-		},
-		{name = "radio signal locator", size = 1, data =
-			{
-				float = {name = "battery %", type = "float", default = 100}
+		}
+	},
+	{
+		name = "radio signal locator",
+		size = 1,
+		data ={
+			float = {
+				name = "battery %",
+				type = "float",
+				default = 100
 			}
-		}, -- 20
-		{name = "remote control", size = 2, data =
-			{
-				int = {name = "channel", type = "int", default = 0},
-				float = {name = "battery %", type = "float", default = 100}
+		}
+	}, -- 20
+	{
+		name = "remote control",
+		size = 2,
+		data = {
+			int = {
+				name = "channel",
+				type = "int",
+				default = 0
+			},
+			float = {
+				name = "battery %",
+				type = "float",
+				default = 100
 			}
-		},
-		{name = "rope", size = 1},
-		{name = "strobe light", size = 2, data =
-			{
-				int = {name = "on/off", type = "bool", default = 0},
-				float = {name = "battery %", type = "float", default = 100}
+		}
+	},
+	{
+		name = "rope",
+		size = 1
+	},
+	{
+		name = "strobe light",
+		size = 2,
+		data = {
+			int = {
+				name = "on/off",
+				type = "bool",
+				default = 0
+			},
+			float = {
+				name = "battery %",
+				type = "float",
+				default = 100
 			}
-		},
-		{name = "strobe light infrared", size = 2, data =
-			{
-				int = {name = "on/off", type = "bool", default = 0},
-				float = {name = "battery %", type = "float", default = 100}
+		}
+	},
+	{
+		name = "strobe light infrared",
+		size = 2,
+		data = {
+			int = {
+				name = "on/off",
+				type = "bool",
+				default = 0
+			},
+			float = {
+				name = "battery %",
+				type = "float",
+				default = 100
 			}
-		},
-		{name = "transponder", size = 2, data =
-			{
-				int = {name = "on/off", type = "bool", default = 0},
-				float = {name = "battery %", type = "float", default = 100}
+		}
+	},
+	{
+		name = "transponder",
+		size = 2,
+		data = {
+			int = {
+				name = "on/off",
+				type = "bool",
+				default = 0
+			},
+			float = {
+				name = "battery %",
+				type = "float",
+				default = 100
 			}
-		},
-		{name = "underwater welding torch", size = 1, data =
-			{
-				float = {name = "fuel %", type = "float", default = 250}
+		}
+	},
+	{
+		name = "underwater welding torch",
+		size = 1,
+		data = {
+			float = {
+				name = "fuel %",
+				type = "float",
+				default = 250
 			}
-		},
-		{name = "welding torch", size = 1, data =
-			{
-				float = {name = "fuel %", type = "float", default = 420},
+		}
+	},
+	{
+		name = "welding torch",
+		size = 1,
+		data = {
+			float = {
+				name = "fuel %",
+				type = "float",
+				default = 420
+			},
+		}
+	},
+	{
+		name = "coal",
+		size = 2
+	},
+	{
+		name = "hazmat suit",
+		size = 3
+	},
+	{
+		name = "radiation detector",
+		size = 2,
+		data = {
+			float = {
+				name = "battery %",
+				type = "float",
+				default = 100
 			}
-		},
-		{name = "coal", size = 2},
-		{name = "hazmat suit", size = 3},
-		{name = "radiation detector", size = 2, data =
-			{
-				float = {name = "battery %", type = "float", default = 100}
-			}
-		} --30
+		}
+	} --30
 }
 
 local STEAM_ID_MIN = "76561197960265729"
@@ -588,11 +761,11 @@ local function clamp(v, low, high)
 	return math.min(math.max(v,low),high)
 end
 
---- converts numbers and strings to boolean values
----@param value string|number The string/number to convert to a bool
+--- converts strings to boolean values
+---@param value string The string to convert to a bool
 --- @return boolean value The input value as a bool
 local function toBool(value)
-	local lookup = {[1] = true, [0] = false, ["true"] = true, ["false"] = false, ["1"] = true, ["0"] = false}
+	local lookup = {["true"] = true, ["false"] = false}
 	return lookup[value]
 end
 
@@ -726,9 +899,13 @@ end
 ---@param include_description boolean if the description of the command should be included
 ---@return string name, string data the name and formatted data of the command formatted for printing
 local function prettyFormatCommand(command_name, include_arguments, include_types, include_description)
-	local type_abbreviations = {string = "text", number = "num", table = "tbl", bool = "bool", playerID = "text/num", vehicleID = "num", steam_id = "num"}
+	local type_abbreviations = {string = "text", number = "num", table = "tbl", bool = "bool", playerID = "text/num", vehicleID = "num", steam_id = "num", text = "text", letter = "letter"}
 	local text = ""
 	local args = {}
+
+	if not COMMANDS[command_name] then
+		return false, (command_name .. " does not exist")
+	end
 
 	if COMMANDS[command_name].args and include_arguments then
 		for k, v in ipairs(COMMANDS[command_name].args) do
@@ -827,7 +1004,7 @@ end
 ---@param admin_peer_id number the peer id of the admin that is banning the player
 ---@param peer_or_steam_id number|string The peer id of the player as a number or the steam_id of the player as a string
 function Player.ban(admin_peer_id, peer_or_steam_id)
-	if #tostring(peer_or_steam_id) <= STEAM_ID_MIN then -- peer_id was given
+	if #tostring(peer_or_steam_id) < #STEAM_ID_MIN then -- peer_id was given
 		if not PLAYER_LIST[peer_or_steam_id] then -- peer_id is not a valid one
 			server.announce("FAILED", string.format("%d is not a valid peer id of a player", peer_or_steam_id), admin_peer_id)
 			return false
@@ -841,6 +1018,9 @@ function Player.ban(admin_peer_id, peer_or_steam_id)
 		return true
 	end
 	-- steam_id was given
+	if not g_playerData[peer_or_steam_id] then
+		g_playerData[peer_or_steam_id] = deepCopyTable(PLAYER_DATA_DEFAULTS)
+	end
 	g_playerData[peer_or_steam_id].banned = true
 	g_banned[peer_or_steam_id] = Player.getSteamID(admin_peer_id)
 	server.save(SAVE_NAME)
@@ -884,7 +1064,7 @@ end
 function Player.prettyName(id)
 	local id_type = type(id)
 	if id_type == "number" then
-		return string.format("%s(%d)", server.getPlayerName(id), id)
+		return string.format("%s(%d)", Player.getData(id).name, id)
 	elseif id_type == "string" then
 		local player_data = g_playerData[id]
 		if PLAYER_LIST[player_data.peer_id] then -- player is on server still
@@ -983,7 +1163,7 @@ function Player.equip(peer_id, target_peer_id, slot, item_id, data1, data2, is_a
 	local caller_pretty_name = Player.prettyName(peer_id)
 	local target_pretty_name = Player.prettyName(target_peer_id)
 
-	is_active = is_active and toBool(is_active) or false or false -- second ro false is for if toBool returned nil
+	is_active = toBool(is_active) or false
 
 	-- Apply default charge etc.
 	if item_params then
@@ -1107,6 +1287,7 @@ end
 function Player.giveRole(caller_id, peer_id, role)
 	if not g_roles[role] then
 		server.announce("FAILED", string.format("%s is not a role", role), caller_id)
+		return false
 	end
 	Player.getData(peer_id).roles[role] = true
 	table.insert(g_roles[role].members, Player.getSteamID(peer_id))
@@ -1137,9 +1318,6 @@ end
 function Player.hasAccessToCommand(peer_id, command_name)
 	local player_roles = Player.getData(peer_id).roles
 
-	-- When adding new commands it's not in the list of allowed yet, which is annoying.
-	if ownerAlwaysAccessToCommand and player_roles["Owner"] then return true end
-
 	for role_name, _ in pairs(player_roles) do
 		if g_roles[role_name].commands[command_name] then
 			return true
@@ -1148,21 +1326,20 @@ function Player.hasAccessToCommand(peer_id, command_name)
 	return false
 end
 
---- checks if the player has admin and auth privilages
+--- checks if the player has admin and auth privileges
 ---@param peer_id number The target player's peer_id
----@return boolean admin, boolean auth, boolean cheat The admin, authenticated and cheats allowed status if the player
+---@return boolean admin, boolean auth The admin and authenticated status if the player
 function Player.updatePrivileges(peer_id)
 	local roles = Player.getData(peer_id).roles
 	local steam_id = Player.getSteamID(peer_id)
 	local is_admin = false
 	local is_auth = false
-	local can_cheat = false
 
 	for role_name, _ in pairs(roles) do
 		local role_data = g_roles[role_name]
 
-		-- if player already has all privilages then break loop. No need to search other roles
-		if is_admin and is_auth and can_cheat then
+		-- if player already has all privileges then break loop. No need to search other roles
+		if is_admin and is_auth then
 			break
 		end
 
@@ -1171,9 +1348,6 @@ function Player.updatePrivileges(peer_id)
 		end
 		if role_data.auth then
 			is_auth = true
-		end
-		if role_data.cheats then
-			can_cheat = true
 		end
 	end
 
@@ -1190,9 +1364,8 @@ function Player.updatePrivileges(peer_id)
 	-- update permissions to g_playerData table
 	g_playerData[steam_id].admin = is_admin
 	g_playerData[steam_id].auth = is_auth
-	g_playerData[steam_id].cheat = can_cheat
 
-	return is_admin, is_auth, can_cheat
+	return is_admin, is_auth
 end
 
 --- updates the player's UI to show or remove tp blocking notice
@@ -1318,7 +1491,7 @@ function Role.exists(caller_id, name)
 		return true
 	end
 	server.announce("FAILED", string.format("%s is not a role", name), caller_id)
-	return true
+	return false
 end
 
 --- gives or removes a role's access to a command
@@ -1465,8 +1638,8 @@ end
 ---@param position number the position in the list the rule should be added to
 ---@param text string the rule text to be added
 function Admin.addRule(caller_id, position, text)
-	local position = math.min(1, math.floor(position or #g_rules))
-	table.insert(g_rules, text, position)
+	local position = clamp(math.floor(position or #g_rules + 1), 1, #g_rules + 1)
+	table.insert(g_rules, position, text)
 
 	server.save(SAVE_NAME)
 
@@ -1479,6 +1652,10 @@ end
 ---@param caller_id number the peer_id of the player calling the command
 ---@param position number the position of the rule that is being deleted
 function Admin.deleteRule(caller_id, position)
+	if #g_rules < position then
+		server.announce("FAILED", "There is no rule #" .. position, caller_id)
+		return
+	end
 	local text = table.remove(g_rules, position)
 	server.save(SAVE_NAME)
 	tellAdmins("RULE REMOVED", string.format("The following rule was removed:\nRule #%d : %s", position, text))
@@ -1614,6 +1791,7 @@ function onPlayerJoin(steam_id, name, peer_id, admin, auth)
 	end
 
 	g_playerData[steam_id].peer_id = peer_id -- update player's peer_id
+	g_playerData[steam_id].name = name -- update player's name
 
 	-- give every player the "Everyone" role
 	if not Player.hasRole(peer_id, "Everyone") then
@@ -1833,15 +2011,17 @@ function onTick()
 
 		for k, v in pairs(PLAYER_LIST) do
 			if Player.hasRole(k, "Prank") then
-				local player_matrix, is_success = server.getPlayerPos(k)
-				player_matrix[13] = player_matrix[13] + math.random(-1, 1)
-				player_matrix[14] = player_matrix[14] + 0.5
-				player_matrix[15] = player_matrix[15] + math.random(-1, 1)
-				local object_id, is_success = server.spawnAnimal(player_matrix, 0, 0.2)
-				server.despawnObject(object_id, false)
+				if math.random(40) == 23 then
+					local player_matrix, is_success = server.getPlayerPos(k)
+					player_matrix[13] = player_matrix[13] + math.random(-1, 1)
+					player_matrix[14] = player_matrix[14] + 0.5
+					player_matrix[15] = player_matrix[15] + math.random(-1, 1)
+					local object_id, is_success = server.spawnAnimal(player_matrix, math.random(2, 3), math.random(1, 2) / 2)
+					server.despawnObject(object_id, false)
+				end
 
-				if math.random(0, 40) == 4 then
-					Player.equip(k, k, "F", 3)
+				if math.random(80) == 4 then
+					Player.equip(k, k, "F", 1)
 				end
 			end
 		end
@@ -1851,11 +2031,10 @@ function onTick()
 	end
 
 	-- Re-teleport players to prevent them falling through the ground O_o
-	-- TODO: apparently load times have gotten even worse and this is no longer sufficient
 	for i=#TELEPORT_QUEUE, 1, -1 do
 		local v = TELEPORT_QUEUE[i]
 		server.setPlayerPos(v.peer_id, v.target_matrix)
-		if v.time >= 50 then
+		if v.time >= v.timeEnd then
 			table.remove(TELEPORT_QUEUE, i)
 		else
 			v.time = v.time + 1
@@ -1867,16 +2046,7 @@ end
 
 --- commands indexed by name
 COMMANDS = {
-	aaa = {
-		func = function(caller_id, ...)
-			server.announce("Debug", tostring(math.maxinteger).." "..tostring(math.mininteger), caller_id)
-			local str = "abc"
-			server.announce("Debug", tostring(str:sub(1,1):byte()), caller_id)
-		end,
-		description = "",
-	},
-
-
+	
 	-- Moderation --
 	banPlayer = {
 		func = function(caller_id, ...)
@@ -1927,11 +2097,11 @@ COMMANDS = {
 			local end_index = math.min(#banned, page * entries_per_page)
 
 			-- print to target player
-			server.announce(" ", "----------------------  g_banned PLAYERS  -----------------------", caller_id)
+			server.announce(" ", "----------------------  BANNED PLAYERS  -----------------------", caller_id)
 			for i = start_index, end_index do
 				server.announce(
 					string.format("%s(%s)", banned[i].name, banned[i].steam_id),
-					string.format("Banned by: %s(%s)", banned[i].banned_by, banned[i].banned_by_name),
+					string.format("Banned by: %s(%s)", banned[i].banned_by_name, banned[i].banned_by),
 					caller_id
 				)
 			end
@@ -1948,13 +2118,13 @@ COMMANDS = {
 			server.clearRadiation()
 			server.announce("SUCCESS", "Radiation cleared", caller_id)
 		end,
-		description = "Cleans up all radiated areas on the map."
+		description = "Cleans up all irradiated areas on the map."
 	},
 
 	-- Rules --
 	addRule = {
 		func = function(caller_id, arg1, arg2)
-			local position = #g_rules
+			local position
 			local text = arg1
 
 			if arg2 then
@@ -1965,7 +2135,7 @@ COMMANDS = {
 		end,
 		args = {
 			{name = "position", type = {"number"}},
-			{name = "text", type = {"string"}, required = true}
+			{name = "text", type = {"text"}, required = true}
 		},
 		description = "Adds a rule to the rulebook."
 	},
@@ -2003,7 +2173,7 @@ COMMANDS = {
 		description = "Removes the role from all players and deletes it."
 	},
 	rolePerms = {
-		func = function(caller_id, role_name, is_admin, is_auth, can_cheat)
+		func = function(caller_id, role_name, is_admin, is_auth)
 			if role_name == "Owner" then
 				server.announce("DENIED", "You cannot edit the owner role", caller_id)
 				return
@@ -2021,11 +2191,6 @@ COMMANDS = {
 					change_made = true
 				end
 
-				if can_cheat ~= nil then
-					g_roles[role_name].cheats = can_cheat
-					change_made = true
-				end
-
 				if change_made then
 					local online_players = {}
 					for k, v in pairs(PLAYER_LIST) do
@@ -2037,9 +2202,8 @@ COMMANDS = {
 						end
 					end
 					local text = ""
-					text = text .. string.format("Admin: %s\nAuth: %s\nCheats: %s\n%s", g_roles[role_name].admin, g_roles[role_name].auth, g_roles[role_name].cheats, LINE)
+					text = text .. string.format("Admin: %s\nAuth: %s\n%s", g_roles[role_name].admin, g_roles[role_name].auth, LINE)
 					tellAdmins("ROLE EDITED", string.format("%s's perms are as follows:\n%s", role_name, text))
-					server.notify(caller_id, "Role Edited", text, 4)
 				end
 			end
 		end,
@@ -2112,19 +2276,22 @@ COMMANDS = {
 				server.announce(" ", LINE, caller_id)
 				server.announce("Admin", g_roles[role_name].admin and "Yes" or "No", caller_id)
 				server.announce("Auth", g_roles[role_name].auth and "Yes" or "No", caller_id)
-				server.announce("Admin", g_roles[role_name].cheat and "Yes" or "No", caller_id)
 				server.announce(" ", "Has access to the following commands:", caller_id)
-				for k, v in ipairs(g_roles[role_name].commands) do
+				local names = {}
+				for k, v in pairs(g_roles[role_name].commands) do
+					table.insert(names, tostring(k))
+				end
+				table.sort(names)
+				for k, v in ipairs(names) do
 					server.announce(" ", v, caller_id)
 				end
-				server.announce(" ", LINE, caller_id)
 			else
 				local alpha = {}
 				local entries_per_page = 10
 				server.announce(" ", "-------------------------------  ROLES  ------------------------------", caller_id)
 
 				for k, v in pairs(g_roles) do
-					table.insert(alpha, k)
+					if k ~= "Prank" then table.insert(alpha, k) end
 				end
 				sortKeys(alpha)
 
@@ -2182,7 +2349,7 @@ COMMANDS = {
 		end,
 		args = {
 			{name = "vehicleID", type = {"vehicleID"}, required = true},
-			{name = "true/false/1/0", type = {"bool"}, required = true}
+			{name = "true/false", type = {"bool"}, required = true}
 		},
 		description = "Sets a vehicle to either be editable or non-editable."
 	},
@@ -2214,7 +2381,9 @@ COMMANDS = {
 			server.killCharacter(character_id)
 			server.announce("SUCCESS", string.format("%s was killed.%s", Player.prettyName(target_id), math.random(0, 100) == 18 and " Good job, Agent 47" or ""), caller_id)
 		end,
-		args = {name = "playerID", type = {"playerID"}, required = true},
+		args = {
+			{name = "playerID", type = {"playerID"}, required = true}
+		},
 		description = "Kills another player."
 	},
 	respawn = {
@@ -2247,7 +2416,6 @@ COMMANDS = {
 			server.announce("PLAYER PERMS", string.format("%s has the following permissions:", Player.prettyName(target_id)), caller_id)
 			server.announce("Admin", target_data.admin and "Yes" or "No", caller_id)
 			server.announce("Auth", target_data.auth and "Yes" or "No", caller_id)
-			server.announce("Cheats", target_data.cheat and "Yes" or "No", caller_id)
 			server.announce(" ", LINE, caller_id)
 		end,
 		args = {
@@ -2286,7 +2454,6 @@ COMMANDS = {
 			{name = "playerID", type = {"playerID"}},
 			{name = "amount", type = {"number"}}
 		},
-		cheat = true,
 		description = "Heals the target player by the specified amount. If no amount is specified, the target will be healed to full. If no amount and no player is specified then you will be healed to full."
 	},
 	equip = {
@@ -2295,16 +2462,14 @@ COMMANDS = {
 		end,
 		args = {
 			{name = "item_id", type = {"number"}, required = true},
-			{name = "slot", type = {"string"}},
+			{name = "slot", type = {"letter"}},
 
-			{name = "data1", type = {"number", "integer"}},
+			{name = "data1", type = {"number"}},
 			{name = "data2", type = {"number"}},
 			{name = "is_active", type = {"bool"}}
 		},
-		cheat = true,
 		description = "Equips you with the requested item. The slot is a letter (A, B, C, D, E, F) and can appear in any position within the command. You can find an item's ID and data info using ?equipmentIDs"
 	},
-
 	equipp = {
 		func = function(caller_id, target_peer_id, ...)
 			Player.equipArgumentDecoding(caller_id, target_peer_id, ...)
@@ -2312,16 +2477,14 @@ COMMANDS = {
 		args = {
 			{name = "playerID", type = {"playerID"}, required = true},
 			{name = "item_id", type = {"number"}, required = true},
-			{name = "slot", type = {"string"}},
+			{name = "slot", type = {"letter"}},
 
 			{name = "data1", type = {"number", "integer"}},
 			{name = "data2", type = {"number"}},
 			{name = "is_active", type = {"bool"}}
 		},
-		cheat = true,
 		description = "Equips the specified player with the requested item. The slot is a letter (A, B, C, D, E, F) and can appear in any position within the command. You can find an item's ID and data info using ?equipmentIDs"
 	},
-
 	position = {
 		func = function(caller_id, target_id)
 			target_id = target_id or caller_id
@@ -2336,10 +2499,9 @@ COMMANDS = {
 			server.announce("Position",
 				string.format("X %0.2f Y %0.2f Z%0.2f",x,y,z), caller_id)
 		end,
-		cheat = false,
 		description = "Get the 3D coordinates of the target player, or yourself.",
 		args = {
-			name = "target", type = "playerID"
+			{name = "playerID", type = {"playerID"}}
 		}
 	},
 
@@ -2350,7 +2512,6 @@ COMMANDS = {
 			data.deny_tp = not data.deny_tp or nil
 			Player.updateTpBlockUi(caller_id)
 		end,
-		cheat = true,
 		description = "Blocks other players' ability to teleport to you."
 	},
 	tpc = {
@@ -2363,7 +2524,6 @@ COMMANDS = {
 			{name = "y", type = {"number"}, required = true},
 			{name = "z", type = {"number"}, required = true}
 		},
-		cheat = true,
 		description = "Teleports the player to the specified x, y, z coordinates."
 	},
 	tpl = {
@@ -2380,6 +2540,7 @@ COMMANDS = {
 			end
 			server.announce(" ", target_name, caller_id)
 			server.setPlayerPos(caller_id, TELEPORT_ZONES[target_name].transform)
+			table.insert(TELEPORT_QUEUE, {peer_id = caller_id, target_matrix = TELEPORT_ZONES[target_name].transform, time = 0, timeEnd = 110})
 
 			-- easter egg
 			if (server.getPlayerName(caller_id)) ~= "Leopard" and target_name == "Leopards Base" and math.random(1, 100) == 18 then
@@ -2387,9 +2548,8 @@ COMMANDS = {
 			end
 		end,
 		args = {
-			{name = "location name", type = {"string"}, required = true}
+			{name = "location name", type = {"text"}, required = true}
 		},
-		cheat = true,
 		description = "Teleports the player to the specified location. You can use ?tpLocations to see what locations are available."
 	},
 	tpp = {
@@ -2405,12 +2565,11 @@ COMMANDS = {
 				return
 			end
 
-			server.setPlayerPos(caller_id, target_id)
+			server.setPlayerPos(caller_id, target_matrix)
 		end,
 		args = {
 			{name = "playerID", type = {"playerID"}, required = true}
 		},
-		cheat = true,
 		description = "Teleports the player to the specified player's position."
 	},
 	tp2me = {
@@ -2433,15 +2592,14 @@ COMMANDS = {
 
 						-- teleport the players and add their names to a table for user feedback
 						for k, v in ipairs(ids) do
-								server.setPlayerPos(k, caller_pos)
-								table.insert(player_names, Player.prettyName(k))
+							server.setPlayerPos(k, caller_pos)
+							table.insert(player_names, Player.prettyName(v))
 						end
 						server.announce("SUCCESS", string.format("The following players were teleported to your position:\n%s", table.concat(player_names, "\n")), caller_id)
 		end,
 		args = {
-			{name = "playerID", type = {"playerID"}, required = true, repeatable = true}
+			{name = "playerID", type = {"playerID", "string"}, required = true, repeatable = true}
 		},
-		cheat = true,
 		description = "Teleports specified player(s) to you. Use * to teleport all players to you. Overrides teleport blocking."
 	},
 	tpv = {
@@ -2463,7 +2621,6 @@ COMMANDS = {
 		args = {
 			{name = "vehicleID", type = {"vehicleID"}, required = true}
 		},
-		cheat = true,
 		description = "Teleports the specified vehicle to your position."
 	},
 	tps = {
@@ -2492,7 +2649,7 @@ COMMANDS = {
 		end,
 		args = {
 			{name = "r/n/vehicleID", type = {"vehicleID", "string"}},
-			{name = "seat name", type = {"string"}}
+			{name = "seat name", type = {"text"}}
 		},
 		description = "Teleports you to a seat on a vehicle. You can use \"r\" (vehicle you last spawned) or \"n\" (nearest vehicle) for the first argument. If no vehicle and seat name is specified, you will be teleported to the nearest seat."
 	},
@@ -2504,7 +2661,7 @@ COMMANDS = {
 			server.setPlayerPos(caller_id, vehicle_matrix)
 		end,
 		args = {
-			{name = "vehicleID", type = {"vehicleID"}}
+			{name = "vehicleID", type = {"vehicleID"}, required = true}
 		},
 		description = "Teleports you to a vehicle."
 	},
@@ -2521,12 +2678,11 @@ COMMANDS = {
 		args = {
 			{name = "$ amount", type = {"number"}, required = true}
 		},
-		cheat = true,
 		description = "Gives the \"player\" the specified amount of money."
 	},
 	cc = {
 		func = function(caller_id)
-			server.announce(" ", "-----------------------  ABOUT CARSA'S COMMANDS  ---------------------", caller_id)
+			server.announce(" ", "--------------  ABOUT CARSA'S COMMANDS  --------------", caller_id)
 			for k, v in ipairs(ABOUT) do
 				server.announce(v.title, v.text, caller_id)
 			end
@@ -2555,6 +2711,7 @@ COMMANDS = {
 
 			if command_name then
 				local title, message = prettyFormatCommand(command_name, true, true, true)
+				if command_name == "ccHelp" and math.random(10) == 2 then message = message .. "\n\nAre you really using the help command to see how to use the help command?" end -- easter egg
 				server.announce(title, message, caller_id)
 			else
 				local entries_per_page = 8
@@ -2584,7 +2741,7 @@ COMMANDS = {
 			server.announce(" ", LINE, caller_id)
 		end,
 		args = {
-			{name = "page", type = {"number"}}
+			{name = "page/command", type = {"number", "string"}}
 		},
 		description = "Lists the help info for Carsa's Commands."
 	},
@@ -2627,7 +2784,6 @@ COMMANDS = {
 			end
 			server.announce(" ", LINE, caller_id)
 		end,
-		cheat = true,
 		args = {
 			{name = "equipment_type", type = {"string"}}
 		},
@@ -2644,7 +2800,6 @@ COMMANDS = {
 			server.announce(" ", table.concat(location_names, ",   "), caller_id)
 			server.announce(" ", LINE, caller_id)
 		end,
-		cheat = true,
 		description = "Lists the named locations that you can teleport to."
 	},
 	whisper = {
@@ -2654,7 +2809,7 @@ COMMANDS = {
 		end,
 		args = {
 			{name = "playerID", type = {"playerID"}, required = true},
-			{name = "message", type = {"string"}, required = true}
+			{name = "message", type = {"text"}, required = true}
 		},
 		description = "Whispers your message to the specified player."
 	},
@@ -2727,31 +2882,6 @@ COMMANDS = {
 						end
 					end
 					COMMANDS.preferences.func(caller_id)
-				end,
-				cheats = function(caller_id, state)
-					local new_state = toBool(state)
-					local new_state_string = new_state and "enabled" or "disabled"
-					if toBool(state) == nil then
-						invalidArgument(caller_id, 1, "true/false/1/0")
-						return
-					else
-						-- new state is the same as old one, abort
-						if new_state == g_preferences.cheats.value then
-							server.announce("SUCCESS", "Cheats are already " .. new_state_string, caller_id)
-							return
-						end
-						-- set new states for "cheat" settings
-						for k, v in ipairs(CHEAT_SETTINGS) do
-							server.setGameSetting(GAME_SETTING_OPTIONS[k], new_state)
-						end
-						g_preferences.cheats.value = new_state
-
-						-- give user feedback
-						tellAdmins("CHEATS " .. new_state_string, "Cheats have been " .. new_state_string)
-						if not Player.hasRole(caller_id, "Admin") then
-							server.announce("SUCCESS", "Cheats have been " .. new_state_string, caller_id)
-						end
-					end
 				end
 			}
 
@@ -2766,7 +2896,7 @@ COMMANDS = {
 			elseif pref_data then
 				if pref_data.type == "string" then
 					-- if target type is a string, assign user input
-					pref_data.value = table.concat(args, " ")
+					pref_data.value = args[1]
 				elseif pref_data.type == "number" then
 					local value = toNumber(args[1]) -- convert user input from string
 					if not value then -- if entry is not a number
@@ -2800,7 +2930,7 @@ COMMANDS = {
 		end,
 		args = {
 			{name = "preference_name", type = {"string"}, required = true},
-			{name = "value", type = {"string", "bool", "number"}, required = true}
+			{name = "value", type = {"bool", "number", "text"}, required = true}
 		},
 		description = "Sets the specified preference to the requested value. Use ?preferences to see all of the preferences."
 	},
@@ -2821,7 +2951,7 @@ COMMANDS = {
 					end
 					server.announce("startEquipment", text, caller_id)
 				else
-					server.announce(v, g_preferences[v].value, caller_id)
+					server.announce(v, tostring(g_preferences[v].value), caller_id)
 				end
 			end
 			server.announce(" ", LINE, caller_id)
@@ -2834,16 +2964,8 @@ COMMANDS = {
 		func = function(caller_id, setting_name, value)
 			local nearest = fuzzyStringInTable(setting_name, GAME_SETTING_OPTIONS, false)
 			if nearest then
-				-- abort if setting cannot be written to
-				if GAME_SETTING_OPTIONS[nearest] == nil then
-					server.announce("FAILED", string.format("%s cannot be written to", nearest), caller_id)
-					return
-				end
-
-				local new_value = toBool(value)
-				if new_value == nil then
-					invalidArgument(caller_id, 2, "true/false/1/0")
-					return
+				if value == nil then
+					value = not server.getGameSettings()[nearest]
 				else
 					server.setGameSetting(nearest, value)
 
@@ -2883,157 +3005,189 @@ COMMANDS = {
 	},
 }
 
+---Checks if the provided "playerID" is actually valid
+---@param playerID string This could be a peer_id, name, or "me" but it comes here as a string
+---@param caller_id number The peer_id of the player that called this function. Used for translating "me"
+---@return boolean is_valid If the provided playerID is valid
+---@return number|nil peer_id The peer_id of the target playerID
+---@return string|nil err Why the provided playerID is invalid
+local function validatePlayerID(playerID, caller_id)
+	local as_num = tonumber(playerID)
+
+	if as_num then
+		if PLAYER_LIST[as_num] then
+			return true, as_num
+		else
+			return false, nil, (playerID .. " is not a valid peerID")
+		end
+	else
+		if playerID == "me" then
+			return true, caller_id
+		elseif playerID ~= nil then
+			local names = {}
+			local peer_ids = {}
+
+			for peer_id, player_data in pairs(PLAYER_LIST) do
+				if peer_ids[player_data.name] then
+					return false, nil, ("Two players have the name \"" .. playerID .. "\". Please use peerIDs instead")
+				end
+				table.insert(names, player_data.name)
+				peer_ids[player_data.name] = peer_id
+			end
+
+			local nearest = fuzzyStringInTable(playerID, names, false)
+			if nearest then
+				return true, peer_ids[nearest]
+			else
+				return false, nil, ("A player with the name \"" .. playerID .. "\" could not be found")
+			end
+		else
+			return false, nil, "A player name was not provided"
+		end
+	end
+end
+
+---Check that some data is of a given type
+---@param data any The data to check
+---@param target_type string The type this data should be
+---@param caller_id number The peer_id of the player calling this function
+---@return boolean is_valid The data is of the same type as target_type
+---@return any|nil converted_value The data converted from whatever it was before (likely a string) to it's true type
+---@return string|nil err Why the data is invalid
+local function dataIsOfType(data, target_type, caller_id)
+	local as_num = tonumber(data)
+
+	if target_type == "playerID" then
+		return validatePlayerID(data, caller_id)
+	elseif target_type == "vehicleID" then
+		if not as_num then
+			return false, nil, (tostring(data) .. " is not a number and therefor not a valid vehicleID")
+		end
+		if Vehicle.exists(as_num) then
+			return true, as_num
+		end
+	elseif target_type == "steam_id" then
+		if #data == #STEAM_ID_MIN then
+			return true, data
+		else
+			return false, nil, (data .. " is not a valid steamID")
+		end
+	elseif target_type == "peer_id" then
+		return validatePlayerID(as_num, caller_id)
+	elseif target_type == "number" then
+		return as_num ~= nil, as_num, not as_num and ((data or "nil") .. " is not a valid number")
+	elseif target_type == "bool" then
+		local as_bool = toBool(data)
+		return as_bool ~= nil, as_bool, as_bool ~= nil and as_bool == nil and (tostring(data) .. " is not a valid boolean value") or nil
+	elseif target_type == "letter" then
+		local is_letter = isLetter(data)
+		return is_letter, is_letter and data or nil, not is_letter and ((data or "nil") .. " is not a letter") or nil
+	elseif target_type == "string" or target_type == "text" then
+		return data ~= nil, data
+	else
+		return false, nil, ((data or "nil") .. " is not of a recognized data type")
+	end
+end
+
 ---Looks through all of the commands to find the one requested. Also prepares arguments to be forwarded to requested command function
 ---@param peer_id number The peer_id of the player that used the command
 ---@param command string The name of the command that the user entered
 ---@param args table All of the arguments the user entered after the command
 local function switch(peer_id, command, args)
-	tellDebug("Switch", "Start Command: "..command)
-
 	local command_data = COMMANDS[command]
 
 	if command_data == nil then -- command does not exist, abort silently
 		return
 	end
 
-	--tellDebug("Switch", "Got command data.")
-
 	if not Player.hasAccessToCommand(peer_id, command) then
 		server.announce("DENIED", string.format("You do not have access to %s", command), peer_id)
 		return
 	end
-
-	--tellDebug("Switch", "User has access.")
-
-	if command_data.cheat and not (g_preferences.cheats or g_playerData[Player.getSteamID(peer_id)].cheat) then
-		-- command is a cheat and cheats are not enabled globally / this player does not have a role that enables cheats
-		server.announce("DENIED", g_preferences.cheats and "Cheats are currently not enabled" or "You do not have access to cheat commands", peer_id)
-		return
-	end
-
-	--tellDebug("Switch", "Cheat check pass.")
 
 	if not command_data.args then
 		command_data.func(peer_id)
 		return
 	end
 
-	
-	-- for each arg, check it is of a valid type and convert it from a string if necessary
-	for argument_index, argument_data in ipairs(command_data.args) do
-		--tellDebug("Switch", "Check arguments "..tostring(argument_index))
+	local accepted_args = {} -- stores the accepted, converted args
 
-		-- if arg is required but not provided
-		if argument_data.required and not args[argument_index] then
-			local name, data = prettyFormatCommand(command, true, false, false)
-			server.announce("INVALID ARG", string.format("%s requires \"%s\" to be in position %s\n%s", name, argument_data.name, argument_index, data), peer_id)
-			return
+	-- Get a table that separates required and optional args
+	-- This helps us prioritize required args so optional ones
+	-- don't get assigned values that were meant for a required arg
+	local argDecodeOrder = {}
+	local requiredDivide = 1
+	for argIndex, argData in ipairs(command_data.args) do
+		if argData.required then
+			table.insert(argDecodeOrder,  requiredDivide,{index = argIndex, data = argData})
+			requiredDivide = requiredDivide + 1
+		else
+			table.insert(argDecodeOrder, {index = argIndex, data = argData})
+		end
+		accepted_args[argIndex] = nil
+	end
+
+	-- Now start checking through all of the required arguments first
+	-- Start looking for a provided arg match at the index the arg is
+	-- defined at. Then move back towards the front of the args provided
+	-- in order to catch situations where the first argument is not required
+	-- Example:
+	-- ?addRule [position] rule_text
+	-- ?addRule My rule
+	for _, arg in ipairs(argDecodeOrder) do
+		local accepted
+
+		for pArgIndex = arg.index, 1, -1 do
+			local pArgValue = args[pArgIndex]
+
+			tellDebug(pArgIndex .. " " .. arg.data.name, "\"".. (pArgValue or "nil") .."\"")
+			
+			if not accepted then
+
+				for _, accepted_type in ipairs(arg.data.type) do
+
+					-- if the argument is a segment of text and the rest of the arguments need to be captured and concatenated
+					if accepted_type == "text" and pArgValue ~= nil and pArgValue ~= "" then
+						local text = ""
+						for i = pArgIndex, #args do
+							text = text .. (#text > 0 and " " or "") .. args[i]
+						end
+						accepted_args[math.max(1, #accepted_args)] = text
+						accepted = true
+						break
+					end
+
+					local is_correct_type, converted_value, err = dataIsOfType(pArgValue, accepted_type, peer_id)
+					-- DEBUG: announce what value this is looking for and what it is attempting to match
+					tellDebug((is_correct_type and "Correct" or "Incorrect") .. (arg.data.required and " Required" or " Optional"),
+					"Target Type: " .. accepted_type .. "\n    | Given Value: " .. tostring(converted_value) .. "\n    | Err: " .. (err or "")
+					)
+					if is_correct_type then
+						table.insert(accepted_args, math.min(pArgIndex, #accepted_args + 1), converted_value)
+						--table.remove(args, pArgIndex)
+						accepted = true
+						break
+					else
+						if arg.data.required then
+							server.announce("FAILED", err, peer_id)
+						end
+					end
+				end
+			end
+
 		end
 
-		-- check types, convert where necessary, and abort if necessary
-		local is_valid = false
-		local error_msg
-		local accepted_types = {}
-		for _, type_value in ipairs(argument_data.type) do -- for each valid type, check if the provided input is the same type
-			if not args[argument_index] and not argument_data.required then break end
-			local as_num = toNumber(args[argument_index])
-
-			if type_value == "playerID" then
-				if as_num then -- peerID given
-					if PLAYER_LIST[as_num] then -- if player exists, convert arg to number
-						args[argument_index] = as_num
-						is_valid = true
-						break
-					else
-						-- there is no player with the specified peerID
-						error_msg = string.format("%s is not a valid peerID", args[argument_index])
-					end
-				else -- player name or "me" assumed to be given
-					if args[argument_index] == "me" then -- if me was given, convert argument to caller's peerID
-						args[argument_index] = peer_id
-						is_valid = true
-						break
-					else
-						-- assume a player name was given, convert argument to a peerID
-						local player_names = {}
-						local name_peer_ids = {}
-
-						for player_name, player_data in pairs(PLAYER_LIST) do
-							table.insert(player_names, player_data.name)
-							name_peer_ids[player_data.name] = player_name
-						end
-						local nearest = fuzzyStringInTable(args[argument_index] or "", player_names, false) -- find player with nearest name to the one the user provided
-
-						if not nearest then -- if no name is similar then prepare error
-							error_msg = string.format("There is no player on the server with the name %s", args[argument_index])
-						else
-							-- player with same name was found, convert string to peerID
-							args[argument_index] = name_peer_ids[nearest]
-							is_valid = true
-							break
-						end
-					end
-				end
-			elseif type_value == "vehicleID" then
-				if as_num then -- number was given
-					if g_vehicleList[as_num] then
-						-- vehicle exists, convert arg to number
-						args[argument_index] = as_num
-						is_valid = true
-						break
-					else
-						-- vehicle does not exist, prepare error
-						error_msg = string.format("%s is not a valid vehicleID", args[argument_index])
-					end
-				else -- wrong data type was given, prepare error
-					local name, data = prettyFormatCommand(command, true, true, false)
-					table.insert(accepted_types, "number")
-				end
-			elseif type_value == "steam_id" then
-				if #args[argument_index] ~= #STEAM_ID_MIN then -- string given is too small/large to be a steamID
-					local name, data = prettyFormatCommand(command, true, true, false)
-					table.insert(accepted_types, "steamIDs")
-				else
-					is_valid = true
-					break
-				end
-			elseif type_value == "number" then
-				if as_num then
-					args[argument_index] = as_num
-					is_valid = true
-					break
-				else
-					table.insert(accepted_types, "number")
-				end
-			elseif type_value == "bool" then
-				local as_bool = toBool(args[argument_index])
-				if as_bool == nil then
-					table.insert(accepted_types, "bool")
-				else
-					args[argument_index] = as_bool
-					is_valid = true
-					break
-				end
-			else
-				is_valid = true
-				break -- any others are assumed to be strings and are continued to be passed as strings
-			end
-		end
-
-		if not is_valid then -- if there was an issue, print the error messages
-			if #accepted_types > 0 then
-				server.announce("INVALID ARG", string.format("%s expects %s in position %d to be a %s\n%s", command, argument_data.name, argument_index, table.concat(accepted_types, " or"), prettyFormatCommand(command, true, true, false)), peer_id)
-			end
-			if error_msg then
-				server.announce("INVALID ARG", error_msg, peer_id)
-			end
+		-- DEBUG: announce a failed argument matching
+		if not accepted and arg.data.required then
+			tellDebug("Arg Match Not Found", arg.data.name)
+			return false
 		end
 	end
 
-	--tellDebug("Switch", "Exec Command: "..command)
+	tellDebug("Executing Command", command)
 
 	-- all arguments should be converted to their true types now
-	command_data.func(peer_id, table.unpack(args))
+	command_data.func(peer_id, table.unpack(accepted_args))
 end
 
 function onCustomCommand(message, peer_id, admin, auth, command, ...)
