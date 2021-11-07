@@ -2521,10 +2521,10 @@ COMMANDS = {
 				message = "Just in time"
 			end
 
-			if caller_id ~= target_id then
-				server.notify(target_id, "YOU'VE BEEN HEALED", Player.prettyName(caller_id) .. " has healed you by " .. clamped_amount .. "%", 5)
+			if caller_id ~= target then
+				server.notify(target, "YOU'VE BEEN HEALED", Player.prettyName(caller_id) .. " has healed you by " .. clamped_amount .. "%", 5)
 				title = "PLAYER HEALED"
-				message = Player.prettyName(target_id) .. " has been healed by " .. clamped_amount .. "%"
+				message = Player.prettyName(target) .. " has been healed by " .. clamped_amount .. "%"
 			end
 
 			return true, title, message
@@ -3230,6 +3230,12 @@ local function switch(peer_id, command, args)
 	-- ?addRule [position] rule_text
 	-- ?addRule My rule
 	for _, arg in ipairs(argDecodeOrder) do
+
+		-- if this arg could not possibly be provided, break
+		if arg.index > #args then
+			break
+		end
+
 		local accepted
 
 		local start = arg.index
