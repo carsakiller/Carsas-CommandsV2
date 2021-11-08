@@ -199,16 +199,54 @@ local DEV_STEAM_IDS = {
 }
 
 local PREFERENCE_DEFAULTS = {
-	equipOnRespawn = {value = true, type = "bool"},
-	keepInventory = {value = false, type = "bool"},
-	removeVehicleOnLeave = {value = true, type = "bool"},
-	maxMass = {value = 0, type = "number"},
-	startEquipment = {
-		value = {{id = 15, slot = "B", data1 = 1}, {id = 6, slot = "C"}, {id = 11, slot = "E", data1 = 3}},
-		type = "table"
+	equipOnRespawn = {
+		value = true,
+		type = {"bool"}
 	},
-	welcomeNew = {value = " ", type = "string"},
-	welcomeReturning = {value = " ", type = "string"}
+	keepInventory = {
+		value = false,
+		type = {"bool"}
+	},
+	removeVehicleOnLeave = {
+		value = true,
+		type = {"bool"}
+	},
+	maxMass = {
+		value = 0,
+		type = {"number"}
+	},
+	startEquipmentA = {
+		value = 0,
+		type = {"number"}
+	},
+	startEquipmentB = {
+		value = 15,
+		type = {"number"}
+	},
+	startEquipmentC = {
+		value = 6,
+		type = {"number"}
+	},
+	startEquipmentD = {
+		value = 11,
+		type = {"number"}
+	},
+	startEquipmentE = {
+		value = 0,
+		type = {"number"}
+	},
+	startEquipmentF = {
+		value = 0,
+		type = {"number"}
+	},
+	welcomeNew = {
+		value = false,
+		type = {"bool", "text"}
+	},
+	welcomeReturning = {
+		value = false,
+		type = {"bool", "text"}
+	}
 }
 
 local PLAYER_DATA_DEFAULTS = {
@@ -1207,6 +1245,10 @@ function Player.equip(peer_id, target_peer_id, slot, item_id, data1, data2, is_a
 		return false, "INVALID ARG", "Could not convert argument \"" .. tostring(item_id) .. "\" to an equipment_id (number)"
 	end
 
+	if item_id == 0 then
+		return server.setCharacterItem(character_id, slot_number or 1, 0, false, 0, 0)
+	end
+
 	local item_data = EQUIPMENT_DATA[item_id]
 	if not item_data then
 		return false, "INVALID ARG", "There is no equipment with the id of " .. tostring(item_id)
@@ -1257,8 +1299,8 @@ function Player.equip(peer_id, target_peer_id, slot, item_id, data1, data2, is_a
 				if inventory[k] == 0 -- give player requested item in open slot
 				or inventory[k] == item_id -- replace an existing item, presumably to recharge it.
 				then
+					if inventory[k] == item_id then isRecharge = true end
 					slot_number = k
-					isRecharge = true
 					success = true
 					break
 				end
@@ -1307,10 +1349,20 @@ end
 ---@return string? title A title to explain what happened
 ---@return string? statusText Text to explain what happened
 function Player.giveStartingEquipment(peer_id)
-	for k, v in ipairs(g_preferences.startEquipment) do
-		local status, title, statusText = Player.equip(0, peer_id, v.slot, v.id, v.data1, v.data2)
-		if not status then
-			return status, title, statusText
+	local items = {
+		g_preferences.startEquipmentA.value,
+		g_preferences.startEquipmentB.value,
+		g_preferences.startEquipmentC.value,
+		g_preferences.startEquipmentD.value,
+		g_preferences.startEquipmentE.value,
+		g_preferences.startEquipmentF.value
+	}
+
+	for i, item_id in pairs(items) do
+		local success, title, statusText = Player.equip(peer_id, peer_id, EQUIPMENT_SLOTS[i].letter, math.floor(item_id))
+		if not success then
+			server.announce(title, statusText)
+			return false, title, statusText
 		end
 	end
 	return true
@@ -1880,7 +1932,7 @@ end
 function onPlayerLeave(steam_id, name, peer_id, is_admin, is_auth)
 	if invalid_version then return end
 
-	if g_preferences.removeVehicleOnLeave then
+	if g_preferences.removeVehicleOnLeave.value then
 		for vehicle_id, vehicle_data in pairs(g_vehicleList) do
 			if vehicle_data.owner == Player.getSteamID(peer_id) then
 				server.despawnVehicle(vehicle_id, false) -- despawn vehicle when unloaded. onVehicleDespawn should handle removing the ids from g_vehicleList
@@ -1894,7 +1946,7 @@ end
 function onPlayerDie(steam_id, name, peer_id, is_admin, is_auth)
 	if invalid_version then return end
 
-	if g_preferences.keepInventory then
+	if g_preferences.keepInventory.value then
 		-- save the player's inventory to persistent data
 		local inventory, title, statusText = Player.getInventory(peer_id)
 		if not inventory then 
@@ -1907,7 +1959,7 @@ end
 function onPlayerRespawn(peer_id)
 	if invalid_version then return end
 
-	if g_preferences.keepInventory then
+	if g_preferences.keepInventory.value then
 		local steam_id = Player.getSteamID(peer_id)
 		if g_playerData[steam_id].inventory then
 			for slot_number, item_id in ipairs(g_playerData[steam_id].inventory) do
@@ -1919,7 +1971,7 @@ function onPlayerRespawn(peer_id)
 			return
 		end
 	end
-	if g_preferences.equipOnRespawn then
+	if g_preferences.equipOnRespawn.value then
 		Player.giveStartingEquipment(peer_id)
 	end
 end
@@ -1932,7 +1984,7 @@ function onVehicleSpawn(vehicle_id, peer_id, x, y, z, cost)
 		-- if mass restriction is in effect, remove any vehicles that are over the limit
 		if g_preferences.maxMass.value and g_preferences.maxMass.value > 0 and vehicle_data.mass > g_preferences.maxMass.value then
 			server.despawnVehicle(vehicle_id, true)
-			server.announce("TOO LARGE", string.format("The vehicle you attempted to spawn is heavier than the max mass allowed by this server (%0.f)", g_preferences.maxMass), peer_id)
+			server.announce("TOO LARGE", string.format("The vehicle you attempted to spawn is heavier than the max mass allowed by this server (%0.f)", g_preferences.maxMass.value), peer_id)
 		end
 		local vehicle_name, success = server.getVehicleName(vehicle_id)
 		vehicle_name = success and vehicle_name or "Unknown"
@@ -2031,23 +2083,23 @@ function onTick()
 						-- if the player is new to the server
 						if v.new then
 							-- custom welcome message for new players
-							if g_preferences.welcomeNew and g_preferences.welcomeNew ~= " " then
-								server.announce("Welcome", g_preferences.welcomeNew, peer_id)
+							if g_preferences.welcomeNew.value then
+								server.announce("Welcome", g_preferences.welcomeNew.value, peer_id)
 							end
 
 							-- show new player the rules
 							Rules.print(peer_id, true)
 
 							-- Give player starting equipment as defined in preferences
-							if g_preferences.equipOnRespawn then
+							if g_preferences.equipOnRespawn.value then
 								Player.giveStartingEquipment(peer_id)
 							end
 						else
-							if g_preferences.welcomeReturning and g_preferences.welcomeReturning ~= " " then
-								server.announce("Welcome", g_preferences.welcomeReturning, peer_id) -- custom welcome message for returning players
+							if g_preferences.welcomeReturning.value then
+								server.announce("Welcome", g_preferences.welcomeReturning.value, peer_id) -- custom welcome message for returning players
 							end
 							-- if player is returning and has nothing in their inventory, give them starting equipment
-							if g_preferences.equipOnRespawn then
+							if g_preferences.equipOnRespawn.value then
 								local inventory, title, statusText = Player.getInventory(peer_id)
 								if inventory.count == 0 then
 									Player.giveStartingEquipment(peer_id)
@@ -2055,8 +2107,8 @@ function onTick()
 							end
 						end
 
-						-- if roles could be found, apply appropriate privilages
-						local is_admin, is_auth = Player.updatePrivileges(peer_id)
+						-- if roles could be found, apply appropriate privileges
+						Player.updatePrivileges(peer_id)
 
 						table.remove(JOIN_QUEUE, k) -- remove player from queue
 					end
@@ -2344,13 +2396,15 @@ COMMANDS = {
 				server.announce("Admin", g_roles[role_name].admin and "Yes" or "No", caller_id)
 				server.announce("Auth", g_roles[role_name].auth and "Yes" or "No", caller_id)
 				server.announce(" ", "Has access to the following commands:", caller_id)
-				local names = {}
-				for k, v in pairs(g_roles[role_name].commands) do
-					table.insert(names, tostring(k))
-				end
-				table.sort(names)
-				for k, v in ipairs(names) do
-					server.announce(" ", v, caller_id)
+				if g_roles[role_name].commands then
+					local names = {}
+					for k, v in pairs(g_roles[role_name].commands) do
+						table.insert(names, tostring(k))
+					end
+					table.sort(names)
+					for k, v in ipairs(names) do
+						server.announce(" ", v, caller_id)
+					end
 				end
 			else
 				local alpha = {}
@@ -2913,101 +2967,47 @@ COMMANDS = {
 	},
 	setPref = {
 		func = function(caller_id, preference_name, ...)
-			local EDGE_CASES = {
-				startEquipment = function(caller_id, ...)
-					local args = {...}
-					local items = {}
-					local as_string = table.concat(args, " ")
-
-					-- split the string at each comma, indicating an item
-					for item in string.gmatch(as_string, "([^,]+)") do
-							table.insert(items, {})
-
-							-- split the string at each space, indicating some data for an item
-						for arg in string.gmatch(item, "([^ ]+)") do
-							if isLetter(arg) then
-									if items[#items].slot then
-											-- slot is already defined, user entered more than 1 slot for 1 item
-											throwWarning("You specified two slots for one item. The first slot defined will be used", caller_id)
-									else
-											items[#items].slot = arg
-										end
-								else
-										table.insert(items[#items], arg)
-							end
-							end
-
-							-- if the user provided a slot letter but not any numbers to indicate an item_id, throw a warning and remove it from the table
-							if #items[#items] == 0 then
-									throwWarning("You did not define an item id for one of the entries. This entry will be skipped", caller_id)
-									table.remove(items, #items)
-							end
-							-- if the user provided a number (indicating a item_id) but did not provide a slot letter, throw a warning and remove it from the table
-							if not items[#items].slot then
-									throwWarning("You did not define a slot for one of the entries. This entry will be skipped", caller_id)
-									table.remove(items, #items)
-							end
-					end
-
-					-- empty current startEquipment
-					g_preferences.startEquipment.value = {}
-					local value = g_preferences.startEquipment.value
-					local PROPERTY_NAMES = {"id", "data1", "data2"}
-
-					for k, v in ipairs(items) do
-						-- for each item the user requested, add a table to the startEquipment table
-						table.insert(value, {})
-						value[#value].slot = v.slot -- save slot to current item
-						for i = 1, 3 do -- for each piece of possible data (item_id, data1, data2)
-							value[#value][PROPERTY_NAMES[i]] = v[i]
-						end
-					end
-					COMMANDS.preferences.func(caller_id)
-				end
-			}
-
 			local args = {...}
 			local pref_data = g_preferences[preference_name]
-			local accepted_type -- used for error reporting
+			local edited = false
 
-			-- if this preference is an edge-case, then pass all of the args to the correct function
-			if EDGE_CASES[preference_name] then
-				EDGE_CASES[preference_name].func(caller_id, args)
-			elseif pref_data then
-				if pref_data.type == "string" then
-					-- if target type is a string, assign user input
-					pref_data.value = args[1]
-				elseif pref_data.type == "number" then
-					local value = tonumber(args[1]) -- convert user input from string
-					if not value then -- if entry is not a number
-						accepted_type = "number"
-					else
-						pref_data.value = value
-					end
-				elseif pref_data.type == "bool" then
-					local value = toBool(args[1]) -- convert user input from string
-					if value == nil then -- if entry is not a bool
-						accepted_type = "bool"
-					else
-						pref_data.value = value
-					end
-				end
-
-				-- give feedback to user
-				if accepted_type then
-					-- there was an incorrect type
-					return false, "INVALID ARG", preference_name .. " only accepts a " .. accepted_type .. " as its value"
-				else
-					tellSupervisors("PREFERENCE EDITED", Player.prettyName(caller_id) .. " has set " .. preference_name .. " to:\n" .. tostring(pref_data.value), caller_id)
-					return true, "PREFERENCE EDITED", preference_name .. " has been set to " .. tostring(pref_data.value)
-				end
-			else
+			if not pref_data then
 				return false, "PREFERENCE NOT FOUND", preference_name .. " is not a preference"
+			end
+
+			for _, data_type in ipairs(pref_data.type) do
+				if data_type == "bool" then
+					local val = toBool(args[1])
+					if val ~= nil then
+						pref_data.value = val
+						edited = true
+					end
+				elseif data_type == "number" then
+					local val = tonumber(args[1])
+					if val then
+						pref_data.value = val
+						edited = true
+					end
+				elseif data_type == "string" then
+					pref_data.value = args[1]
+					edited = true
+				elseif data_type == "text" then
+					pref_data.value = table.concat(args, " ")
+					edited = true
+				end
+			end
+
+			if edited then
+				tellSupervisors("PREFERENCE EDITED", Player.prettyName(caller_id) .. " has set " .. preference_name .. " to:\n" .. tostring(pref_data.value), caller_id)
+				return true, "PREFERENCE EDITED", preference_name .. " has been set to " .. tostring(pref_data.value)
+			else
+				-- there was an incorrect type
+				return false, "INVALID ARG", preference_name .. " only accepts a " .. table.concat(pref_data.types, " or ") .. " as its value"
 			end
 		end,
 		args = {
 			{name = "preference_name", type = {"string"}, required = true},
-			{name = "value", type = {"bool", "number", "text"}, required = true}
+			{name = "value", type = {"bool", "number", "string", "text"}, required = true}
 		},
 		description = "Sets the specified preference to the requested value. Use ?preferences to see all of the preferences."
 	},
@@ -3170,7 +3170,7 @@ local function dataIsOfType(data, target_type, caller_id)
 		return as_num ~= nil, as_num, not as_num and ((data or "nil") .. " is not a valid number")
 	elseif target_type == "bool" then
 		local as_bool = toBool(data)
-		return as_bool ~= nil, as_bool, as_bool ~= nil and as_bool == nil and (tostring(data) .. " is not a valid boolean value") or nil
+		return as_bool ~= nil, as_bool, as_bool == nil and (tostring(data) .. " is not a valid boolean value") or nil
 	elseif target_type == "letter" then
 		local is_letter = isLetter(data)
 		return is_letter, is_letter and data or nil, not is_letter and ((data or "nil") .. " is not a letter") or nil
@@ -3251,14 +3251,15 @@ local function switch(peer_id, command, args)
 
 		for pArgIndex = start, fin, step do
 			local pArgValue = args[pArgIndex]
+			local is_correct_type, converted_value, err
 
 			tellDebug(pArgIndex .. " " .. arg.data.name, "\"".. (pArgValue or "nil") .."\"")
-			
+
 			if not accepted or arg.data.repeatable then
 
 				for _, accepted_type in ipairs(arg.data.type) do
-					
-					local is_correct_type, converted_value, err = dataIsOfType(pArgValue, accepted_type, peer_id)
+
+					is_correct_type, converted_value, err = dataIsOfType(pArgValue, accepted_type, peer_id)
 					-- DEBUG: announce what value this is looking for and what it is attempting to match
 					tellDebug((is_correct_type and "Correct" or "Incorrect") .. (arg.data.required and " Required" or " Optional"),
 					"Target Type: " .. accepted_type .. "\n    | Given Value: " .. tostring(pArgValue) .. "\n    | Converted Value: " .. tostring(converted_value) .. "\n    | Err: " .. (err or "")
@@ -3279,11 +3280,11 @@ local function switch(peer_id, command, args)
 						table.insert(accepted_args, math.min(pArgIndex, #accepted_args + 1), converted_value)
 						accepted = true
 						break
-					else
-						if arg.data.required then
-							return false, "INVALID ARG", err
-						end
 					end
+				end
+
+				if not is_correct_type and arg.data.required then
+					return false, "INVALID ARG", err
 				end
 			end
 
@@ -3301,7 +3302,7 @@ local function switch(peer_id, command, args)
 		end
 	end
 
-	server.notify(peer_id, "EXECUTING " .. command, table.concat(accepted_args, "\n"), 8)
+	server.notify(peer_id, "EXECUTING " .. command, " ", 8)
 
 	-- all arguments should be converted to their true types now
 	return command_data.func(peer_id, table.unpack(accepted_args))
