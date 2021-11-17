@@ -829,7 +829,7 @@ local LINE = "------------------------------------------------------------------
 local Player, Role, Vehicle = {}, {}, {}
 
 -- Global variables --
-local COMMANDS, TELEPORT_ZONES, PLAYER_LIST, JOIN_QUEUE, TELEPORT_QUEUE, VEHICLE_ID_VIEWERS
+local COMMANDS, TELEPORT_ZONES, PLAYER_LIST, EVENT_QUEUE, VEHICLE_ID_VIEWERS
 
 -- Persistent Data Shortcuts --
 local g_vehicleList, g_objectList, g_playerData, g_roles, g_uniquePlayers, g_banned, g_preferences, g_rules
@@ -1105,11 +1105,12 @@ end
 ---@return string title A title to explain what happened
 ---@return string statusText Text to explain what happened
 function Player.ban(caller_id, id)
+	local steam_id = id
 	if #tostring(id) < #STEAM_ID_MIN then -- peer_id was given
 		if not PLAYER_LIST[id] then -- peer_id is not a valid one
 			return false, "INVALID ARG", id .. " is not a valid peer_id of an online player"
 		end
-		local steam_id = Player.getSteamID(id)
+		steam_id = Player.getSteamID(id)
 		if steam_id == Player.getSteamID(caller_id) then
 			return false, "INVALID ARG", "You cannot ban yourself"
 		end
@@ -1126,14 +1127,15 @@ function Player.ban(caller_id, id)
 	if not g_playerData[id] then
 		g_playerData[id] = deepCopyTable(PLAYER_DATA_DEFAULTS)
 	end
+	server.announce("STEAM_ID", steam_id)
 	g_banned[id] = Player.getSteamID(caller_id)
 	server.save(SAVE_NAME)
 
 	-- if player is currently on server, kick them
-	if g_playerData[id].peer_id then
-		server.kickPlayer(g_playerData[id].peer_id)
+	if g_playerData[steam_id].peer_id then
+		server.kickPlayer(g_playerData[steam_id].peer_id)
 	end
-	local banned_name = g_playerData[id].name or "unknown"
+	local banned_name = g_playerData[steam_id].name or "unknown"
 	tellSupervisors("PLAYER BANNED", string.format("%s(%s)", banned_name, id) .. " was banned from the server by " .. Player.prettyName(caller_id), caller_id)
 	return true, "PLAYER BANNED", string.format("%s(%s)", banned_name, id) .. " was banned from the server"
 end
@@ -1209,14 +1211,14 @@ function Player.equipArgumentDecoding(caller_id, target_id, ...)
 	local args = {...}
 	local args_to_pass = {}
 
-	for k, v in ipairs(args) do
+	for _, v in ipairs(args) do
 		if isLetter(v) then
 			args_to_pass.slot = string.upper(v)
 		else
 			table.insert(args_to_pass, v)
 		end
 	end
-	return Player.equip(caller_id, caller_id, args_to_pass.slot or false, table.unpack(args_to_pass))
+	return Player.equip(caller_id, target_id, args_to_pass.slot or false, table.unpack(args_to_pass))
 end
 
 --- Equips the target player with the requested item
@@ -1298,6 +1300,7 @@ function Player.equip(peer_id, target_peer_id, slot, item_id, data1, data2, is_a
 				table.insert(available_slots, v.name)
 				if inventory[k] == 0 -- give player requested item in open slot
 				or inventory[k] == item_id -- replace an existing item, presumably to recharge it.
+				or item_size ~= 2 -- item is not a small item, there is only one slot, replace the item
 				then
 					if inventory[k] == item_id then isRecharge = true end
 					slot_number = k
@@ -1537,7 +1540,7 @@ function Player.nearestVehicle(peer_id, owner_id)
 
 	for vehicle_id, data in pairs(g_vehicleList) do
 		local matrixdist = matrix.distance((server.getPlayerPos(peer_id)), (server.getVehiclePos(vehicle_id)))
-		if matrixdist < dist and (data.owner == Player.getSteamID(owner_id) or not owner_id) then
+		if matrixdist < dist and (not owner_id and true or data.owner == Player.getSteamID(owner_id)) then
 			dist = matrixdist
 			id = vehicle_id
 		end
@@ -1839,11 +1842,8 @@ function onCreate(is_new)
 	--- List of players indexed by peer_id
 	PLAYER_LIST = getPlayerList()
 
-	--- Players who are in the character creation screen.
-	JOIN_QUEUE = {}
-
-	--- People may fall through the floor when teleporting, so we watch for that and teleport again.
-	TELEPORT_QUEUE = {}
+	-- The cool new way to handle all the cursed edge cases that require certain things to be delayed
+	EVENT_QUEUE = {}
 
 	--- People who are seeing vehicle_ids
 	VEHICLE_ID_VIEWERS = {}
@@ -1885,11 +1885,15 @@ function onPlayerJoin(steam_id, name, peer_id, admin, auth)
 	if returning_player then
 		this_players_data = Player.getData(peer_id)
 
-		if this_players_data.banned then
-			server.kickPlayer(peer_id)
+		if g_banned[steam_id] then
+			-- queue player for kicking
+			table.insert(EVENT_QUEUE, {
+				type = "kick",
+				target_id = peer_id,
+				time = 0,
+				timeEnd = 30
+			})
 		end
-
-		Player.updatePrivileges(peer_id)
 	else
 		-- add new player's data to persistent data table
 		g_playerData[steam_id] = deepCopyTable(PLAYER_DATA_DEFAULTS)
@@ -1913,6 +1917,8 @@ function onPlayerJoin(steam_id, name, peer_id, admin, auth)
 		Player.giveRole(peer_id, peer_id, "Prank")
 	end
 
+	Player.updatePrivileges(peer_id)
+
 	-- add map labels for some teleport zones
 	for k, v in pairs(TELEPORT_ZONES) do
 		if v.ui_id then
@@ -1923,8 +1929,14 @@ function onPlayerJoin(steam_id, name, peer_id, admin, auth)
 	-- update player's UI to show notice if they are blocking teleports
 	Player.updateTpBlockUi(peer_id)
 
-	-- add to JOIN_QUEUE to handle equiping and welcome messages
-	table.insert(JOIN_QUEUE, {id = peer_id, steam_id = steam_id, new = not returning_player})
+	-- add to EVENT_QUEUE to give starting equipment and welcome
+	table.insert(EVENT_QUEUE, {
+		type = "join",
+		target_id = peer_id,
+		new = not returning_player,
+		interval = 0,
+		intervalEnd = 60
+	})
 
 	server.save(SAVE_NAME)
 end
@@ -1934,13 +1946,13 @@ function onPlayerLeave(steam_id, name, peer_id, is_admin, is_auth)
 
 	if g_preferences.removeVehicleOnLeave.value then
 		for vehicle_id, vehicle_data in pairs(g_vehicleList) do
-			if vehicle_data.owner == Player.getSteamID(peer_id) then
+			if vehicle_data.owner == steam_id then
 				server.despawnVehicle(vehicle_id, false) -- despawn vehicle when unloaded. onVehicleDespawn should handle removing the ids from g_vehicleList
 			end
 		end
 	end
-	PLAYER_LIST[peer_id] = nil
 	Player.getData(peer_id).peer_id = nil
+	PLAYER_LIST[peer_id] = nil
 end
 
 function onPlayerDie(steam_id, name, peer_id, is_admin, is_auth)
@@ -2046,76 +2058,96 @@ local count = 0
 function onTick()
 	if invalid_version then return end
 
+	for i=#EVENT_QUEUE, 1, -1 do
+		local event = EVENT_QUEUE[i]
+
+		if event.type == "kick" and event.time and event.time >= event.timeEnd then
+			local peer_id = PLAYER_LIST[event.target_id]
+			if peer_id then
+				server.kick(peer_id)
+			end
+			table.remove(EVENT_QUEUE, i)
+		elseif event.type == "join" and event.interval and event.interval >= event.intervalEnd then
+			local peer_id = event.target_id
+			local is_new = event.new
+			local moved = false
+
+			local player_matrix, pos_success = server.getPlayerPos(peer_id)
+			local look_x, look_y, look_z, look_success = server.getPlayerLookDirection(peer_id)
+			local look_direction = {look_x, look_y, look_z}
+
+			if pos_success then
+				if event.last_position then
+					if matrix.distance(event.last_position, player_matrix) > 0.1 then
+						moved = true
+					end
+				end
+				event.last_position = player_matrix
+			end
+
+			if look_success then
+				if event.last_look_direction then
+					if look_direction ~= event.last_look_direction then
+						moved = true
+					end
+				end
+				event.last_look_direction = look_direction
+			end
+
+			if moved then
+				if is_new then
+					if g_preferences.welcomeNew.value then
+						server.announce("WELCOME", g_preferences.welcomeNew.value, peer_id)
+					end
+					Rules.print(peer_id, true)
+					if g_preferences.equipOnRespawn.value then
+						Player.giveStartingEquipment(peer_id)
+					end
+				else
+					if g_preferences.welcomeReturning.value then
+						server.announce("WELCOME", g_preferences.welcomeReturning.value, peer_id)
+					end
+					if g_preferences.equipOnRespawn.value then
+						local inventory = Player.getInventory(peer_id)
+						if inventory.count == 0 then
+							Player.giveStartingEquipment(peer_id)
+						end
+					end
+				end
+				table.remove(EVENT_QUEUE, i)
+			end
+		elseif event.type == "teleportToPosition" then
+			local peer_id = event.target_id
+			local pos = event.target_position
+
+			server.setPlayerPos(peer_id, pos)
+			if event.time >= event.timeEnd then
+				table.remove(EVENT_QUEUE, i)
+			end
+		end
+
+		if event.time then
+			event.time = event.time + 1
+		end
+
+		if event.interval then
+			if event.interval < event.intervalEnd then
+				event.interval = event.interval + 1
+			else
+				event.interval = 0
+			end
+		end
+
+	end
+
+
 	-- draw vehicle ids on the screens of those that have requested it
 	for peer_id, _ in pairs(VEHICLE_ID_VIEWERS) do
 		Player.updateVehicleIdUi(peer_id)
 	end
 
+
 	if count >= 60 then -- delay so not running expensive calculations every tick
-		for k, v in ipairs(JOIN_QUEUE) do -- check if player has moved or looked around when joining
-			local peer_id = v.id
-			local player_matrix, success = server.getPlayerPos(peer_id)
-			if success then
-				local look_x, look_y, look_z, success = server.getPlayerLookDirection(peer_id)
-				local look_direction = {look_x, look_y, look_z}
-				if success then
-					local moved = false
-					if PLAYER_LIST[peer_id].last_position and PLAYER_LIST[peer_id].last_look_direction then
-						if matrix.distance(PLAYER_LIST[peer_id].last_position, player_matrix) > 0.1 then -- player has moved
-							moved = true
-						end
-						for h, c in ipairs(look_direction) do
-							if PLAYER_LIST[peer_id].last_look_direction[h] - c > 0.01 then -- player's camera has moved
-								moved = true
-							end
-						end
-					end
-					if not moved then
-						-- continue polling player to check for movements (indicating they have actually spawned)
-						PLAYER_LIST[peer_id].last_position = player_matrix
-						PLAYER_LIST[peer_id].last_look_direction = look_direction
-					else
-						-- player has moved
-						-- clear last position data from PLAYER_LIST
-						PLAYER_LIST[peer_id].last_position = nil
-						PLAYER_LIST[peer_id].last_look_direction = nil
-
-						-- if the player is new to the server
-						if v.new then
-							-- custom welcome message for new players
-							if g_preferences.welcomeNew.value then
-								server.announce("Welcome", g_preferences.welcomeNew.value, peer_id)
-							end
-
-							-- show new player the rules
-							Rules.print(peer_id, true)
-
-							-- Give player starting equipment as defined in preferences
-							if g_preferences.equipOnRespawn.value then
-								Player.giveStartingEquipment(peer_id)
-							end
-						else
-							if g_preferences.welcomeReturning.value then
-								server.announce("Welcome", g_preferences.welcomeReturning.value, peer_id) -- custom welcome message for returning players
-							end
-							-- if player is returning and has nothing in their inventory, give them starting equipment
-							if g_preferences.equipOnRespawn.value then
-								local inventory, title, statusText = Player.getInventory(peer_id)
-								if inventory.count == 0 then
-									Player.giveStartingEquipment(peer_id)
-								end
-							end
-						end
-
-						-- if roles could be found, apply appropriate privileges
-						Player.updatePrivileges(peer_id)
-
-						table.remove(JOIN_QUEUE, k) -- remove player from queue
-					end
-				end
-			end
-		end
-
 		for k, v in pairs(PLAYER_LIST) do
 			if Player.hasRole(k, "Prank") then
 				if math.random(40) == 23 then
@@ -2135,17 +2167,6 @@ function onTick()
 		count = 0
 	else
 		count = count + 1
-	end
-
-	-- Re-teleport players to prevent them falling through the ground O_o
-	for i=#TELEPORT_QUEUE, 1, -1 do
-		local v = TELEPORT_QUEUE[i]
-		server.setPlayerPos(v.peer_id, v.target_matrix)
-		if v.time >= v.timeEnd then
-			table.remove(TELEPORT_QUEUE, i)
-		else
-			v.time = v.time + 1
-		end
 	end
 end
 
@@ -2671,9 +2692,10 @@ COMMANDS = {
 			end
 
 			server.setPlayerPos(caller_id, TELEPORT_ZONES[target_name].transform)
-			table.insert(TELEPORT_QUEUE, {
-				peer_id = caller_id,
-				target_matrix = TELEPORT_ZONES[target_name].transform,
+			table.insert(EVENT_QUEUE, {
+				type = "teleportToPosition",
+				target_id = caller_id,
+				target_position = TELEPORT_ZONES[target_name].transform,
 				time = 0,
 				timeEnd = 110
 			})
@@ -2728,8 +2750,11 @@ COMMANDS = {
 
 			-- teleport the players and add their names to a table for user feedback
 			for k, v in ipairs(ids) do
-				server.setPlayerPos(k, caller_pos)
-				table.insert(player_names, Player.prettyName(v))
+				local success = server.setPlayerPos(v, caller_pos)
+				if success then
+					table.insert(player_names, Player.prettyName(v))
+					server.announce("TELEPORTED", "You have been teleported to " .. Player.prettyName(caller_id), v)
+				end
 			end
 			return true, "The following players were telported to your location:\n" .. table.concat(player_names, "\n")
 		end,
@@ -2767,16 +2792,24 @@ COMMANDS = {
 				else
 					return false, "VEHICLE NOT FOUND", "You have not spawned any vehicles or the last vehicle you spawned has already been despawned"
 				end
-			elseif arg1 == "n" or arg1 == nil then
+			elseif arg1 == "n" or not arg1 then
 				local nearest = Player.nearestVehicle(caller_id)
 				if not nearest then
 					return false, "VEHICLE NOT FOUND", "There are no vehicles in the world"
 				end
 				vehicle_id = nearest
+			else
+				return false, "INVALID ARG", arg1 .. " is not a valid vehicle_id"
+			end
+
+			if not server.getVehicleSimulating(vehicle_id) then
+				local vehicle_pos = server.getVehiclePos(vehicle_id)
+				server.setPlayerPos(caller_id, vehicle_pos)
+				return false, "UH OH", "Looks like the vehicle you are trying to teleport to isn't loaded in. This is both ridiculous and miserable. While we think of a fix, please enjoy being teleported to the vehicle's general location instead"
 			end
 
 			server.setCharacterSeated(character_id, vehicle_id, seat_name)
-			return true, "TELEPORTED", "You have been teleported to " .. seat_name and "seat " .. seat_name .. " on " .. Vehicle.prettyName(vehicle_id) or Vehicle.prettyName(vehicle_id)
+			return true, "TELEPORTED", "You have been teleported to the " .. (seat_name and "seat \"" .. seat_name.."\"" or "first seat") .. " on " .. Vehicle.prettyName(vehicle_id)
 		end,
 		args = {
 			{name = "r/n/vehicleID", type = {"vehicleID", "string"}},
