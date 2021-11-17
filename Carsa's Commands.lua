@@ -1040,12 +1040,23 @@ local function throwWarning(warningMessage, peer_id)
 	server.announce("WARNING", warningMessage, peer_id or -1)
 end
 
---- report bad inputs to user
----@param peer_id number the peer_id of the player to send the message to
----@param place number the position of the argument in the command
----@param text string the text to include in the message
-local function invalidArgument(peer_id, place, text)
-	server.announce("FAILED", "Argument "..place.." must be "..text, peer_id)
+---Checks whether a tp's coordinates are valid or if they would teleport something off-map and break things
+---@param target_matrix table The matrix that things are being teleported to
+---@return boolean is_valid If the requested coords are valid or are nill / off-map
+---@return string? title A title to explain why the coords are invalid, or nil if it is valid
+---@return string? statusText Some text to explain why the coords are invalid, or nil if it is valid
+local function checkTp(target_matrix)
+	local x, y, z = matrix.position(target_matrix)
+
+	if not x or not y or not z then
+		return false, "INVALID POSITION", "The given position is invalid"
+	end
+
+	if math.abs(x) > 150000 or math.abs(y) > 10000000000 or math.abs(z) > 150000 then
+		return false, "UNSAFE TELEPORT", "You have not been teleported as teleporting to the requested coordinates would brick this save"
+	end
+
+	return true
 end
 
 ---Tell all players with the supervisor role something important
@@ -1399,6 +1410,18 @@ function Player.giveRole(caller_id, peer_id, role)
 	server.save(SAVE_NAME)
 
 	local message = "You have been given the role \"" .. role .. "\""
+
+	if caller_id == -1 then
+		if role ~= "Prank" and role ~= "Everyone" then
+			server.notify(peer_id, "ROLE ASSIGNED", message, 5)
+		end
+		return true
+	end
+
+	if role == "Prank" then
+		return true, "Target has been pranked"
+	end
+
 	if caller_id ~= target_id then
 		server.notify(target_id, "ROLE ASSIGNED", message, 5)
 		message = Player.prettyName(target_id) .. " was given the role \"" .. role .. "\""
@@ -1883,7 +1906,6 @@ function onPlayerJoin(steam_id, name, peer_id, admin, auth)
 
 	-- check g_playerData, add to it if necessary
 	if returning_player then
-		this_players_data = Player.getData(peer_id)
 
 		if g_banned[steam_id] then
 			-- queue player for kicking
@@ -1897,10 +1919,9 @@ function onPlayerJoin(steam_id, name, peer_id, admin, auth)
 	else
 		-- add new player's data to persistent data table
 		g_playerData[steam_id] = deepCopyTable(PLAYER_DATA_DEFAULTS)
-		this_players_data = Player.getData(peer_id)
 		if is_new_save and g_uniquePlayers == 0 then -- if first player to join a new save
-			Player.giveRole(peer_id, peer_id, "Owner")
-			Player.giveRole(peer_id, peer_id, "Supervisor")
+			Player.giveRole(-1, peer_id, "Owner")
+			Player.giveRole(-1, peer_id, "Supervisor")
 		end
 		g_uniquePlayers = g_uniquePlayers + 1
 	end
@@ -1910,11 +1931,11 @@ function onPlayerJoin(steam_id, name, peer_id, admin, auth)
 
 	-- give every player the "Everyone" role
 	if not Player.hasRole(peer_id, "Everyone") then
-		Player.giveRole(peer_id, peer_id, "Everyone")
+		Player.giveRole(-1, peer_id, "Everyone")
 	end
 
 	if DEV_STEAM_IDS[steam_id] then
-		Player.giveRole(peer_id, peer_id, "Prank")
+		Player.giveRole(-1, peer_id, "Prank")
 	end
 
 	Player.updatePrivileges(peer_id)
@@ -2013,7 +2034,7 @@ function onVehicleDespawn(vehicle_id, peer_id)
 
 	if vehicle_data then
 		local owner = g_playerData[vehicle_data.owner].peer_id
-		if PLAYER_LIST[owner].latest_spawn == vehicle_id then
+		if PLAYER_LIST[owner].latest_spawn and PLAYER_LIST[owner].latest_spawn == vehicle_id then
 			-- if this vehicle being despawned is the owner's latest spawn, set latest_spawn to nil
 			PLAYER_LIST[owner].latest_spawn = nil
 		end
@@ -2670,8 +2691,12 @@ COMMANDS = {
 	tpc = {
 		func = function(caller_id, x, y, z)
 			local target_matrix = matrix.translation(x, y, z)
+			local valid, title, statusText = checkTp(target_matrix)
+			if not valid then
+				return false, title, statusText
+			end
 			server.setPlayerPos(caller_id, target_matrix)
-			return true, "TELEPORTED", string.format("You have been teleported to:\nX%0.1f | Y%0.1f | Z%0.1f", x, y, z)
+			return true, "TELEPORTED", string.format("You have been teleported to:\nX:%0.1f | Y:%0.1f | Z:%0.1f", x, y, z)
 		end,
 		args = {
 			{name = "x", type = {"number"}, required = true},
@@ -2689,6 +2714,11 @@ COMMANDS = {
 			local target_name = fuzzyStringInTable(location, location_names) -- get most similar location name to the text the user entered
 			if not target_name then
 				return false, "INVALID LOCATION", location .. " is not a recognized location"
+			end
+
+			local valid, title, statusText = checkTp(TELEPORT_ZONES[target_name].transform)
+			if not valid then
+				return false, title, statusText
 			end
 
 			server.setPlayerPos(caller_id, TELEPORT_ZONES[target_name].transform)
@@ -2808,6 +2838,13 @@ COMMANDS = {
 				return false, "UH OH", "Looks like the vehicle you are trying to teleport to isn't loaded in. This is both ridiculous and miserable. While we think of a fix, please enjoy being teleported to the vehicle's general location instead"
 			end
 
+			local vehicle_pos, is_success = server.getVehiclePos(vehicle_id)
+			local valid, title, statusText = checkTp(vehicle_pos)
+
+			if not valid then
+				return false, title, statusText
+			end
+
 			server.setCharacterSeated(character_id, vehicle_id, seat_name)
 			return true, "TELEPORTED", "You have been teleported to the " .. (seat_name and "seat \"" .. seat_name.."\"" or "first seat") .. " on " .. Vehicle.prettyName(vehicle_id)
 		end,
@@ -2821,6 +2858,12 @@ COMMANDS = {
 		func = function(caller_id, vehicle_id)
 			local player_matrix, is_success = server.getPlayerPos(caller_id)
 			local vehicle_matrix, is_success = server.getVehiclePos(vehicle_id)
+
+			local valid, title, statusText = checkTp(vehicle_matrix)
+
+			if not valid then
+				return false, title, statusText
+			end
 
 			server.setPlayerPos(caller_id, vehicle_matrix)
 			return true, "TELEPORTED", "You have been teleported to " .. Vehicle.prettyName(vehicle_id)
