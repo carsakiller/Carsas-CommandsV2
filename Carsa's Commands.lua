@@ -1820,6 +1820,7 @@ function onCreate(is_new)
 	g_savedata.rules = g_savedata.rules or {}
 	g_savedata.game_settings = g_savedata.game_settings or {}
 	g_savedata.aliases = g_savedata.aliases or deepCopyTable(DEFAULT_ALIASES)
+	g_savedata.companion = g_savedata.companion or false
 
 	-- create references to shorten code
 	g_vehicleList = g_savedata.vehicle_list
@@ -1831,6 +1832,12 @@ function onCreate(is_new)
 	g_preferences = g_savedata.preferences
 	g_rules = g_savedata.rules
 	g_aliases = g_savedata.aliases
+
+	-- Main menu properties
+	g_savedata.companion = property.checkbox("Carsa's Companion", "true")
+	g_preferences.equipOnRespawn.value = property.checkbox("Equip players on spawn", "true")
+	g_preferences.keepInventory.value = property.checkbox("Keep inventory on death", "true")
+	g_preferences.removeVehicleOnLeave.value = property.checkbox("Remove player's vehicle on leave", "true")
 
 	--- List of players indexed by peer_id
 	PLAYER_LIST = getPlayerList()
@@ -2051,24 +2058,26 @@ function onTick()
 	if invalid_version then return end
 
 	-- stuff for web companion
-	syncTick()
-	if initialize then
-		initialize = false
-		for commandName, command in pairs(COMMANDS) do
-			registerWebServerCommandCallback("command-" .. commandName, function(token, com, content)
-				local success, title, text = handleCompanion(token, commandName, content)
+	if g_savedata.companion then
+		syncTick()
+		if initialize then
+			initialize = false
+			for commandName, command in pairs(COMMANDS) do
+				registerWebServerCommandCallback("command-" .. commandName, function(token, com, content)
+					local success, title, text = handleCompanion(token, commandName, content)
 
-				if command.syncableData then
-					for dataname, datacallback in pairs(command.syncableData) do
-						syncData(dataname, datacallback())
+					if command.syncableData then
+						for dataname, datacallback in pairs(command.syncableData) do
+							syncData(dataname, datacallback())
+						end
 					end
-				end
 
-				return success, title, text
-			end)
+					return success, title, text
+				end)
+			end
+
+			-- TODO: implement commands for the test module
 		end
-
-		-- TODO: implement commands for the test module
 	end
 
 	-- draw vehicle ids on the screens of those that have requested it
@@ -2936,7 +2945,7 @@ COMMANDS = {
 				local sorted_commands = {}
 
 				for command_name, command_data in pairs(COMMANDS) do
-					if true then --Player.hasAccessToCommand(caller_id, command_name) then
+					if Player.hasAccessToCommand(caller_id, command_name) then
 						table.insert(sorted_commands, command_name)
 					end
 				end
