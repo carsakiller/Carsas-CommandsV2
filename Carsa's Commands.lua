@@ -257,53 +257,6 @@ local PLAYER_DATA_DEFAULTS = {
 
 local DEFAULT_ROLES = {
 	Owner = {
-		commands = {
-			addRole = true,
-			addRule = true,
-			bailout = true,
-			banPlayer = true,
-			banned = true,
-			cc = true,
-			ccHelp = true,
-			clearRadiation = true,
-			clearVehicle = true,
-			equip = true,
-			equipmentIDs = true,
-			equipp = true,
-			gameSettings = true,
-			giveRole = true,
-			heal = true,
-			kill = true,
-			playerPerms = true,
-			playerRoles = true,
-			position = true,
-			preferences = true,
-			removeRole = true,
-			removeRule = true,
-			resetPref = true,
-			respawn = true,
-			revokeRole = true,
-			roleAccess = true,
-			rolePerms = true,
-			roles = true,
-			rules = true,
-			setEditable = true,
-			setGameSetting = true,
-			setPref = true,
-			tp2me = true,
-			tp2v = true,
-			tpLocations = true,
-			tpb = true,
-			tpc = true,
-			tpl = true,
-			tpp = true,
-			tps = true,
-			tpv = true,
-			unban = true,
-			vehicleIDs = true,
-			vehicleList = true,
-			whisper = true,
-		},
 		admin = true,
 		auth = true,
 		members = {}
@@ -314,6 +267,7 @@ local DEFAULT_ROLES = {
 	},
 	Admin = {
 		commands = {
+			addAlias = true,
 			addRole = true,
 			addRule = true,
 			bailout = true,
@@ -334,6 +288,7 @@ local DEFAULT_ROLES = {
 			playerRoles = true,
 			position = true,
 			preferences = true,
+			removeAlias = true,
 			removeRole = true,
 			removeRule = true,
 			resetPref = true,
@@ -411,6 +366,7 @@ local DEFAULT_ROLES = {
 	},
 	Everyone = {
 		commands = {
+			aliases = true,
 			rules = true,
 			roles = true,
 			vehicleList = true,
@@ -818,6 +774,21 @@ local TYPE_ABBREVIATIONS = {
 	letter = "letter"
 }
 
+local DEFAULT_ALIASES = {
+	cv = "clearVehicle",
+	vl = "vehicleList",
+	vedit = "setEditable",
+	vids = "vehicleIDs",
+	pr = "playerRoles",
+	pp = "playerPerms",
+	h = "heal",
+	e = "equip",
+	p = "position",
+	eids = "equipmentIDs",
+	tpls = "tpLocations",
+	w = "whisper"
+}
+
 local STEAM_ID_MIN = "76561197960265729"
 local deny_tp_ui_id
 local is_new_save
@@ -827,12 +798,6 @@ local LINE = "------------------------------------------------------------------
 
 -- "CLASSES" --
 local Player, Role, Vehicle = {}, {}, {}
-
--- Global variables --
-local COMMANDS, TELEPORT_ZONES, PLAYER_LIST, EVENT_QUEUE, VEHICLE_ID_VIEWERS
-
--- Persistent Data Shortcuts --
-local g_vehicleList, g_objectList, g_playerData, g_roles, g_uniquePlayers, g_banned, g_preferences, g_rules
 
 
 -- GENERAL HELPER FUNCTIONS --
@@ -1480,6 +1445,9 @@ function Player.hasAccessToCommand(peer_id, command_name)
 	local player_roles = Player.getData(peer_id).roles
 
 	for role_name, _ in pairs(player_roles) do
+		if role_name == "Owner" then
+			return true
+		end
 		if exploreTable(g_roles, {role_name, "commands", command_name}) then
 			return true
 		end
@@ -1851,6 +1819,7 @@ function onCreate(is_new)
 	g_savedata.preferences = g_savedata.preferences or deepCopyTable(PREFERENCE_DEFAULTS)
 	g_savedata.rules = g_savedata.rules or {}
 	g_savedata.game_settings = g_savedata.game_settings or {}
+	g_savedata.aliases = g_savedata.aliases or deepCopyTable(DEFAULT_ALIASES)
 
 	-- create references to shorten code
 	g_vehicleList = g_savedata.vehicle_list
@@ -1861,6 +1830,7 @@ function onCreate(is_new)
 	g_banned = g_savedata.banned
 	g_preferences = g_savedata.preferences
 	g_rules = g_savedata.rules
+	g_aliases = g_savedata.aliases
 
 	--- List of players indexed by peer_id
 	PLAYER_LIST = getPlayerList()
@@ -2749,19 +2719,24 @@ COMMANDS = {
 				return false, "INVALID LOCATION", location .. " is not a recognized location"
 			end
 
-			local valid, title, statusText = checkTp(TELEPORT_ZONES[target_name].transform)
+			local destination = TELEPORT_ZONES[target_name].transform
+
+			local valid, title, statusText = checkTp(destination)
 			if not valid then
 				return false, title, statusText
 			end
 
-			server.setPlayerPos(caller_id, TELEPORT_ZONES[target_name].transform)
-			table.insert(EVENT_QUEUE, {
-				type = "teleportToPosition",
-				target_id = caller_id,
-				target_position = TELEPORT_ZONES[target_name].transform,
-				time = 0,
-				timeEnd = 110
-			})
+			server.setPlayerPos(caller_id, destination)
+			local player_pos, success = server.getPlayerPos(caller_id)
+			if not success or matrix.distance(player_pos, destination) > 1800 then
+				table.insert(EVENT_QUEUE, {
+					type = "teleportToPosition",
+					target_id = caller_id,
+					target_position = destination,
+					time = 0,
+					timeEnd = 110
+				})
+			end
 
 			-- easter egg
 			if (server.getPlayerName(caller_id)) ~= "Leopard" and target_name == "Leopards Base" and math.random(1, 100) == 18 then
@@ -3145,6 +3120,74 @@ COMMANDS = {
 		end,
 		description = "Lists the preferences and their states for you."
 	},
+	addAlias = {
+		func = function(caller_id, alias, command)
+			if COMMANDS[alias] then
+				return false, "ALREADY EXISTS", "\"" .. alias .. "\" is the name of a pre-existing command. Please select a different name"
+			end
+
+			if g_aliases[alias] then
+				return false, "ALREADY EXISTS", "\"" .. alias .. "\" is already an alias for " .. g_aliases[alias]
+			end
+
+			g_aliases[alias] = command
+			return true, "ALIAS ADDED", "\"" .. alias .. "\" is now an alias for " .. command
+		end,
+		args = {
+			{name = "alias", type = "string", required = true},
+			{name = "command", type = "string", required = true}
+		},
+		description = "Adds an alias for a pre-existing command. For example, you can add an alias so ccHelp becomes just help"
+	},
+	aliases = {
+		func = function(caller_id, page)
+			page = page or 1
+
+			server.announce(" ", "-------------------------------  ALIASES  ------------------------------", caller_id)
+
+			local entries_per_page = 8
+			local sorted = {}
+
+			for alias, command in pairs(g_aliases) do
+				if Player.hasAccessToCommand(caller_id, command) then
+					table.insert(sorted, alias)
+				end
+			end
+
+			table.sort(sorted)
+
+			local max_page = math.max(1, math.ceil(#sorted / entries_per_page)) -- the number of pages needed to display all entries
+			page = clamp(page, 1, max_page)
+			local start_index = 1 + (page - 1) * entries_per_page
+			local end_index = math.min(#sorted, page * entries_per_page)
+
+
+			for i = start_index, end_index do
+				server.announce(sorted[i], g_aliases[sorted[i]], caller_id)
+			end
+			server.announce(" ", string.format("Page %d of %d", page, max_page), caller_id)
+			server.announce(" ", LINE, caller_id)
+			return true
+		end,
+		args = {
+			{name = "page", type={"number"}}
+		},
+		description = "Lists the aliases that can be used instead of the full command names"
+	},
+	removeAlias = {
+		func = function(caller_id, alias)
+			if not g_aliases[alias] then
+				return false, "ALIAS NOT FOUND", "\"" .. alias .. "\" does not exist"
+			end
+
+			g_aliases[alias] = nil
+			return true, "ALIAS REMOVED", "\"" .. alias .. "\" has been removed"
+		end,
+		args = {
+			{name = "alias", type={"string"}, required = true}
+		},
+		description = "Removes an alias for a command"
+	},
 
 	-- Game Settings
 	setGameSetting = {
@@ -3284,7 +3327,7 @@ function dataIsOfType(data, target_type, caller_id)
 		local is_letter = isLetter(data)
 		return is_letter, is_letter and data or nil, not is_letter and ((data or "nil") .. " is not a letter") or nil
 	elseif target_type == "string" or target_type == "text" then
-		return data ~= nil, data
+		return tostring(data) ~= "nil", data or nil, (data or "nil") .. " is not a string"
 	else
 		return false, nil, ((data or "nil") .. " is not of a recognized data type")
 	end
@@ -3422,27 +3465,29 @@ function onCustomCommand(message, caller_id, admin, auth, command, ...)
 
 	command = command:sub(2) -- cut off "?"
 
-	if COMMANDS[command] then
-		if invalid_version then
-			throwWarning(string.format("Your code is older than your save data. (%s < %s) To prevent data loss/corruption, no data will be processed. Please update Carsa's Commands to the latest version.", tostring(g_savedata.version), tostring(SaveDataVersion)), caller_id)
-			return
-		end
+	if not COMMANDS[command] and not g_aliases[command] then
+		return
+	end
 
-		local args = {...}
-		local steam_id = Player.getSteamID(caller_id)
+	if invalid_version then
+		throwWarning(string.format("Your code is older than your save data. (%s < %s) To prevent data loss/corruption, no data will be processed. Please update Carsa's Commands to the latest version.", tostring(g_savedata.version), tostring(SaveDataVersion)), caller_id)
+		return
+	end
 
-		-- if player data could not be found, "pretend" player just joined and give default data
-		if not g_playerData[steam_id] then
-			throwError("Persistent data for " .. Player.prettyName(caller_id) .. " could not be found. Resetting player's data to defaults", caller_id)
-			onPlayerJoin(steam_id, (server.getPlayerName(caller_id)) or "Unknown Name", caller_id)
-		end
+	local args = {...}
+	local steam_id = Player.getSteamID(caller_id)
 
-		local success, statusTitle, statusText = switch(caller_id, command, args)
-		local title = statusText and statusTitle or (success and "SUCCESS" or "FAILED")
-		local text = statusText and statusText or statusTitle
-		if text then
-			server.announce(title, text, caller_id)
-		end
+	-- if player data could not be found, "pretend" player just joined and give default data
+	if not g_playerData[steam_id] then
+		throwError("Persistent data for " .. Player.prettyName(caller_id) .. " could not be found. Resetting player's data to defaults", caller_id)
+		onPlayerJoin(steam_id, (server.getPlayerName(caller_id)) or "Unknown Name", caller_id)
+	end
+
+	local success, statusTitle, statusText = switch(caller_id, g_aliases[command] or command, args)
+	local title = statusText and statusTitle or (success and "SUCCESS" or "FAILED")
+	local text = statusText and statusText or statusTitle
+	if text then
+		server.announce(title, text, caller_id)
 	end
 end
 
