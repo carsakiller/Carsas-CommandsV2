@@ -3158,6 +3158,21 @@ COMMANDS = {
 	},
 }
 
+ALIASES = {
+	cv = "clearVehicle",
+	vl = "vehicleList",
+	vedit = "setEditable",
+	vids = "vehicleIDs",
+	pr = "playerRoles",
+	pp = "playerPerms",
+	h = "heal",
+	e = "equip",
+	p = "position",
+	eids = "equipmentIDs",
+	tpls = "tpLocations",
+	w = "whisper"
+}
+
 ---Handle command execution request from Carsa's Companion
 ---@param token string The token of the user using Carsa's Companion
 ---@param command string The name of the command to execute
@@ -3389,27 +3404,29 @@ function onCustomCommand(message, caller_id, admin, auth, command, ...)
 
 	command = command:sub(2) -- cut off "?"
 
-	if COMMANDS[command] then
-		if invalid_version then
-			throwWarning(string.format("Your code is older than your save data. (%s < %s) To prevent data loss/corruption, no data will be processed. Please update Carsa's Commands to the latest version.", tostring(g_savedata.version), tostring(SaveDataVersion)), caller_id)
-			return
-		end
+	if not COMMANDS[command] and not ALIASES[command] then
+		return
+	end
 
-		local args = {...}
-		local steam_id = Player.getSteamID(caller_id)
+	if invalid_version then
+		throwWarning(string.format("Your code is older than your save data. (%s < %s) To prevent data loss/corruption, no data will be processed. Please update Carsa's Commands to the latest version.", tostring(g_savedata.version), tostring(SaveDataVersion)), caller_id)
+		return
+	end
 
-		-- if player data could not be found, "pretend" player just joined and give default data
-		if not g_playerData[steam_id] then
-			throwError("Persistent data for " .. Player.prettyName(caller_id) .. " could not be found. Resetting player's data to defaults", caller_id)
-			onPlayerJoin(steam_id, (server.getPlayerName(caller_id)) or "Unknown Name", caller_id)
-		end
+	local args = {...}
+	local steam_id = Player.getSteamID(caller_id)
 
-		local success, statusTitle, statusText = switch(caller_id, command, args)
-		local title = statusText and statusTitle or (success and "SUCCESS" or "FAILED")
-		local text = statusText and statusText or statusTitle
-		if text then
-			server.announce(title, text, caller_id)
-		end
+	-- if player data could not be found, "pretend" player just joined and give default data
+	if not g_playerData[steam_id] then
+		throwError("Persistent data for " .. Player.prettyName(caller_id) .. " could not be found. Resetting player's data to defaults", caller_id)
+		onPlayerJoin(steam_id, (server.getPlayerName(caller_id)) or "Unknown Name", caller_id)
+	end
+
+	local success, statusTitle, statusText = switch(caller_id, ALIASES[command] or command, args)
+	local title = statusText and statusTitle or (success and "SUCCESS" or "FAILED")
+	local text = statusText and statusText or statusTitle
+	if text then
+		server.announce(title, text, caller_id)
 	end
 end
 
