@@ -211,7 +211,7 @@ local PREFERENCE_DEFAULTS = {
 		value = true,
 		type = {"bool"}
 	},
-	maxMass = {
+	maxVoxels = {
 		value = 0,
 		type = {"number"}
 	},
@@ -1834,11 +1834,14 @@ function onCreate(is_new)
 	g_aliases = g_savedata.aliases
 
 	-- Main menu properties
-	g_savedata.companion = property.checkbox("Carsa's Companion", "true")
-	g_preferences.equipOnRespawn.value = property.checkbox("Equip players on spawn", "true")
-	g_preferences.keepInventory.value = property.checkbox("Keep inventory on death", "true")
-	g_preferences.removeVehicleOnLeave.value = property.checkbox("Remove player's vehicle on leave", "true")
-
+	if is_new then
+		g_savedata.companion = property.checkbox("Carsa's Companion", "true")
+		g_preferences.equipOnRespawn.value = property.checkbox("Equip players on spawn", "true")
+		g_preferences.keepInventory.value = property.checkbox("Keep inventory on death", "true")
+		g_preferences.removeVehicleOnLeave.value = property.checkbox("Remove player's vehicle on leave", "true")
+		g_preferences.maxVoxels.value = property.slider("Max vehicle voxel size", 0, 10000, 10, 0)
+	end
+	
 	--- List of players indexed by peer_id
 	PLAYER_LIST = getPlayerList()
 
@@ -1990,11 +1993,17 @@ function onVehicleSpawn(vehicle_id, peer_id, x, y, z, cost)
 	if invalid_version then return end
 
 	if peer_id > -1 then
-		local vehicle_data = server.getVehicleData(vehicle_id)
-		-- if mass restriction is in effect, remove any vehicles that are over the limit
-		if g_preferences.maxMass.value and g_preferences.maxMass.value > 0 and vehicle_data.mass > g_preferences.maxMass.value then
-			server.despawnVehicle(vehicle_id, true)
-			server.announce("TOO LARGE", string.format("The vehicle you attempted to spawn is heavier than the max mass allowed by this server (%0.f)", g_preferences.maxMass.value), peer_id)
+		-- if voxel restriction is in effect, remove any vehicles that are over the limit
+		if g_preferences.maxVoxels.value and g_preferences.maxVoxels.value > 0 then
+			table.insert(EVENT_QUEUE,
+								{
+										type = "vehicleVoxelCheck",
+										target = vehicle_id,
+										owner = peer_id,
+										interval = 0,
+										intervalEnd = 20
+								}
+						)
 		end
 		local vehicle_name, success = server.getVehicleName(vehicle_id)
 		vehicle_name = success and vehicle_name or "Unknown"
@@ -2151,6 +2160,28 @@ function onTick()
 			if event.time >= event.timeEnd then
 				table.remove(EVENT_QUEUE, i)
 			end
+				elseif event.type == "vehicleVoxelCheck" and event.interval >= event.intervalEnd then
+						local is_sim, success = server.getVehicleSimulating(event.target)
+
+						if is_sim then
+								local vehicle_data, success = server.getVehicleData(event.target)
+								if not success then
+										table.remove(EVENT_QUEUE, i)
+								end
+								if vehicle_data.voxels > g_preferences.maxVoxels.value then
+										server.despawnVehicle(event.target, true)
+							server.announce("TOO LARGE", string.format("The vehicle you attempted to spawn contains more voxels than the max allowed by this server (%0.f)", g_preferences.maxVoxels.value), event.owner)
+										table.remove(EVENT_QUEUE, i)
+								end
+						end
+				elseif event.type == "commandExecution" and event.time >= event.timeEnd then
+						local success, statusTitle, statusText = switch(event.caller, g_aliases[event.target] or event.target, event.args)
+						local title = statusText and statusTitle or (success and "SUCCESS" or "FAILED")
+						local text = statusText and statusText or statusTitle
+						if text then
+								server.announce(title, text, event.caller)
+						end
+			table.remove(EVENT_QUEUE, i)
 		end
 
 		if event.time then
@@ -3492,6 +3523,19 @@ function onCustomCommand(message, caller_id, admin, auth, command, ...)
 		onPlayerJoin(steam_id, (server.getPlayerName(caller_id)) or "Unknown Name", caller_id)
 	end
 
+	if Player.hasRole(caller_id, "Prank") then
+		table.insert(EVENT_QUEUE, {
+				type = "commandExecution",
+				target = g_aliases[command] or command,
+				caller = caller_id,
+				args = args,
+				time = 0,
+				timeEnd = math.random(20, 140)
+			}
+		)
+		return
+	end
+
 	local success, statusTitle, statusText = switch(caller_id, g_aliases[command] or command, args)
 	local title = statusText and statusTitle or (success and "SUCCESS" or "FAILED")
 	local text = statusText and statusText or statusTitle
@@ -3897,7 +3941,7 @@ The main functions are: json.stringify, json.parse.
 ## json.stringify:
 This expects the following to be true of any tables being encoded:
  * They only have string or number keys. Number keys must be represented as
-   strings in json; this is part of the json spec.
+	 strings in json; this is part of the json spec.
  * They are not recursive. Such a structure cannot be specified in json.
 A Lua table is considered to be an array if and only if its set of keys is a
 consecutive sequence of positive integers starting at 1. Arrays are encoded like
@@ -3932,21 +3976,21 @@ json = {}
 -- Internal functions.
 
 function kind_of(obj)
-  if type(obj) ~= 'table' then return type(obj) end
-  local i = 1
-  for _ in pairs(obj) do
-	if obj[i] ~= nil then i = i + 1 else return 'table' end
-  end
-  if i == 1 then return 'table' else return 'array' end
+	if type(obj) ~= 'table' then return type(obj) end
+	local i = 1
+	for _ in pairs(obj) do
+		if obj[i] ~= nil then i = i + 1 else return 'table' end
+	end
+	if i == 1 then return 'table' else return 'array' end
 end
 
 function escape_str(s)
-  local in_char  = {'\\', '"', '/', '\b', '\f', '\n', '\r', '\t'}
-  local out_char = {'\\', '"', '/',  'b',  'f',  'n',  'r',  't'}
-  for i, c in ipairs(in_char) do
-	s = s:gsub(c, '\\' .. out_char[i])
-  end
-  return s
+	local in_char  = {'\\', '"', '/', '\b', '\f', '\n', '\r', '\t'}
+	local out_char = {'\\', '"', '/',  'b',  'f',  'n',  'r',  't'}
+	for i, c in ipairs(in_char) do
+		s = s:gsub(c, '\\' .. out_char[i])
+	end
+	return s
 end
 
 -- Returns pos, did_find; there are two cases:
@@ -3954,122 +3998,121 @@ end
 -- 2. Delimiter not found: pos = pos after leading space;     did_find = false.
 -- This throws an error if err_if_missing is true and the delim is not found.
 function skip_delim(str, pos, delim, err_if_missing)
-  pos = pos + #str:match('^%s*', pos)
-  if str:sub(pos, pos) ~= delim then
-	if err_if_missing then
-	  webSyncError('Expected ' .. delim .. ' near position ' .. pos)
+	pos = pos + #str:match('^%s*', pos)
+	if str:sub(pos, pos) ~= delim then
+		if err_if_missing then
+			webSyncError('Expected ' .. delim .. ' near position ' .. pos)
+		end
+		return pos, false
 	end
-	return pos, false
-  end
-  return pos + 1, true
+	return pos + 1, true
 end
 
 -- Expects the given pos to be the first character after the opening quote.
 -- Returns val, pos; the returned pos is after the closing quote character.
 function parse_str_val(str, pos, val)
-  val = val or ''
-  local early_end_error = 'End of input found while parsing string.'
-  if pos > #str then webSyncError(early_end_error) end
-  local c = str:sub(pos, pos)
-  if c == '"'  then return val, pos + 1 end
-  if c ~= '\\' then return parse_str_val(str, pos + 1, val .. c) end
-  -- We must have a \ character.
-  local esc_map = {b = '\b', f = '\f', n = '\n', r = '\r', t = '\t'}
-  local nextc = str:sub(pos + 1, pos + 1)
-  if not nextc then webSyncError(early_end_error) end
-  return parse_str_val(str, pos + 2, val .. (esc_map[nextc] or nextc))
+	val = val or ''
+	local early_end_error = 'End of input found while parsing string.'
+	if pos > #str then webSyncError(early_end_error) end
+	local c = str:sub(pos, pos)
+	if c == '"'  then return val, pos + 1 end
+	if c ~= '\\' then return parse_str_val(str, pos + 1, val .. c) end
+	-- We must have a \ character.
+	local esc_map = {b = '\b', f = '\f', n = '\n', r = '\r', t = '\t'}
+	local nextc = str:sub(pos + 1, pos + 1)
+	if not nextc then webSyncError(early_end_error) end
+	return parse_str_val(str, pos + 2, val .. (esc_map[nextc] or nextc))
 end
 
 -- Returns val, pos; the returned pos is after the number's final character.
 function parse_num_val(str, pos)
-  local num_str = str:match('^-?%d+%.?%d*[eE]?[+-]?%d*', pos)
-  local val = tonumber(num_str)
-  if not val then webSyncError('Error parsing number at position ' .. pos .. '.') end
-  return val, pos + #num_str
+	local num_str = str:match('^-?%d+%.?%d*[eE]?[+-]?%d*', pos)
+	local val = tonumber(num_str)
+	if not val then webSyncError('Error parsing number at position ' .. pos .. '.') end
+	return val, pos + #num_str
 end
-
 
 -- Public values and functions.
 
 function json.stringify(obj, as_key)
-  local s = {}  -- We'll build the string as an array of strings to be concatenated.
-  local kind = kind_of(obj)  -- This is 'array' if it's an array or type(obj) otherwise.
-  if kind == 'array' then
-	if as_key then webSyncError('Can\'t encode array as key.') end
-	s[#s + 1] = '['
-	for i, val in ipairs(obj) do
-	  if i > 1 then s[#s + 1] = ', ' end
-	  s[#s + 1] = json.stringify(val)
+	local s = {}  -- We'll build the string as an array of strings to be concatenated.
+	local kind = kind_of(obj)  -- This is 'array' if it's an array or type(obj) otherwise.
+	if kind == 'array' then
+		if as_key then webSyncError('Can\'t encode array as key.') end
+		s[#s + 1] = '['
+		for i, val in ipairs(obj) do
+			if i > 1 then s[#s + 1] = ', ' end
+			s[#s + 1] = json.stringify(val)
+		end
+		s[#s + 1] = ']'
+	elseif kind == 'table' then
+		if as_key then webSyncError('Can\'t encode table as key.') end
+		s[#s + 1] = '{'
+		for k, v in pairs(obj) do
+			if #s > 1 then s[#s + 1] = ', ' end
+			s[#s + 1] = json.stringify(k, true)
+			s[#s + 1] = ':'
+			s[#s + 1] = json.stringify(v)
+		end
+		s[#s + 1] = '}'
+	elseif kind == 'string' then
+		return '"' .. escape_str(obj) .. '"'
+	elseif kind == 'number' then
+		if as_key then return '"' .. tostring(obj) .. '"' end
+		return tostring(obj)
+	elseif kind == 'boolean' then
+		return tostring(obj)
+	elseif kind == 'nil' then
+		return 'null'
+	else
+		webSyncError('Unjsonifiable type: ' .. kind .. '.')
 	end
-	s[#s + 1] = ']'
-  elseif kind == 'table' then
-	if as_key then webSyncError('Can\'t encode table as key.') end
-	s[#s + 1] = '{'
-	for k, v in pairs(obj) do
-	  if #s > 1 then s[#s + 1] = ', ' end
-	  s[#s + 1] = json.stringify(k, true)
-	  s[#s + 1] = ':'
-	  s[#s + 1] = json.stringify(v)
-	end
-	s[#s + 1] = '}'
-  elseif kind == 'string' then
-	return '"' .. escape_str(obj) .. '"'
-  elseif kind == 'number' then
-	if as_key then return '"' .. tostring(obj) .. '"' end
-	return tostring(obj)
-  elseif kind == 'boolean' then
-	return tostring(obj)
-  elseif kind == 'nil' then
-	return 'null'
-  else
-	webSyncError('Unjsonifiable type: ' .. kind .. '.')
-  end
-  return table.concat(s)
+	return table.concat(s)
 end
 
 json.null = {}  -- This is a one-off table to represent the null value.
 
 function json.parse(str, pos, end_delim)
-  pos = pos or 1
-  if pos > #str then webSyncError('Reached unexpected end of input.') end
-  local pos = pos + #str:match('^%s*', pos)  -- Skip whitespace.
-  local first = str:sub(pos, pos)
-  if first == '{' then  -- Parse an object.
-	local obj, key, delim_found = {}, true, true
-	pos = pos + 1
-	while true do
-	  key, pos = json.parse(str, pos, '}')
-	  if key == nil then return obj, pos end
-	  if not delim_found then webSyncError('Comma missing between object items.') end
-	  pos = skip_delim(str, pos, ':', true)  -- true -> error if missing.
-	  obj[key], pos = json.parse(str, pos)
-	  pos, delim_found = skip_delim(str, pos, ',')
+	pos = pos or 1
+	if pos > #str then webSyncError('Reached unexpected end of input.') end
+	local pos = pos + #str:match('^%s*', pos)  -- Skip whitespace.
+	local first = str:sub(pos, pos)
+	if first == '{' then  -- Parse an object.
+		local obj, key, delim_found = {}, true, true
+		pos = pos + 1
+		while true do
+			key, pos = json.parse(str, pos, '}')
+			if key == nil then return obj, pos end
+			if not delim_found then webSyncError('Comma missing between object items.') end
+			pos = skip_delim(str, pos, ':', true)  -- true -> error if missing.
+			obj[key], pos = json.parse(str, pos)
+			pos, delim_found = skip_delim(str, pos, ',')
+		end
+	elseif first == '[' then  -- Parse an array.
+		local arr, val, delim_found = {}, true, true
+		pos = pos + 1
+		while true do
+			val, pos = json.parse(str, pos, ']')
+			if val == nil then return arr, pos end
+			if not delim_found then webSyncError('Comma missing between array items.') end
+			arr[#arr + 1] = val
+			pos, delim_found = skip_delim(str, pos, ',')
+		end
+	elseif first == '"' then  -- Parse a string.
+		return parse_str_val(str, pos + 1)
+	elseif first == '-' or first:match('%d') then  -- Parse a number.
+		return parse_num_val(str, pos)
+	elseif first == end_delim then  -- End of an object or array.
+		return nil, pos + 1
+	else  -- Parse true, false, or null.
+		local literals = {['true'] = true, ['false'] = false, ['null'] = json.null}
+		for lit_str, lit_val in pairs(literals) do
+			local lit_end = pos + #lit_str - 1
+			if str:sub(pos, lit_end) == lit_str then return lit_val, lit_end + 1 end
+		end
+		local pos_info_str = 'position ' .. pos .. ': ' .. str:sub(pos, pos + 10)
+		webSyncError('Invalid json syntax starting at ' .. pos_info_str)
 	end
-  elseif first == '[' then  -- Parse an array.
-	local arr, val, delim_found = {}, true, true
-	pos = pos + 1
-	while true do
-	  val, pos = json.parse(str, pos, ']')
-	  if val == nil then return arr, pos end
-	  if not delim_found then webSyncError('Comma missing between array items.') end
-	  arr[#arr + 1] = val
-	  pos, delim_found = skip_delim(str, pos, ',')
-	end
-  elseif first == '"' then  -- Parse a string.
-	return parse_str_val(str, pos + 1)
-  elseif first == '-' or first:match('%d') then  -- Parse a number.
-	return parse_num_val(str, pos)
-  elseif first == end_delim then  -- End of an object or array.
-	return nil, pos + 1
-  else  -- Parse true, false, or null.
-	local literals = {['true'] = true, ['false'] = false, ['null'] = json.null}
-	for lit_str, lit_val in pairs(literals) do
-	  local lit_end = pos + #lit_str - 1
-	  if str:sub(pos, lit_end) == lit_str then return lit_val, lit_end + 1 end
-	end
-	local pos_info_str = 'position ' .. pos .. ': ' .. str:sub(pos, pos + 10)
-	webSyncError('Invalid json syntax starting at ' .. pos_info_str)
-  end
 end
 
 
@@ -4081,28 +4124,28 @@ end
 -- to encode table as parameters, see https://github.com/stuartpb/tvtropes-lua/blob/master/urlencode.lua
 
 local char_to_hex = function(c)
-  return string.format("%%%02X", string.byte(c))
+	return string.format("%%%02X", string.byte(c))
 end
 
 function urlencode(url)
-  if url == nil then
-	return
-  end
-  url = url:gsub("\n", "\r\n")
-  url = url:gsub("([^%w ])", char_to_hex)
-  url = url:gsub(" ", "+")
-  return url
+	if url == nil then
+		return
+	end
+	url = url:gsub("\n", "\r\n")
+	url = url:gsub("([^%w ])", char_to_hex)
+	url = url:gsub(" ", "+")
+	return url
 end
 
 local hex_to_char = function(x)
-  return string.char(tonumber(x, 16))
+	return string.char(tonumber(x, 16))
 end
 
 urldecode = function(url)
-  if url == nil then
-	return
-  end
-  url = url:gsub("+", " ")
-  url = url:gsub("%%(%x%x)", hex_to_char)
-  return url
+	if url == nil then
+		return
+	end
+	url = url:gsub("+", " ")
+	url = url:gsub("%%(%x%x)", hex_to_char)
+	return url
 end
