@@ -251,7 +251,6 @@ local PREFERENCE_DEFAULTS = {
 
 local PLAYER_DATA_DEFAULTS = {
 	name = "unknown",
-	banned = false,
 	roles = {}
 }
 
@@ -1103,7 +1102,6 @@ function Player.ban(caller_id, id)
 	if not g_playerData[id] then
 		g_playerData[id] = deepCopyTable(PLAYER_DATA_DEFAULTS)
 	end
-	server.announce("STEAM_ID", steam_id)
 	g_banned[id] = Player.getSteamID(caller_id)
 	server.save(SAVE_NAME)
 
