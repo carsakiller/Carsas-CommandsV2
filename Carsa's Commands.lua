@@ -246,6 +246,10 @@ local PREFERENCE_DEFAULTS = {
 	welcomeReturning = {
 		value = false,
 		type = {"bool", "text"}
+	},
+	companion = {
+		value = false,
+		type = {"bool"}
 	}
 }
 
@@ -1818,7 +1822,6 @@ function onCreate(is_new)
 	g_savedata.rules = g_savedata.rules or {}
 	g_savedata.game_settings = g_savedata.game_settings or {}
 	g_savedata.aliases = g_savedata.aliases or deepCopyTable(DEFAULT_ALIASES)
-	g_savedata.companion = g_savedata.companion or false
 
 	-- create references to shorten code
 	g_vehicleList = g_savedata.vehicle_list
@@ -1833,7 +1836,7 @@ function onCreate(is_new)
 
 	-- Main menu properties
 	if is_new then
-		g_savedata.companion = property.checkbox("Carsa's Companion", "true")
+		g_preferences.companion.value = property.checkbox("Carsa's Companion", "false")
 		g_preferences.equipOnRespawn.value = property.checkbox("Equip players on spawn", "true")
 		g_preferences.keepInventory.value = property.checkbox("Keep inventory on death", "true")
 		g_preferences.removeVehicleOnLeave.value = property.checkbox("Remove player's vehicle on leave", "true")
@@ -2065,7 +2068,7 @@ function onTick()
 	if invalid_version then return end
 
 	-- stuff for web companion
-	if g_savedata.companion then
+	if g_preferences.companion.value then
 		syncTick()
 		if initialize then
 			initialize = false
