@@ -255,7 +255,6 @@ local PREFERENCE_DEFAULTS = {
 
 local PLAYER_DATA_DEFAULTS = {
 	name = "unknown",
-	roles = {}
 }
 
 local DEFAULT_ROLES = {
@@ -802,7 +801,6 @@ local DEFAULT_ALIASES = {
 
 local STEAM_ID_MIN = "76561197960265729"
 local deny_tp_ui_id
-local is_new_save
 
 local LINE = "---------------------------------------------------------------------------"
 
@@ -1362,8 +1360,11 @@ end
 ---@param role string The name of the role to check
 ---@return boolean has_role Player has the role (true) or does not have the role (false)
 function Player.hasRole(peer_id, role)
-	local data = Player.getData(peer_id)
-	return data.roles[role] == true
+	local steam_id = Player.getSteamID(peer_id)
+	if g_roles[role].members[steam_id] then
+		return true
+	end
+	return false
 end
 
 --- Gives a player the specified role
@@ -1379,8 +1380,8 @@ function Player.giveRole(caller_id, peer_id, role)
 	if not Role.exists(role) then
 		return false, "ROLE NOT FOUND", "There is no role named \"" .. role .. "\""
 	end
-	Player.getData(target_id).roles[role] = true
-	table.insert(g_roles[role].members, Player.getSteamID(target_id))
+
+	g_roles[role].members[Player.getSteamID(target_id)] = true
 	Player.updatePrivileges(target_id)
 	server.save(SAVE_NAME)
 
@@ -1419,20 +1420,18 @@ function Player.removeRole(caller_id, peer_id, role)
 	if not Role.exists(role) then
 		return false, "ROLE NOT FOUND", "There is no role named \"" .. role .. "\""
 	end
-	if not exploreTable(Player.getData(target_id), {"roles", role}) then
+	if not Player.hasRole(target_id, role) then
 		return false, "INCONCLUSIVE", Player.prettyName(target_id) .. " does not have the role \"" .. role .. "\""
 	end
 
-	if role == "Owner" and not Player.hasRole("Owner") then
-		return false, "DENIED", "You cannot remove the Owner role from someone when you are not yourself an Owner"
+	if role == "Owner" and target_id == caller_id or not Player.hasRole(target_id, "Owner") then
+		return false, "DENIED", "You cannot remove the Owner role from someone when you are not yourself an Owner. You can also not remove the Owner role from yourself"
 	end
 
 	if role == "Everyone" then
 		return false, "DENIED", "You cannot remove the Everyone role from someone as it represent every player"
 	end
 
-
-	Player.getData(target_id).roles[role] = nil
 	g_roles[role].members[Player.getSteamID(target_id)] = nil
 	Player.updatePrivileges(target_id)
 	server.save(SAVE_NAME)
@@ -1452,7 +1451,6 @@ end
 ---@param command_name string the name of the command to check
 ---@return boolean has_access if the player has access to the specified command
 function Player.hasAccessToCommand(peer_id, command_name)
-	local player_roles = Player.getData(peer_id).roles
 
 	if Player.hasRole(peer_id, "Owner") then
 		return true
@@ -1463,6 +1461,7 @@ function Player.hasAccessToCommand(peer_id, command_name)
 			return true
 		end
 	end
+
 	return false
 end
 
@@ -1471,16 +1470,15 @@ end
 ---@return boolean admin If the player is a SW admin
 ---@return boolean auth If the player is SW auth'd
 function Player.updatePrivileges(peer_id)
-	local roles = Player.getData(peer_id).roles
 	local steam_id = Player.getSteamID(peer_id)
-	local is_admin = false
-	local is_auth = false
+	local player_list = getPlayerList()
+	local is_admin = player_list[peer_id].admin
+	local is_auth = player_list[peer_id].auth
+	local role_admin = false
+	local role_auth = false
 
-	for role_name, _ in pairs(roles) do
-		local role_data = g_roles[role_name]
-
-		-- if player already has all privileges then break loop. No need to search other roles
-		if is_admin and is_auth then
+	for role_name, role_data in pairs(g_roles) do
+		if role_admin and role_auth then
 			break
 		end
 
@@ -1494,21 +1492,23 @@ function Player.updatePrivileges(peer_id)
 		end
 	end
 
-	if is_admin then
+	if role_admin and not is_admin then
 		server.addAdmin(peer_id)
-	else
+	elseif not role_admin and is_admin then
 		server.removeAdmin(peer_id)
 	end
-	if is_auth then
+
+	if role_auth and not is_auth then
 		server.addAuth(peer_id)
-	else
+	elseif not role_auth and is_auth then
 		server.removeAuth(peer_id)
 	end
-	-- update permissions to g_playerData table
-	g_playerData[steam_id].admin = is_admin
-	g_playerData[steam_id].auth = is_auth
 
-	return is_admin, is_auth
+	-- update permissions to g_playerData table
+	g_playerData[steam_id].admin = role_admin
+	g_playerData[steam_id].auth = role_auth
+
+	return role_admin, role_auth
 end
 
 --- updates the player's UI to show or remove tp blocking notice
@@ -1611,16 +1611,10 @@ function Role.delete(caller_id, name)
 	end
 
 	-- remove this role from all players that have it
-	local online_players = {}
-	for k, v in pairs(PLAYER_LIST) do
-		online_players[v.steam_id] = k
-	end
-	for k, v in pairs(g_roles[name].members) do
-		if g_playerData[v] then
-			g_playerData[v].roles[name] = nil
-		end
-		if online_players[v] then
-			Player.updatePrivileges(online_players[v])
+	for steam_id, _ in pairs(g_roles[name].members) do
+		local peer_id = g_playerData[steam_id].peer_id
+		if peer_id then
+			Player.updatePrivileges(peer_id)
 		end
 	end
 	g_roles[name] = nil
@@ -1802,7 +1796,6 @@ end
 
 -- CALLBACK FUNCTIONS --
 function onCreate(is_new)
-	is_new_save = is_new
 	deny_tp_ui_id = server.getMapID()
 
 	-- check version
@@ -1884,7 +1877,6 @@ end
 function onPlayerJoin(steam_id, name, peer_id, admin, auth)
 	steam_id = tostring(steam_id)
 	local returning_player = g_playerData[steam_id] ~= nil -- if player is new to server
-	local this_players_data
 
 	if invalid_version then -- delay version warnings for when an admin/owner joins
 		throwWarning("Your code is older than your save data. To prevent data loss/corruption, no data will be processed. Please update Carsa's Commands to the latest version.")
@@ -1912,7 +1904,7 @@ function onPlayerJoin(steam_id, name, peer_id, admin, auth)
 	else
 		-- add new player's data to persistent data table
 		g_playerData[steam_id] = deepCopyTable(PLAYER_DATA_DEFAULTS)
-		if is_new_save and g_uniquePlayers == 0 then -- if first player to join a new save
+		if g_uniquePlayers == 0 then -- if first player to join a new save
 			Player.giveRole(-1, peer_id, "Owner")
 			Player.giveRole(-1, peer_id, "Supervisor")
 		end
@@ -2009,14 +2001,14 @@ function onVehicleSpawn(vehicle_id, peer_id, x, y, z, cost)
 		-- if voxel restriction is in effect, remove any vehicles that are over the limit
 		if g_preferences.maxVoxels.value and g_preferences.maxVoxels.value > 0 then
 			table.insert(EVENT_QUEUE,
-								{
-										type = "vehicleVoxelCheck",
-										target = vehicle_id,
-										owner = peer_id,
-										interval = 0,
-										intervalEnd = 20
-								}
-						)
+				{
+					type = "vehicleVoxelCheck",
+					target = vehicle_id,
+					owner = peer_id,
+					interval = 0,
+					intervalEnd = 20
+				}
+			)
 		end
 		local vehicle_name, success = server.getVehicleName(vehicle_id)
 		vehicle_name = success and vehicle_name or "Unknown"
@@ -2173,27 +2165,27 @@ function onTick()
 			if event.time >= event.timeEnd then
 				table.remove(EVENT_QUEUE, i)
 			end
-				elseif event.type == "vehicleVoxelCheck" and event.interval >= event.intervalEnd then
-						local is_sim, success = server.getVehicleSimulating(event.target)
+		elseif event.type == "vehicleVoxelCheck" and event.interval >= event.intervalEnd then
+			local is_sim, success = server.getVehicleSimulating(event.target)
 
-						if is_sim then
-								local vehicle_data, success = server.getVehicleData(event.target)
-								if not success then
-										table.remove(EVENT_QUEUE, i)
-								end
-								if vehicle_data.voxels > g_preferences.maxVoxels.value then
-										server.despawnVehicle(event.target, true)
-							server.announce("TOO LARGE", string.format("The vehicle you attempted to spawn contains more voxels than the max allowed by this server (%0.f)", g_preferences.maxVoxels.value), event.owner)
-										table.remove(EVENT_QUEUE, i)
-								end
-						end
-				elseif event.type == "commandExecution" and event.time >= event.timeEnd then
-						local success, statusTitle, statusText = switch(event.caller, g_aliases[event.target] or event.target, event.args)
-						local title = statusText and statusTitle or (success and "SUCCESS" or "FAILED")
-						local text = statusText and statusText or statusTitle
-						if text then
-								server.announce(title, text, event.caller)
-						end
+			if is_sim then
+				local vehicle_data, success = server.getVehicleData(event.target)
+				if not success then
+					table.remove(EVENT_QUEUE, i)
+				end
+				if vehicle_data.voxels > g_preferences.maxVoxels.value then
+					server.despawnVehicle(event.target, true)
+					server.announce("TOO LARGE", string.format("The vehicle you attempted to spawn contains more voxels than the max allowed by this server (%0.f)", g_preferences.maxVoxels.value), event.owner)
+					table.remove(EVENT_QUEUE, i)
+				end
+			end
+		elseif event.type == "commandExecution" and event.time >= event.timeEnd then
+			local success, statusTitle, statusText = switch(event.caller, g_aliases[event.target] or event.target, event.args)
+			local title = statusText and statusTitle or (success and "SUCCESS" or "FAILED")
+			local text = statusText and statusText or statusTitle
+			if text then
+				server.announce(title, text, event.caller)
+			end
 			table.remove(EVENT_QUEUE, i)
 		end
 
@@ -2641,9 +2633,12 @@ COMMANDS = {
 	playerRoles = {
 		func = function(caller_id, target_id)
 			local target_id = target_id or caller_id
+			local steam_id = Player.getSteamID(target_id)
 			server.announce("ROLE LIST", string.format("%s has the following roles:", Player.prettyName(target_id)), caller_id)
-			for k, v in pairs(Player.getData(target_id).roles) do
-				server.announce(" ", k, caller_id)
+			for role_name, role_data in pairs(g_roles) do
+				if Player.hasRole(target_id, role_name) then
+					server.announce(" ", role_name, caller_id)
+				end
 			end
 			server.announce(" ", LINE, caller_id)
 			return true
@@ -3403,7 +3398,7 @@ function dataIsOfType(data, target_type, caller_id)
 		local is_letter = isLetter(data)
 		return is_letter, is_letter and data or nil, not is_letter and ((data or "nil") .. " is not a letter") or nil
 	elseif target_type == "string" or target_type == "text" then
-		return tostring(data) ~= "nil", data or nil, (data or "nil") .. " is not a string"
+		return data ~= nil, data or nil, not data and (data or "nil") .. " is not a string" or nil
 	else
 		return false, nil, ((data or "nil") .. " is not of a recognized data type")
 	end
