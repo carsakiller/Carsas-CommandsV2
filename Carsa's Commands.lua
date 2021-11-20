@@ -801,6 +801,7 @@ local DEFAULT_ALIASES = {
 
 local STEAM_ID_MIN = "76561197960265729"
 local deny_tp_ui_id
+local previous_game_settings
 
 local LINE = "---------------------------------------------------------------------------"
 
@@ -2227,6 +2228,19 @@ function onTick()
 				end
 			end
 		end
+
+		if previous_game_settings then
+			local settings = server.getGameSettings()
+			if previous_game_settings ~= settings then
+				for setting, value in pairs(settings) do
+					if type(value) == "boolean" and previous_game_settings[setting] ~= value then
+						server.notify(-1, "GAME SETTING CHANGED", setting .. " has been " .. (value and "ENABLED" or "DISABLED"), 9)
+					end
+				end
+			end
+		end
+		previous_game_settings = server.getGameSettings()
+
 		count = 0
 	else
 		count = count + 1
@@ -3290,12 +3304,8 @@ COMMANDS = {
 			local alphabetical = sortKeys(game_settings)
 			server.announce(" ", "------------------------  GAME SETTINGS  -----------------------", caller_id)
 			for k, v in ipairs(alphabetical) do
-				if game_settings[v] == true then
-					server.announce(v, "true", caller_id)
-				elseif game_settings[v] == false then
-					server.announce(v, "false", caller_id)
-				else
-					server.announce(v, game_settings[v], caller_id)
+				if type(game_settings[v]) == "boolean" then
+					server.announce(v, tostring(game_settings[v]), caller_id)
 				end
 			end
 			server.announce(" ", LINE, caller_id)
