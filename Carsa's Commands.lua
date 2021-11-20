@@ -259,12 +259,14 @@ local PLAYER_DATA_DEFAULTS = {
 
 local DEFAULT_ROLES = {
 	Owner = {
+		active = true,
 		admin = true,
 		auth = true,
 		members = {}
 	},
 	-- users with this role will receive notices when something important is changed
 	Supervisor = {
+		active = true,
 		members = {}
 	},
 	Admin = {
@@ -299,6 +301,7 @@ local DEFAULT_ROLES = {
 			roleAccess = true,
 			rolePerms = true,
 			roles = true,
+			roleStatus = true,
 			rules = true,
 			setEditable = true,
 			setGameSetting = true,
@@ -317,6 +320,7 @@ local DEFAULT_ROLES = {
 			vehicleList = true,
 			whisper = true,
 		},
+		active = true,
 		admin = true,
 		auth = true,
 		members = {}
@@ -354,6 +358,7 @@ local DEFAULT_ROLES = {
 			vehicleList = true,
 			whisper = true,
 		},
+		active = true,
 		admin = true,
 		auth = true,
 		members = {}
@@ -362,6 +367,7 @@ local DEFAULT_ROLES = {
 		commands = {
 			setEditable = true
 		},
+		active = true,
 		admin = false,
 		auth = true,
 		members = {}
@@ -393,11 +399,13 @@ local DEFAULT_ROLES = {
 			whisper = true,
 			gameSettings = true
 		},
+		active = true,
 		admin = false,
 		auth = true,
 		members = {}
 	},
 	Prank = {
+		active = true,
 		admin = false,
 		auth = false,
 		members = {}
@@ -1449,7 +1457,7 @@ function Player.hasAccessToCommand(peer_id, command_name)
 	end
 
 	for role_name, role_data in pairs(g_roles) do
-		if Player.hasRole(peer_id, role_name) and role_data.commands and role_data.commands[command_name] then
+		if role_data.active and Player.hasRole(peer_id, role_name) and role_data.commands and role_data.commands[command_name] then
 			return true
 		end
 	end
@@ -1474,7 +1482,7 @@ function Player.updatePrivileges(peer_id)
 			break
 		end
 
-		if Player.hasRole(peer_id, role_name) then
+		if role_data.active and Player.hasRole(peer_id, role_name) then
 			if role_data.admin then
 				role_admin = true
 			end
@@ -1570,6 +1578,7 @@ function Role.new(caller_id, name)
 
 	g_roles[name] = {
 		commands = {},
+		active = true,
 		admin = false,
 		auth = false,
 		members = {}
@@ -2474,6 +2483,7 @@ COMMANDS = {
 					return false, "ROLE NOT FOUND", "The role \"" .. role_name .. "\" does not exist"
 				end
 				server.announce(" ", LINE, caller_id)
+				server.announce("Active", g_roles[role_name].active and "Yes" or "No", caller_id)
 				server.announce("Admin", g_roles[role_name].admin and "Yes" or "No", caller_id)
 				server.announce("Auth", g_roles[role_name].auth and "Yes" or "No", caller_id)
 				server.announce(" ", "Has access to the following commands:", caller_id)
@@ -2486,6 +2496,8 @@ COMMANDS = {
 					for k, v in ipairs(names) do
 						server.announce(" ", v, caller_id)
 					end
+				elseif role_name == "Owner" then
+					server.announce(" ", "All", caller_id)
 				end
 			else
 				local alpha = {}
@@ -2504,7 +2516,7 @@ COMMANDS = {
 
 
 				for i = start_index, end_index do
-					server.announce(" ", alpha[i], caller_id)
+					server.announce(alpha[i], g_roles[alpha[i]].active and "Active" or "Inactive", caller_id)
 				end
 				server.announce(" ", string.format("Page %d of %d", page, max_page), caller_id)
 			end
@@ -2515,6 +2527,26 @@ COMMANDS = {
 			{name = "page/role_name", type = {"number", "string"}}
 		},
 		description = "Lists all of the roles on the server. Specifying a role's name will list detailed info on it."
+	},
+	roleStatus = {
+		func = function(caller_id, role, status)
+			if not Role.exists(role) then
+				return false, "ROLE NOT FOUND", "\"" .. role .. "\" is not an existing role"
+			end
+			if status == nil then
+				return true, role, g_roles[role].active and "Active" or "Inactive"
+			end
+			if DEFAULT_ROLES[role] then
+				return false, "DENIED", "\"" .. role .. "\" is a reserved role and cannot be edited"
+			end
+			g_roles[role].active = status
+			return true, "ROLE " .. (status and "activated" or "deactivated"), "\"" .. role .. "\" has been " .. (status and "activated" or "deactivated")
+		end,
+		args = {
+			{name = "role", type = {"string"}, required = true},
+			{name = "status", type = {"bool"}}
+		},
+		description = "Gets or sets whether a role is active or not. An inactive role won't apply it's permissions to it's members"
 	},
 
 	-- Vehicles --
