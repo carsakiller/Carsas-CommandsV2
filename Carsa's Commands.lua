@@ -317,6 +317,7 @@ local DEFAULT_ROLES = {
 			tpv = true,
 			unban = true,
 			vehicleIDs = true,
+			vehicleInfo = true,
 			vehicleList = true,
 			whisper = true,
 		},
@@ -355,6 +356,7 @@ local DEFAULT_ROLES = {
 			tpv = true,
 			unban = true,
 			vehicleIDs = true,
+			vehicleInfo = true,
 			vehicleList = true,
 			whisper = true,
 		},
@@ -379,6 +381,7 @@ local DEFAULT_ROLES = {
 			roles = true,
 			vehicleList = true,
 			vehicleIDs = true,
+			vehicleInfo = true,
 			respawn = true,
 			playerRoles = true,
 			playerPerms = true,
@@ -787,6 +790,8 @@ local TYPE_ABBREVIATIONS = {
 local DEFAULT_ALIASES = {
 	cv = "clearVehicle",
 	vl = "vehicleList",
+	vlist = "vehicleList",
+	vinfo = "vehicleInfo",
 	vedit = "setEditable",
 	vids = "vehicleIDs",
 	pr = "playerRoles",
@@ -2013,7 +2018,7 @@ function onVehicleSpawn(vehicle_id, peer_id, x, y, z, cost)
 		end
 		local vehicle_name, success = server.getVehicleName(vehicle_id)
 		vehicle_name = success and vehicle_name or "Unknown"
-		g_vehicleList[vehicle_id] = {owner = Player.getSteamID(peer_id), name = vehicle_name, ui_id = server.getMapID()}
+		g_vehicleList[vehicle_id] = {owner = Player.getSteamID(peer_id), name = vehicle_name, ui_id = server.getMapID(), cost = cost}
 		PLAYER_LIST[peer_id].latest_spawn = vehicle_id
 	end
 end
@@ -2622,6 +2627,30 @@ COMMANDS = {
 			return true, "VEHICLE IDS", "Vehicle IDs are now " .. (VEHICLE_ID_VIEWERS[caller_id] and "visible" or "hidden")
 		end,
 		description = "Toggles displaying vehicle IDs."
+	},
+	vehicleInfo = {
+		func = function(caller_id, vehicle_id)
+			if not vehicle_id then
+				vehicle_id = Player.nearestVehicle(caller_id)
+			end
+			if not vehicle_id then
+				return false, "VEHICLE NOT FOUND", "There are no vehicles in the world"
+			end
+
+			local vehicle_save_data = g_vehicleList[vehicle_id]
+			local vehicle_data = server.getVehicleData(vehicle_id)
+			server.announce("VEHICLE_DATA", "vehicleID : " .. vehicle_id, caller_id)
+			server.announce(" ", "Name : " .. (vehicle_save_data.name or "Unknown"), caller_id)
+			server.announce(" ", "Owner : " .. (g_playerData[vehicle_save_data.owner].name or "Unknown"), caller_id)
+			server.announce(" ", "Voxel Count : " .. (vehicle_data.voxels and string.format("%d", vehicle_data.voxels) or "Unknown"), caller_id)
+			server.announce(" ", "Mass : " .. (vehicle_data.mass and string.format("%0.2f", vehicle_data.mass) or "Unknown"), caller_id)
+			server.announce(" ", "Cost : " .. (vehicle_save_data.cost and string.format("%0.2f", vehicle_save_data.cost) or "Unknown"), caller_id)
+			return true
+		end,
+		args = {
+			{name = "vehicleID", type={"vehicleID"}}
+		},
+		description = "Get info on a vehicle. If no vehicleID is provided, the nearest vehicle will be used"
 	},
 
 	-- Player --
