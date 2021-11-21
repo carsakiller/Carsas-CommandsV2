@@ -1,12 +1,14 @@
 local debugMessages = true
 
---! For export, but should be harmless
-server = server or {}
+local ScriptVersion = "2.0.0"
+local SaveDataVersion = "2.0.0"
 
 
--- LIBRARIES --
+--[ LIBRARIES ]--
+--#region
 
--- lua implementation of fzy library --
+--[ lua implementation of fzy library ]--
+--#region
 -- @author Seth Warn
 -- @source https://github.com/swarn/fzy-lua
 -- @license
@@ -165,16 +167,207 @@ function fzy.score(needle, haystack, case_sensitive)
 		return result
 	end
 end
--- END OF LIBRARIES --
+--#endregion
+
+--[ json.lua library ]--
+--#region
+---@author tylerneylon
+---@source https://gist.github.com/tylerneylon/59f4bcf316be525b30ab
+json = {}
+
+
+-- Internal functions.
+
+function kind_of(obj)
+	if type(obj) ~= 'table' then return type(obj) end
+	local i = 1
+	for _ in pairs(obj) do
+		if obj[i] ~= nil then i = i + 1 else return 'table' end
+	end
+	if i == 1 then return 'table' else return 'array' end
+end
+
+function escape_str(s)
+	local in_char  = {'\\', '"', '/', '\b', '\f', '\n', '\r', '\t'}
+	local out_char = {'\\', '"', '/',  'b',  'f',  'n',  'r',  't'}
+	for i, c in ipairs(in_char) do
+		s = s:gsub(c, '\\' .. out_char[i])
+	end
+	return s
+end
+
+-- Returns pos, did_find; there are two cases:
+-- 1. Delimiter found: pos = pos after leading space + delim; did_find = true.
+-- 2. Delimiter not found: pos = pos after leading space;     did_find = false.
+-- This throws an error if err_if_missing is true and the delim is not found.
+function skip_delim(str, pos, delim, err_if_missing)
+	pos = pos + #str:match('^%s*', pos)
+	if str:sub(pos, pos) ~= delim then
+		if err_if_missing then
+			webSyncError('Expected ' .. delim .. ' near position ' .. pos)
+		end
+		return pos, false
+	end
+	return pos + 1, true
+end
+
+-- Expects the given pos to be the first character after the opening quote.
+-- Returns val, pos; the returned pos is after the closing quote character.
+function parse_str_val(str, pos, val)
+	val = val or ''
+	local early_end_error = 'End of input found while parsing string.'
+	if pos > #str then webSyncError(early_end_error) end
+	local c = str:sub(pos, pos)
+	if c == '"'  then return val, pos + 1 end
+	if c ~= '\\' then return parse_str_val(str, pos + 1, val .. c) end
+	-- We must have a \ character.
+	local esc_map = {b = '\b', f = '\f', n = '\n', r = '\r', t = '\t'}
+	local nextc = str:sub(pos + 1, pos + 1)
+	if not nextc then webSyncError(early_end_error) end
+	return parse_str_val(str, pos + 2, val .. (esc_map[nextc] or nextc))
+end
+
+-- Returns val, pos; the returned pos is after the number's final character.
+function parse_num_val(str, pos)
+	local num_str = str:match('^-?%d+%.?%d*[eE]?[+-]?%d*', pos)
+	local val = tonumber(num_str)
+	if not val then webSyncError('Error parsing number at position ' .. pos .. '.') end
+	return val, pos + #num_str
+end
+
+-- Public values and functions.
+
+function json.stringify(obj, as_key)
+	local s = {}  -- We'll build the string as an array of strings to be concatenated.
+	local kind = kind_of(obj)  -- This is 'array' if it's an array or type(obj) otherwise.
+	if kind == 'array' then
+		if as_key then webSyncError('Can\'t encode array as key.') end
+		s[#s + 1] = '['
+		for i, val in ipairs(obj) do
+			if i > 1 then s[#s + 1] = ', ' end
+			s[#s + 1] = json.stringify(val)
+		end
+		s[#s + 1] = ']'
+	elseif kind == 'table' then
+		if as_key then webSyncError('Can\'t encode table as key.') end
+		s[#s + 1] = '{'
+		for k, v in pairs(obj) do
+			if #s > 1 then s[#s + 1] = ', ' end
+			s[#s + 1] = json.stringify(k, true)
+			s[#s + 1] = ':'
+			s[#s + 1] = json.stringify(v)
+		end
+		s[#s + 1] = '}'
+	elseif kind == 'string' then
+		return '"' .. escape_str(obj) .. '"'
+	elseif kind == 'number' then
+		if as_key then return '"' .. tostring(obj) .. '"' end
+		return tostring(obj)
+	elseif kind == 'boolean' then
+		return tostring(obj)
+	elseif kind == 'nil' then
+		return 'null'
+	else
+		webSyncError('Unjsonifiable type: ' .. kind .. '.')
+	end
+	return table.concat(s)
+end
+
+json.null = {}  -- This is a one-off table to represent the null value.
+
+function json.parse(str, pos, end_delim)
+	pos = pos or 1
+	if pos > #str then webSyncError('Reached unexpected end of input.') end
+	local pos = pos + #str:match('^%s*', pos)  -- Skip whitespace.
+	local first = str:sub(pos, pos)
+	if first == '{' then  -- Parse an object.
+		local obj, key, delim_found = {}, true, true
+		pos = pos + 1
+		while true do
+			key, pos = json.parse(str, pos, '}')
+			if key == nil then return obj, pos end
+			if not delim_found then webSyncError('Comma missing between object items.') end
+			pos = skip_delim(str, pos, ':', true)  -- true -> error if missing.
+			obj[key], pos = json.parse(str, pos)
+			pos, delim_found = skip_delim(str, pos, ',')
+		end
+	elseif first == '[' then  -- Parse an array.
+		local arr, val, delim_found = {}, true, true
+		pos = pos + 1
+		while true do
+			val, pos = json.parse(str, pos, ']')
+			if val == nil then return arr, pos end
+			if not delim_found then webSyncError('Comma missing between array items.') end
+			arr[#arr + 1] = val
+			pos, delim_found = skip_delim(str, pos, ',')
+		end
+	elseif first == '"' then  -- Parse a string.
+		return parse_str_val(str, pos + 1)
+	elseif first == '-' or first:match('%d') then  -- Parse a number.
+		return parse_num_val(str, pos)
+	elseif first == end_delim then  -- End of an object or array.
+		return nil, pos + 1
+	else  -- Parse true, false, or null.
+		local literals = {['true'] = true, ['false'] = false, ['null'] = json.null}
+		for lit_str, lit_val in pairs(literals) do
+			local lit_end = pos + #lit_str - 1
+			if str:sub(pos, lit_end) == lit_str then return lit_val, lit_end + 1 end
+		end
+		local pos_info_str = 'position ' .. pos .. ': ' .. str:sub(pos, pos + 10)
+		webSyncError('Invalid json syntax starting at ' .. pos_info_str)
+	end
+end
 
 
 
 
-local ScriptVersion = "2.0.0"
-local SaveDataVersion = "2.0.0"
 
---- Flag used to notify of an outdated version
-local invalid_version
+-- ref: https://gist.github.com/ignisdesign/4323051
+-- ref: http://stackoverflow.com/questions/20282054/how-to-urldecode-a-request-uri-string-in-lua
+-- to encode table as parameters, see https://github.com/stuartpb/tvtropes-lua/blob/master/urlencode.lua
+
+local char_to_hex = function(c)
+	return string.format("%%%02X", string.byte(c))
+end
+
+function urlencode(url)
+	if url == nil then
+		return
+	end
+	url = url:gsub("\n", "\r\n")
+	url = url:gsub("([^%w ])", char_to_hex)
+	url = url:gsub(" ", "+")
+	return url
+end
+
+local hex_to_char = function(x)
+	return string.char(tonumber(x, 16))
+end
+
+urldecode = function(url)
+	if url == nil then
+		return
+	end
+	url = url:gsub("+", " ")
+	url = url:gsub("%%(%x%x)", hex_to_char)
+	return url
+end
+--#endregion
+
+--#endregion
+
+--[ GLOBALS ]--
+
+local invalid_version -- Flag used to notify of an outdated version
+local deny_tp_ui_id
+local previous_game_settings
+
+--[ CONSTANTS ]--
+--#region
+
+local SAVE_NAME = "CC_Autosave"
+local STEAM_ID_MIN = "76561197960265729"
+local LINE = "---------------------------------------------------------------------------"
 
 local ABOUT = {
 	{title = "ScriptVersion:", text = ScriptVersion},
@@ -183,8 +376,6 @@ local ABOUT = {
 	{title = "Github:", text = "https://github.com/carsakiller/Carsas-Commands"},
 	{title = "More Info:", text = "For more info, I recommend checking out the github page"}
 }
-
-local SAVE_NAME = "CC_Autosave"
 
 local DEV_STEAM_IDS = {
 	["76561197976988654"] = true, --Deltars
@@ -198,222 +389,20 @@ local DEV_STEAM_IDS = {
 	["76561198038082317"] = true, --NJersey
 }
 
-local PREFERENCE_DEFAULTS = {
-	equipOnRespawn = {
-		value = true,
-		type = {"bool"}
-	},
-	keepInventory = {
-		value = false,
-		type = {"bool"}
-	},
-	removeVehicleOnLeave = {
-		value = true,
-		type = {"bool"}
-	},
-	maxVoxels = {
-		value = 0,
-		type = {"number"}
-	},
-	startEquipmentA = {
-		value = 0,
-		type = {"number"}
-	},
-	startEquipmentB = {
-		value = 15,
-		type = {"number"}
-	},
-	startEquipmentC = {
-		value = 6,
-		type = {"number"}
-	},
-	startEquipmentD = {
-		value = 11,
-		type = {"number"}
-	},
-	startEquipmentE = {
-		value = 0,
-		type = {"number"}
-	},
-	startEquipmentF = {
-		value = 0,
-		type = {"number"}
-	},
-	welcomeNew = {
-		value = false,
-		type = {"bool", "text"}
-	},
-	welcomeReturning = {
-		value = false,
-		type = {"bool", "text"}
-	},
-	companion = {
-		value = false,
-		type = {"bool"}
-	}
+local TYPE_ABBREVIATIONS = {
+	string = "text",
+	number = "num",
+	table = "tbl",
+	bool = "bool",
+	playerID = "text/num",
+	vehicleID = "num",
+	steam_id = "num",
+	text = "text",
+	letter = "letter"
 }
 
-local PLAYER_DATA_DEFAULTS = {
-	name = "unknown",
-}
-
-local DEFAULT_ROLES = {
-	Owner = {
-		active = true,
-		admin = true,
-		auth = true,
-		members = {}
-	},
-	-- users with this role will receive notices when something important is changed
-	Supervisor = {
-		active = true,
-		members = {}
-	},
-	Admin = {
-		commands = {
-			addAlias = true,
-			addRole = true,
-			addRule = true,
-			bailout = true,
-			banPlayer = true,
-			banned = true,
-			cc = true,
-			ccHelp = true,
-			clearRadiation = true,
-			clearVehicle = true,
-			equip = true,
-			equipmentIDs = true,
-			equipp = true,
-			gameSettings = true,
-			giveRole = true,
-			heal = true,
-			kill = true,
-			playerPerms = true,
-			playerRoles = true,
-			position = true,
-			preferences = true,
-			removeAlias = true,
-			removeRole = true,
-			removeRule = true,
-			resetPref = true,
-			respawn = true,
-			revokeRole = true,
-			roleAccess = true,
-			rolePerms = true,
-			roles = true,
-			roleStatus = true,
-			rules = true,
-			setEditable = true,
-			setGameSetting = true,
-			setPref = true,
-			tp2me = true,
-			tp2v = true,
-			tpLocations = true,
-			tpb = true,
-			tpc = true,
-			tpl = true,
-			tpp = true,
-			tps = true,
-			tpv = true,
-			unban = true,
-			vehicleIDs = true,
-			vehicleInfo = true,
-			vehicleList = true,
-			whisper = true,
-		},
-		active = true,
-		admin = true,
-		auth = true,
-		members = {}
-	},
-	Moderator = {
-		commands = {
-			banPlayer = true,
-			banned = true,
-			cc = true,
-			ccHelp = true,
-			clearRadiation = true,
-			clearVehicle = true,
-			equip = true,
-			equipmentIDs = true,
-			equipp = true,
-			heal = true,
-			playerPerms = true,
-			playerRoles = true,
-			position = true,
-			preferences = true,
-			respawn = true,
-			roles = true,
-			rules = true,
-			setEditable = true,
-			tp2v = true,
-			tpLocations = true,
-			tpb = true,
-			tpc = true,
-			tpl = true,
-			tpp = true,
-			tps = true,
-			tpv = true,
-			unban = true,
-			vehicleIDs = true,
-			vehicleInfo = true,
-			vehicleList = true,
-			whisper = true,
-		},
-		active = true,
-		admin = true,
-		auth = true,
-		members = {}
-	},
-	Auth = {
-		commands = {
-			setEditable = true
-		},
-		active = true,
-		admin = false,
-		auth = true,
-		members = {}
-	},
-	Everyone = {
-		commands = {
-			aliases = true,
-			rules = true,
-			roles = true,
-			vehicleList = true,
-			vehicleIDs = true,
-			vehicleInfo = true,
-			respawn = true,
-			playerRoles = true,
-			playerPerms = true,
-			position = true,
-			heal = true,
-			equip = true,
-			tpb = true,
-			tpc = true,
-			tpl = true,
-			tpp = true,
-			tpv = true,
-			tps = true,
-			tp2v = true,
-			cc = true,
-			ccHelp = true,
-			equipmentIDs = true,
-			tpLocations = true,
-			whisper = true,
-			gameSettings = true
-		},
-		active = true,
-		admin = false,
-		auth = true,
-		members = {}
-	},
-	Prank = {
-		active = true,
-		admin = false,
-		auth = false,
-		members = {}
-	}
-}
+--[ GAME DATA ]--
+--#region
 
 local GAME_SETTING_OPTIONS = {
 	"third_person",
@@ -453,7 +442,11 @@ local GAME_SETTING_OPTIONS = {
 	-- sunset
 }
 
-local EQUIPMENT_SIZE_NAMES = {"Large", "Small", "Outfit"}
+local EQUIPMENT_SIZE_NAMES = {
+	"Large",
+	"Small",
+	"Outfit"
+}
 
 local EQUIPMENT_SLOTS = {
 	{size = 1, letter = "A"},
@@ -774,17 +767,225 @@ local EQUIPMENT_DATA = {
 		}
 	} --30
 }
+--#endregion
 
-local TYPE_ABBREVIATIONS = {
-	string = "text",
-	number = "num",
-	table = "tbl",
-	bool = "bool",
-	playerID = "text/num",
-	vehicleID = "num",
-	steam_id = "num",
-	text = "text",
-	letter = "letter"
+-- [ DEFAULTS ]--
+--#region
+local PREFERENCE_DEFAULTS = {
+	equipOnRespawn = {
+		value = true,
+		type = {"bool"}
+	},
+	keepInventory = {
+		value = false,
+		type = {"bool"}
+	},
+	removeVehicleOnLeave = {
+		value = true,
+		type = {"bool"}
+	},
+	maxVoxels = {
+		value = 0,
+		type = {"number"}
+	},
+	startEquipmentA = {
+		value = 0,
+		type = {"number"}
+	},
+	startEquipmentB = {
+		value = 15,
+		type = {"number"}
+	},
+	startEquipmentC = {
+		value = 6,
+		type = {"number"}
+	},
+	startEquipmentD = {
+		value = 11,
+		type = {"number"}
+	},
+	startEquipmentE = {
+		value = 0,
+		type = {"number"}
+	},
+	startEquipmentF = {
+		value = 0,
+		type = {"number"}
+	},
+	welcomeNew = {
+		value = false,
+		type = {"bool", "text"}
+	},
+	welcomeReturning = {
+		value = false,
+		type = {"bool", "text"}
+	},
+	companion = {
+		value = false,
+		type = {"bool"}
+	}
+}
+
+local PLAYER_DATA_DEFAULTS = {
+	name = "unknown",
+}
+
+local DEFAULT_ROLES = {
+	Owner = {
+		active = true,
+		admin = true,
+		auth = true,
+		members = {}
+	},
+	-- users with this role will receive notices when something important is changed
+	Supervisor = {
+		active = true,
+		members = {}
+	},
+	Admin = {
+		commands = {
+			addAlias = true,
+			addRole = true,
+			addRule = true,
+			bailout = true,
+			banPlayer = true,
+			banned = true,
+			cc = true,
+			ccHelp = true,
+			clearRadiation = true,
+			clearVehicle = true,
+			equip = true,
+			equipmentIDs = true,
+			equipp = true,
+			gameSettings = true,
+			giveRole = true,
+			heal = true,
+			kill = true,
+			playerPerms = true,
+			playerRoles = true,
+			position = true,
+			preferences = true,
+			removeAlias = true,
+			removeRole = true,
+			removeRule = true,
+			resetPref = true,
+			respawn = true,
+			revokeRole = true,
+			roleAccess = true,
+			rolePerms = true,
+			roles = true,
+			roleStatus = true,
+			rules = true,
+			setEditable = true,
+			setGameSetting = true,
+			setPref = true,
+			tp2me = true,
+			tp2v = true,
+			tpLocations = true,
+			tpb = true,
+			tpc = true,
+			tpl = true,
+			tpp = true,
+			tps = true,
+			tpv = true,
+			unban = true,
+			vehicleIDs = true,
+			vehicleInfo = true,
+			vehicleList = true,
+			whisper = true,
+		},
+		active = true,
+		admin = true,
+		auth = true,
+		members = {}
+	},
+	Moderator = {
+		commands = {
+			banPlayer = true,
+			banned = true,
+			cc = true,
+			ccHelp = true,
+			clearRadiation = true,
+			clearVehicle = true,
+			equip = true,
+			equipmentIDs = true,
+			equipp = true,
+			heal = true,
+			playerPerms = true,
+			playerRoles = true,
+			position = true,
+			preferences = true,
+			respawn = true,
+			roles = true,
+			rules = true,
+			setEditable = true,
+			tp2v = true,
+			tpLocations = true,
+			tpb = true,
+			tpc = true,
+			tpl = true,
+			tpp = true,
+			tps = true,
+			tpv = true,
+			unban = true,
+			vehicleIDs = true,
+			vehicleInfo = true,
+			vehicleList = true,
+			whisper = true,
+		},
+		active = true,
+		admin = true,
+		auth = true,
+		members = {}
+	},
+	Auth = {
+		commands = {
+			setEditable = true
+		},
+		active = true,
+		admin = false,
+		auth = true,
+		members = {}
+	},
+	Everyone = {
+		commands = {
+			aliases = true,
+			rules = true,
+			roles = true,
+			vehicleList = true,
+			vehicleIDs = true,
+			vehicleInfo = true,
+			respawn = true,
+			playerRoles = true,
+			playerPerms = true,
+			position = true,
+			heal = true,
+			equip = true,
+			tpb = true,
+			tpc = true,
+			tpl = true,
+			tpp = true,
+			tpv = true,
+			tps = true,
+			tp2v = true,
+			cc = true,
+			ccHelp = true,
+			equipmentIDs = true,
+			tpLocations = true,
+			whisper = true,
+			gameSettings = true
+		},
+		active = true,
+		admin = false,
+		auth = true,
+		members = {}
+	},
+	Prank = {
+		active = true,
+		admin = false,
+		auth = false,
+		members = {}
+	}
 }
 
 local DEFAULT_ALIASES = {
@@ -803,19 +1004,12 @@ local DEFAULT_ALIASES = {
 	tpls = "tpLocations",
 	w = "whisper"
 }
-
-local STEAM_ID_MIN = "76561197960265729"
-local deny_tp_ui_id
-local previous_game_settings
-
-local LINE = "---------------------------------------------------------------------------"
+--#endregion
+--#endregion
 
 
--- "CLASSES" --
-local Player, Role, Vehicle = {}, {}, {}
-
-
--- GENERAL HELPER FUNCTIONS --
+--[ GENERAL HELPER FUNCTIONS ]--
+--#region
 
 ---compares two version strings
 ---@param v string the first version string
@@ -1001,10 +1195,112 @@ function prettyFormatCommand(command_name, include_arguments, include_types, inc
 	return "?" .. command_name, text
 end
 
+---Checks whether a tp's coordinates are valid or if they would teleport something off-map and break things
+---@param target_matrix table The matrix that things are being teleported to
+---@return boolean is_valid If the requested coords are valid or are nill / off-map
+---@return string? title A title to explain why the coords are invalid, or nil if it is valid
+---@return string? statusText Some text to explain why the coords are invalid, or nil if it is valid
+function checkTp(target_matrix)
+	local x, y, z = matrix.position(target_matrix)
+
+	if not x or not y or not z then
+		return false, "INVALID POSITION", "The given position is invalid"
+	end
+
+	if math.abs(x) > 150000 or math.abs(y) > 10000000000 or math.abs(z) > 150000 then
+		return false, "UNSAFE TELEPORT", "You have not been teleported as teleporting to the requested coordinates would brick this save"
+	end
+
+	return true
+end
+
+---Checks if the provided "playerID" is actually valid
+---@param playerID string This could be a peer_id, name, or "me" but it comes here as a string
+---@param caller_id number The peer_id of the player that called this function. Used for translating "me"
+---@return boolean is_valid If the provided playerID is valid
+---@return number|nil peer_id The peer_id of the target playerID
+---@return string|nil err Why the provided playerID is invalid
+function validatePlayerID(playerID, caller_id)
+	local as_num = tonumber(playerID)
+
+	if as_num then
+		if PLAYER_LIST[as_num] then
+			return true, as_num
+		else
+			return false, nil, (playerID .. " is not a valid peerID")
+		end
+	else
+		if playerID == "me" then
+			return true, caller_id
+		elseif playerID ~= nil then
+			local names = {}
+			local peer_ids = {}
+
+			for peer_id, player_data in pairs(PLAYER_LIST) do
+				if peer_ids[player_data.name] then
+					return false, nil, ("Two players have the name \"" .. playerID .. "\". Please use peerIDs instead")
+				end
+				table.insert(names, player_data.name)
+				peer_ids[player_data.name] = peer_id
+			end
+
+			local nearest = fuzzyStringInTable(playerID, names, false)
+			if nearest then
+				return true, peer_ids[nearest]
+			else
+				return false, nil, ("A player with the name \"" .. playerID .. "\" could not be found")
+			end
+		end
+	end
+	return false, nil, "A playerID was not provided"
+end
+
+---Check that some data is of a given type
+---@param data any The data to check
+---@param target_type string The type this data should be
+---@param caller_id number The peer_id of the player calling this function
+---@return boolean is_valid The data is of the same type as target_type
+---@return any|nil converted_value The data converted from whatever it was before (likely a string) to it's true type
+---@return string|nil err Why the data is invalid
+function dataIsOfType(data, target_type, caller_id)
+	local as_num = tonumber(data)
+
+	if target_type == "playerID" then
+		return validatePlayerID(data, caller_id)
+	elseif target_type == "vehicleID" then
+		if not as_num then
+			return false, nil, (tostring(data) .. " is not a number and therefor not a valid vehicleID")
+		end
+		if Vehicle.exists(as_num) then
+			return true, as_num
+		end
+	elseif target_type == "steam_id" then
+		if #data == #STEAM_ID_MIN then
+			return true, data
+		else
+			return false, nil, (data .. " is not a valid steamID")
+		end
+	elseif target_type == "peer_id" then
+		return validatePlayerID(as_num, caller_id)
+	elseif target_type == "number" then
+		return as_num ~= nil, as_num, not as_num and ((data or "nil") .. " is not a valid number")
+	elseif target_type == "bool" then
+		local as_bool = toBool(data)
+		return as_bool ~= nil, as_bool, as_bool == nil and (tostring(data) .. " is not a valid boolean value") or nil
+	elseif target_type == "letter" then
+		local is_letter = isLetter(data)
+		return is_letter, is_letter and data or nil, not is_letter and ((data or "nil") .. " is not a letter") or nil
+	elseif target_type == "string" or target_type == "text" then
+		return data ~= nil, data or nil, not data and (data or "nil") .. " is not a string" or nil
+	else
+		return false, nil, ((data or "nil") .. " is not of a recognized data type")
+	end
+end
+--#endregion
 
 
-
--- ERROR REPORTING FUNCTIONS --
+--[ ERROR REPORTING FUNCTIONS ]--
+--#region
 
 --- general error reporting that includes instructions to report any bugs
 ---@param errorMessage string the message to print to the user
@@ -1018,25 +1314,6 @@ end
 ---@param peer_id number the peer_id of the user to send the message to
 function throwWarning(warningMessage, peer_id)
 	server.announce("WARNING", warningMessage, peer_id or -1)
-end
-
----Checks whether a tp's coordinates are valid or if they would teleport something off-map and break things
----@param target_matrix table The matrix that things are being teleported to
----@return boolean is_valid If the requested coords are valid or are nill / off-map
----@return string? title A title to explain why the coords are invalid, or nil if it is valid
----@return string? statusText Some text to explain why the coords are invalid, or nil if it is valid
-local function checkTp(target_matrix)
-	local x, y, z = matrix.position(target_matrix)
-
-	if not x or not y or not z then
-		return false, "INVALID POSITION", "The given position is invalid"
-	end
-
-	if math.abs(x) > 150000 or math.abs(y) > 10000000000 or math.abs(z) > 150000 then
-		return false, "UNSAFE TELEPORT", "You have not been teleported as teleporting to the requested coordinates would brick this save"
-	end
-
-	return true
 end
 
 ---Tell all players with the supervisor role something important
@@ -1071,9 +1348,16 @@ function tellDebug(title, message)
 		end
 	end
 end
+--#endregion
 
 
+--[ "CLASSES" ]--
+--#region
 
+local Player, Role, Vehicle, Rules = {}, {}, {}, {}
+
+-- PLAYER CLASS --
+--#region
 
 --- get the player's steam id
 ---@param peer_id number The target player's peer_id
@@ -1558,9 +1842,10 @@ function Player.nearestVehicle(peer_id, owner_id)
 
 	return id
 end
+--#endregion
 
-
-
+-- ROLE CLASS --
+--#region
 
 --- creates a new role
 ---@param caller_id number the peer_id of the player calling the command
@@ -1700,9 +1985,10 @@ function Role.onlinePeers(role_name)
 
 	return peerIDs
 end
+--#endregion
 
-
-
+-- VEHICLE CLASS --
+--#region
 
 --- returns the vehicle's name and id in a nice way for user readability
 ---@param vehicle_id number the id of the vehicle
@@ -1738,11 +2024,10 @@ function Vehicle.printList(target_id)
 	end
 	server.announce(" ", LINE, target_id)
 end
+--#endregion
 
-
-
---- RULES --
-local Rules = {}
+--- RULES CLASS --
+--#region
 
 --- prints the list of rules to a specific player
 ---@param target_id number the peer_id to send the list to
@@ -1769,7 +2054,7 @@ end
 ---@return boolean success If the operation succeeded
 ---@return string title A title to explain what happened
 ---@return string statusText Text to explain what happened
-function Rules.addRule(caller_id, position, text)
+function Rules.add(caller_id, position, text)
 	local position = clamp(math.floor(position or #g_rules + 1), 1, #g_rules + 1)
 	table.insert(g_rules, position, text)
 
@@ -1786,7 +2071,7 @@ end
 ---@return boolean success If the operation succeeded
 ---@return string title A title to explain what happened
 ---@return string statusText Text to explain what happened
-function Rules.deleteRule(caller_id, position)
+function Rules.remove(caller_id, position)
 	if #g_rules < position then
 		server.announce("FAILED", "There is no rule #" .. position, caller_id)
 		return
@@ -1796,11 +2081,14 @@ function Rules.deleteRule(caller_id, position)
 	tellSupervisors("RULE REMOVED", "The following rule was removed by " .. Player.prettyName(caller_id) .. ":\nRule #" .. position .. " : " .. text, caller_id)
 	return true, "RULE REMOVED", "The following rule was removed:\nRule #" .. position .. " : " .. text
 end
+--#endregion
 
--- END OF "CLASSES" --
+--#endregion
 
 
--- CALLBACK FUNCTIONS --
+--[ CALLBACK FUNCTIONS ]--
+--#region
+
 function onCreate(is_new)
 	deny_tp_ui_id = server.getMapID()
 
@@ -2022,7 +2310,6 @@ function onVehicleSpawn(vehicle_id, peer_id, x, y, z, cost)
 		PLAYER_LIST[peer_id].latest_spawn = vehicle_id
 	end
 end
-
 
 function onVehicleDespawn(vehicle_id, peer_id)
 	if invalid_version then return end
@@ -2251,8 +2538,11 @@ function onTick()
 		count = count + 1
 	end
 end
+--#endregion
 
 
+--[ COMMAND DATA & EXECUTION ]--
+--#region
 
 --- commands indexed by name
 COMMANDS = {
@@ -2367,7 +2657,7 @@ COMMANDS = {
 				end
 			end
 
-			return Rules.addRule(caller_id, position, text)
+			return Rules.add(caller_id, position, text)
 		end,
 		args = {
 			{name = "text", type = {"text"}, required = true},
@@ -2379,7 +2669,7 @@ COMMANDS = {
 		}
 	},
 	removeRule = {
-		func = Rules.deleteRule,
+		func = Rules.remove,
 		args = {
 			{name = "rule #", type = {"number"}, required = true}
 		},
@@ -3360,89 +3650,6 @@ function handleCompanion(token, command, argstring)
 	return success, title, text
 end
 
----Checks if the provided "playerID" is actually valid
----@param playerID string This could be a peer_id, name, or "me" but it comes here as a string
----@param caller_id number The peer_id of the player that called this function. Used for translating "me"
----@return boolean is_valid If the provided playerID is valid
----@return number|nil peer_id The peer_id of the target playerID
----@return string|nil err Why the provided playerID is invalid
-function validatePlayerID(playerID, caller_id)
-	local as_num = tonumber(playerID)
-
-	if as_num then
-		if PLAYER_LIST[as_num] then
-			return true, as_num
-		else
-			return false, nil, (playerID .. " is not a valid peerID")
-		end
-	else
-		if playerID == "me" then
-			return true, caller_id
-		elseif playerID ~= nil then
-			local names = {}
-			local peer_ids = {}
-
-			for peer_id, player_data in pairs(PLAYER_LIST) do
-				if peer_ids[player_data.name] then
-					return false, nil, ("Two players have the name \"" .. playerID .. "\". Please use peerIDs instead")
-				end
-				table.insert(names, player_data.name)
-				peer_ids[player_data.name] = peer_id
-			end
-
-			local nearest = fuzzyStringInTable(playerID, names, false)
-			if nearest then
-				return true, peer_ids[nearest]
-			else
-				return false, nil, ("A player with the name \"" .. playerID .. "\" could not be found")
-			end
-		end
-	end
-	return false, nil, "A playerID was not provided"
-end
-
----Check that some data is of a given type
----@param data any The data to check
----@param target_type string The type this data should be
----@param caller_id number The peer_id of the player calling this function
----@return boolean is_valid The data is of the same type as target_type
----@return any|nil converted_value The data converted from whatever it was before (likely a string) to it's true type
----@return string|nil err Why the data is invalid
-function dataIsOfType(data, target_type, caller_id)
-	local as_num = tonumber(data)
-
-	if target_type == "playerID" then
-		return validatePlayerID(data, caller_id)
-	elseif target_type == "vehicleID" then
-		if not as_num then
-			return false, nil, (tostring(data) .. " is not a number and therefor not a valid vehicleID")
-		end
-		if Vehicle.exists(as_num) then
-			return true, as_num
-		end
-	elseif target_type == "steam_id" then
-		if #data == #STEAM_ID_MIN then
-			return true, data
-		else
-			return false, nil, (data .. " is not a valid steamID")
-		end
-	elseif target_type == "peer_id" then
-		return validatePlayerID(as_num, caller_id)
-	elseif target_type == "number" then
-		return as_num ~= nil, as_num, not as_num and ((data or "nil") .. " is not a valid number")
-	elseif target_type == "bool" then
-		local as_bool = toBool(data)
-		return as_bool ~= nil, as_bool, as_bool == nil and (tostring(data) .. " is not a valid boolean value") or nil
-	elseif target_type == "letter" then
-		local is_letter = isLetter(data)
-		return is_letter, is_letter and data or nil, not is_letter and ((data or "nil") .. " is not a letter") or nil
-	elseif target_type == "string" or target_type == "text" then
-		return data ~= nil, data or nil, not data and (data or "nil") .. " is not a string" or nil
-	else
-		return false, nil, ((data or "nil") .. " is not of a recognized data type")
-	end
-end
-
 ---Looks through all of the commands to find the one requested. Also prepares arguments to be forwarded to requested command function
 ---@param peer_id number The peer_id of the player that used the command
 ---@param command string The name of the command that the user entered
@@ -3613,18 +3820,13 @@ function onCustomCommand(message, caller_id, admin, auth, command, ...)
 		server.announce(title, text, caller_id)
 	end
 end
+--#endregion
 
 
 
 
-
-
-
------ PONY STUFF
-
-
-
-
+--[ CARSA'S COMPANION ]--
+--#region
 
 --[[ Helpers ]]--
 
@@ -3987,235 +4189,4 @@ function httpReply(port, url, response_body)
 		end
 	end
 end
-
-
-
---[[
-
-
-
-Third Party Libraries
-
-
-
-
-
---]]
-
-
-
-
---[[ json.lua https://gist.github.com/tylerneylon/59f4bcf316be525b30ab
-A compact pure-Lua JSON library.
-The main functions are: json.stringify, json.parse.
-## json.stringify:
-This expects the following to be true of any tables being encoded:
- * They only have string or number keys. Number keys must be represented as
-	 strings in json; this is part of the json spec.
- * They are not recursive. Such a structure cannot be specified in json.
-A Lua table is considered to be an array if and only if its set of keys is a
-consecutive sequence of positive integers starting at 1. Arrays are encoded like
-so: [2, 3, false, "hi"]. Any other type of Lua table is encoded as a json
-object, encoded like so: {"key1": 2, "key2": false}.
-Because the Lua nil value cannot be a key, and as a table value is considerd
-equivalent to a missing key, there is no way to express the json "null" value in
-a Lua table. The only way this will output "null" is if your entire input obj is
-nil itself.
-An empty Lua table, {}, could be considered either a json object or array -
-it's an ambiguous edge case. We choose to treat this as an object as it is the
-more general type.
-To be clear, none of the above considerations is a limitation of this code.
-Rather, it is what we get when we completely observe the json specification for
-as arbitrary a Lua object as json is capable of expressing.
-## json.parse:
-This function parses json, with the exception that it does not pay attention to
-\u-escaped unicode code points in strings.
-It is difficult for Lua to return null as a value. In order to prevent the loss
-of keys with a null value in a json string, this function uses the one-off
-table value json.null (which is just an empty table) to indicate null values.
-This way you can check if a value is null with the conditional
-val == json.null.
-If you have control over the data and are using Lua, I would recommend just
-avoiding null values in your data to begin with.
---]]
-
-
-json = {}
-
-
--- Internal functions.
-
-function kind_of(obj)
-	if type(obj) ~= 'table' then return type(obj) end
-	local i = 1
-	for _ in pairs(obj) do
-		if obj[i] ~= nil then i = i + 1 else return 'table' end
-	end
-	if i == 1 then return 'table' else return 'array' end
-end
-
-function escape_str(s)
-	local in_char  = {'\\', '"', '/', '\b', '\f', '\n', '\r', '\t'}
-	local out_char = {'\\', '"', '/',  'b',  'f',  'n',  'r',  't'}
-	for i, c in ipairs(in_char) do
-		s = s:gsub(c, '\\' .. out_char[i])
-	end
-	return s
-end
-
--- Returns pos, did_find; there are two cases:
--- 1. Delimiter found: pos = pos after leading space + delim; did_find = true.
--- 2. Delimiter not found: pos = pos after leading space;     did_find = false.
--- This throws an error if err_if_missing is true and the delim is not found.
-function skip_delim(str, pos, delim, err_if_missing)
-	pos = pos + #str:match('^%s*', pos)
-	if str:sub(pos, pos) ~= delim then
-		if err_if_missing then
-			webSyncError('Expected ' .. delim .. ' near position ' .. pos)
-		end
-		return pos, false
-	end
-	return pos + 1, true
-end
-
--- Expects the given pos to be the first character after the opening quote.
--- Returns val, pos; the returned pos is after the closing quote character.
-function parse_str_val(str, pos, val)
-	val = val or ''
-	local early_end_error = 'End of input found while parsing string.'
-	if pos > #str then webSyncError(early_end_error) end
-	local c = str:sub(pos, pos)
-	if c == '"'  then return val, pos + 1 end
-	if c ~= '\\' then return parse_str_val(str, pos + 1, val .. c) end
-	-- We must have a \ character.
-	local esc_map = {b = '\b', f = '\f', n = '\n', r = '\r', t = '\t'}
-	local nextc = str:sub(pos + 1, pos + 1)
-	if not nextc then webSyncError(early_end_error) end
-	return parse_str_val(str, pos + 2, val .. (esc_map[nextc] or nextc))
-end
-
--- Returns val, pos; the returned pos is after the number's final character.
-function parse_num_val(str, pos)
-	local num_str = str:match('^-?%d+%.?%d*[eE]?[+-]?%d*', pos)
-	local val = tonumber(num_str)
-	if not val then webSyncError('Error parsing number at position ' .. pos .. '.') end
-	return val, pos + #num_str
-end
-
--- Public values and functions.
-
-function json.stringify(obj, as_key)
-	local s = {}  -- We'll build the string as an array of strings to be concatenated.
-	local kind = kind_of(obj)  -- This is 'array' if it's an array or type(obj) otherwise.
-	if kind == 'array' then
-		if as_key then webSyncError('Can\'t encode array as key.') end
-		s[#s + 1] = '['
-		for i, val in ipairs(obj) do
-			if i > 1 then s[#s + 1] = ', ' end
-			s[#s + 1] = json.stringify(val)
-		end
-		s[#s + 1] = ']'
-	elseif kind == 'table' then
-		if as_key then webSyncError('Can\'t encode table as key.') end
-		s[#s + 1] = '{'
-		for k, v in pairs(obj) do
-			if #s > 1 then s[#s + 1] = ', ' end
-			s[#s + 1] = json.stringify(k, true)
-			s[#s + 1] = ':'
-			s[#s + 1] = json.stringify(v)
-		end
-		s[#s + 1] = '}'
-	elseif kind == 'string' then
-		return '"' .. escape_str(obj) .. '"'
-	elseif kind == 'number' then
-		if as_key then return '"' .. tostring(obj) .. '"' end
-		return tostring(obj)
-	elseif kind == 'boolean' then
-		return tostring(obj)
-	elseif kind == 'nil' then
-		return 'null'
-	else
-		webSyncError('Unjsonifiable type: ' .. kind .. '.')
-	end
-	return table.concat(s)
-end
-
-json.null = {}  -- This is a one-off table to represent the null value.
-
-function json.parse(str, pos, end_delim)
-	pos = pos or 1
-	if pos > #str then webSyncError('Reached unexpected end of input.') end
-	local pos = pos + #str:match('^%s*', pos)  -- Skip whitespace.
-	local first = str:sub(pos, pos)
-	if first == '{' then  -- Parse an object.
-		local obj, key, delim_found = {}, true, true
-		pos = pos + 1
-		while true do
-			key, pos = json.parse(str, pos, '}')
-			if key == nil then return obj, pos end
-			if not delim_found then webSyncError('Comma missing between object items.') end
-			pos = skip_delim(str, pos, ':', true)  -- true -> error if missing.
-			obj[key], pos = json.parse(str, pos)
-			pos, delim_found = skip_delim(str, pos, ',')
-		end
-	elseif first == '[' then  -- Parse an array.
-		local arr, val, delim_found = {}, true, true
-		pos = pos + 1
-		while true do
-			val, pos = json.parse(str, pos, ']')
-			if val == nil then return arr, pos end
-			if not delim_found then webSyncError('Comma missing between array items.') end
-			arr[#arr + 1] = val
-			pos, delim_found = skip_delim(str, pos, ',')
-		end
-	elseif first == '"' then  -- Parse a string.
-		return parse_str_val(str, pos + 1)
-	elseif first == '-' or first:match('%d') then  -- Parse a number.
-		return parse_num_val(str, pos)
-	elseif first == end_delim then  -- End of an object or array.
-		return nil, pos + 1
-	else  -- Parse true, false, or null.
-		local literals = {['true'] = true, ['false'] = false, ['null'] = json.null}
-		for lit_str, lit_val in pairs(literals) do
-			local lit_end = pos + #lit_str - 1
-			if str:sub(pos, lit_end) == lit_str then return lit_val, lit_end + 1 end
-		end
-		local pos_info_str = 'position ' .. pos .. ': ' .. str:sub(pos, pos + 10)
-		webSyncError('Invalid json syntax starting at ' .. pos_info_str)
-	end
-end
-
-
-
-
-
--- ref: https://gist.github.com/ignisdesign/4323051
--- ref: http://stackoverflow.com/questions/20282054/how-to-urldecode-a-request-uri-string-in-lua
--- to encode table as parameters, see https://github.com/stuartpb/tvtropes-lua/blob/master/urlencode.lua
-
-local char_to_hex = function(c)
-	return string.format("%%%02X", string.byte(c))
-end
-
-function urlencode(url)
-	if url == nil then
-		return
-	end
-	url = url:gsub("\n", "\r\n")
-	url = url:gsub("([^%w ])", char_to_hex)
-	url = url:gsub(" ", "+")
-	return url
-end
-
-local hex_to_char = function(x)
-	return string.char(tonumber(x, 16))
-end
-
-urldecode = function(url)
-	if url == nil then
-		return
-	end
-	url = url:gsub("+", " ")
-	url = url:gsub("%%(%x%x)", hex_to_char)
-	return url
-end
+--#endregion
