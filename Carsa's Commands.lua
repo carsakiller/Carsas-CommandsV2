@@ -1,8 +1,15 @@
+-- CARSA'S COMMANDS
+---@version 2.0.0
+
+---@alias peer_id number
+---@alias steam_id string
+---@alias vehicle_id number
+---@alias matrix table<number, number>
+
 local debugMessages = true
 
 local ScriptVersion = "2.0.0"
 local SaveDataVersion = "2.0.0"
-
 
 --[ LIBRARIES ]--
 --#region
@@ -356,17 +363,22 @@ end
 
 --#endregion
 
+
 --[ GLOBALS ]--
 
 local invalid_version -- Flag used to notify of an outdated version
-local deny_tp_ui_id
 local previous_game_settings
+local deny_tp_ui_id
+
 
 --[ CONSTANTS ]--
 --#region
 
 local SAVE_NAME = "CC_Autosave"
 local STEAM_ID_MIN = "76561197960265729"
+local BUTTON_PREFIX = "?cc"
+
+
 local LINE = "---------------------------------------------------------------------------"
 
 local ABOUT = {
@@ -1054,17 +1066,6 @@ function toBool(value)
 	return lookup[string.lower(tostring(value))]
 end
 
---- gets the list of players and returns it indexed by peer_id
----@return table new_format The player list table indexed by peer_id
-function getPlayerList()
-	local new_format = {}
-	local list = server.getPlayers()
-	for k, v in ipairs(list) do
-		new_format[v.id] = {steam_id = tostring(v.steam_id), name = v.name}
-	end
-	return new_format
-end
-
 --- checks if the passed string is a single letter
 ---@param l string the string to check
 ---@return boolean is_letter Is the string is a letter or not
@@ -1094,24 +1095,6 @@ function exploreTable(root, path)
 	else
 		return nil
 	end
-end
-
---- sorts the keys of a table
----@param t table the table that will have it's keys sorted
----@param descending boolean if the sort should be in descending order
----@return table sorted_table table containing the keys of t as values in sorted order
-function sortKeys(t, descending)
-	local sorted = {}
-	for k, v in pairs(t) do
-		table.insert(sorted, k)
-	end
-
-	if descending then
-		table.sort(sorted, function(a, b) return a > b end)
-	else
-		table.sort(sorted)
-	end
-	return sorted
 end
 
 --- used to find most similar string in table
@@ -1224,7 +1207,7 @@ function validatePlayerID(playerID, caller_id)
 	local as_num = tonumber(playerID)
 
 	if as_num then
-		if PLAYER_LIST[as_num] then
+		if STEAM_IDS[as_num] then
 			return true, as_num
 		else
 			return false, nil, (playerID .. " is not a valid peerID")
@@ -1236,7 +1219,7 @@ function validatePlayerID(playerID, caller_id)
 			local names = {}
 			local peer_ids = {}
 
-			for peer_id, player_data in pairs(PLAYER_LIST) do
+			for peer_id, player_data in pairs(STEAM_IDS) do
 				if peer_ids[player_data.name] then
 					return false, nil, ("Two players have the name \"" .. playerID .. "\". Please use peerIDs instead")
 				end
@@ -1271,7 +1254,7 @@ function dataIsOfType(data, target_type, caller_id)
 		if not as_num then
 			return false, nil, (tostring(data) .. " is not a number and therefor not a valid vehicleID")
 		end
-		if Vehicle.exists(as_num) then
+		if G_vehicles.get(as_num) then
 			return true, as_num
 		end
 	elseif target_type == "steam_id" then
@@ -1296,24 +1279,71 @@ function dataIsOfType(data, target_type, caller_id)
 		return false, nil, ((data or "nil") .. " is not of a recognized data type")
 	end
 end
---#endregion
 
+---Decodes the equip arguments and calls equip on the target
+---@param caller Player The player to run equip on
+---@param notify steam_id The steam_id of the player to notify about the status of the equip
+---@param ... any equip args
+---@return any results The results of `caller.equip()`
+function equipArgumentDecode(caller, notify, ...)
+	local args = {...}
+	local args_to_pass = {}
 
---[ ERROR REPORTING FUNCTIONS ]--
---#region
-
---- general error reporting that includes instructions to report any bugs
----@param errorMessage string the message to print to the user
----@param peer_id number the peer_id of the user to send the message to
-function throwError(errorMessage, peer_id)
-	server.announce("ERROR", errorMessage .. ". Please visit the GitHub page for this script to file a bug report. https://github.com/carsakiller/Carsas-Commands", peer_id or -1)
+	for _, v in ipairs(args) do
+		if isLetter(v) then
+			args_to_pass.slot = string.upper(v)
+		else
+			table.insert(args_to_pass, v)
+		end
+	end
+	return caller.equip(notify, args_to_pass.slot or false, table.unpack(args_to_pass))
 end
 
---- warn of non-critical issue
----@param warningMessage string the message to print to the user
----@param peer_id number the peer_id of the user to send the message to
-function throwWarning(warningMessage, peer_id)
-	server.announce("WARNING", warningMessage, peer_id or -1)
+---Assists in paginating data from a table
+---@param page number The page you want to display
+---@param data_table table The table of data to paginate
+---@param entries_per_page number The number of entries you want per page
+---@return number page The actual page being displayed
+---@return number max_page The max number of pages needed to display the data
+---@return number start_index The start index that should be used for looping through the `data_table` and printing
+---@return number end_index The end index that should be used for looping through the `data_table` and printing
+function paginate(page, data_table, entries_per_page)
+    local max_page = math.max(1, math.ceil(#data_table / entries_per_page))
+    page = clamp(page, 1, max_page)
+    local start_index = (page - 1) * entries_per_page + 1
+    local end_index = math.min(#data_table, page * entries_per_page)
+    
+    return page, max_page, start_index, end_index
+end
+
+---Quotes text
+---@param text string The text to put in quotes
+---@return string quoted_text The text in quotes
+function quote(text)
+	return string.format("\"%s\"", tostring(text))
+end
+
+---Get the keys from a table and optionally sort them
+---@param t table The table to get the keys from
+---@param sort boolean If the keys should be sorted. Else, order is not guaranteed
+---@param reverse_sort boolean If the keys should be sorted in ascending order rather than descending order
+---@return table keys The keys from the table
+function getTableKeys(t, sort, reverse_sort)
+	local keys = {}
+
+	for k, _ in pairs(t) do
+		table.insert(keys, k)
+	end
+
+	if sort then
+		if reverse_sort then
+			table.sort(keys, function(a, b) return a > b end)
+		else
+			table.sort(keys)
+		end
+	end
+
+	return keys
 end
 
 ---Tell all players with the supervisor role something important
@@ -1334,184 +1364,411 @@ function tellSupervisors(title, message, ...)
 		server.announce(title, message, peer_id)
 	end
 end
+--#endregion
 
---- Whisper to admins/owners subscribed to debugging infos.
----@param title string the title of the message.
----@param message string the message.
-function tellDebug(title, message)
-	-- todo individual subscriptions
 
-	if not debugMessages then return end
-	for k, v in pairs(PLAYER_LIST) do
-		if Player.hasRole(k, "Owner") then
-			server.announce(title, message, k)
+--[ SOOP ]--
+--#region
+
+---Creates a new object from a class
+---@param class table A class like `Players` or `Role`
+---@return table object A new object created using a class
+function new(class, ...)
+	local obj = {}
+
+	for k, v in pairs(class) do
+		if type(v) == "function" then
+			-- replace every function with a middleware function that sets the "self" argument
+			obj[k] = function(...)
+				return v(obj, ...)
+			end
 		end
+	end
+
+	obj.constructor(...)
+	return obj
+end
+
+---serializes an object for storing to g_savedata
+---@param object table The object to serialize
+---@return table data The serialized object data to save
+function serialize(object)
+	local data = {}
+	for k, v in pairs(object) do
+		if type(v) ~= "function" then
+			data[k] = v
+		end
+	end
+	return data
+end
+
+
+
+---Class that defines each role
+---@class Role
+local Role = {}
+--#region
+
+---Creates a role object
+---@param self Role This role object's instance
+---@param name string The name of the new role
+---@param active? boolean If this role should be active by default
+---@param admin? boolean If this role should give it's members admin privileges
+---@param auth? boolean If this role should give it's members auth privileges
+---@param commands? table A table indexed by command names with a value of true for each command this role should give access to
+---@param members table? A table indexed by the `steam_ids` of the players that have this role
+function Role.constructor(self, name, active, admin, auth, commands, members)
+	self.name = name
+	self.active = active or true
+	self.admin = admin or false
+	self.auth = auth or false
+	self.commands = commands or {}
+	self.members = members or {}
+
+	self.save()
+end
+
+---Save this role to g_savedata
+---@param self Role This role object's instance
+function Role.save(self)
+	g_savedata.roles[self.name] = serialize(self)
+end
+
+---Adds a player to this role
+---@param self Role This role object's instance
+---@param player Player The target player's object instance
+function Role.addMember(self, player)
+	self.members[player.steam_id] = true
+	player.updatePrivileges()
+
+	self.save()
+end
+
+---Removes a player from this role
+---@param self Role This role object's instance
+---@param player Player The target player's object instance
+function Role.removeMember(self, player)
+	self.members[player.steam_id] = nil
+	player.updatePrivileges()
+
+	self.save()
+end
+
+---Sets the active state of this role
+---@param self Role This role object's instance
+---@param state boolean If this role should be enabled or disabled
+---@return boolean state The new state of this role
+function Role.setState(self, state)
+	self.active = state
+	self.updateMembers()
+
+	self.save()
+
+	return self.active
+end
+
+---Set the stormworks permissions of this role
+---@param self Role This role object's instance
+---@param admin boolean If this role should grant or deny admin privileges
+---@param auth boolean If this role should grant or deny auth privileges
+---@return boolean change_made If a change was made to the permissions or they are the same as before
+function Role.setPermissions(self, admin, auth)
+	local change = false
+	if self.admin ~= admin or self.auth ~= auth then
+		change = true
+	end
+
+	self.admin = admin
+	self.auth = auth
+
+	if change then
+		self.updateMembers()
+	end
+
+	self.save()
+
+	return change
+end
+
+---Add access to a command for this role
+---@param self Role This role object's instance
+---@param command string The name of the command to give access to
+function Role.addCommandAccess(self, command)
+	self.commands[command] = true
+	self.updateMembers()
+
+	self.save()
+end
+
+---Remove access to a command for this role
+---@param self Role This role object's instance
+---@param command string The name of the command to remove access to
+function Role.removeCommandAccess(self, command)
+	self.commands[command] = nil
+	self.updateMembers()
+
+	self.save()
+end
+
+---Update the permissions for all the members of this role
+---@param self Role This role object's instance
+function Role.updateMembers(self)
+	for steam_id, player in pairs(self.members) do
+		player.updatePrivileges()
 	end
 end
 --#endregion
 
 
---[ "CLASSES" ]--
+---Class that defines the object that contains all of the role objects
+---@class RoleContainer
+local RoleContainer = {}
 --#region
 
-local Player, Role, Vehicle, Rules = {}, {}, {}, {}
-
--- PLAYER CLASS --
---#region
-
---- get the player's steam id
----@param peer_id number The target player's peer_id
----@return string steam_id The player's steam ID
-function Player.getSteamID(peer_id)
-	return PLAYER_LIST[peer_id].steam_id or nil
+---Creates a role container object
+---@param self RoleContainer This role container object's instance
+function RoleContainer.constructor(self)
+	self.roles = {}
 end
 
---- get the player's data table
----@param peer_id number The target player's peer_id
----@return table persistent_data The player's persistent data table
-function Player.getData(peer_id)
-	return g_playerData[Player.getSteamID(peer_id)]
+---Creates a role and adds it to this roles container
+---@param self RoleContainer This role container object's instance
+---@param role string The name of the new role
+---@param active boolean? If the role is active or not
+---@param admin boolean? If the role grants admin permissions
+---@param auth boolean? If the role grants auth permissions
+---@param commands table? A table indexed by the names of the commands this role should have access to
+---@param members table? A table indexed by the `steam_ids` of the players that have this role
+---@return boolean success If the role was created successfully
+---@return string err Why the role was/wasn't created
+---@return string errText Text explaining why the role was/wasn't created
+function RoleContainer.create(self, role, active, admin, auth, commands, members)
+	if self.roles[role] then
+		return false, "ROLE ALREADY EXISTS", "The role \"" .. role .. "\" already exists"
+	end
+	self.roles[role] = new(Role, role, active, admin, auth, commands, members)
+	return true, "ROLE CREATED", string.format("\"%s\" has been created", role)
 end
 
---- bans a player by peer or steam id
----@param caller_id number the peer id of the admin that is banning the player
----@param id number|string The peer id of the player as a number or the steam_id of the player as a string
----@return boolean success If the operation succeeded
----@return string title A title to explain what happened
----@return string statusText Text to explain what happened
-function Player.ban(caller_id, id)
-	local steam_id = id
-	if #tostring(id) < #STEAM_ID_MIN then -- peer_id was given
-		if not PLAYER_LIST[id] then -- peer_id is not a valid one
-			return false, "INVALID ARG", id .. " is not a valid peer_id of an online player"
-		end
-		steam_id = Player.getSteamID(id)
-		if steam_id == Player.getSteamID(caller_id) then
-			return false, "INVALID ARG", "You cannot ban yourself"
-		end
-		g_banned[steam_id] = Player.getSteamID(caller_id)
-		server.save(SAVE_NAME)
-		server.kickPlayer(id)
-		tellSupervisors("PLAYER BANNED", Player.prettyName(id) .. " was banned from the server by " .. Player.prettyName(caller_id), caller_id)
-		return true, "PLAYER BANNED", Player.prettyName(id) .. " was banned"
+---Deletes a role
+---@param self RoleContainer This role container object's instance
+---@param role string The name of the role to delete
+---@return boolean success If the role was deleted successfully
+---@return string err Why the real was/wasn't created
+---@return string errText Text explaining why the role was/wasn't deleted
+function RoleContainer.delete(self, role)
+	if not self.roles[role] then
+		return false, "ROLE NOT FOUND", "\"" .. role .. "\" is not a valid role"
 	end
-	-- steam_id was given
-	if id == Player.getSteamID(caller_id) then
-		return false, "INVALID ARG", "You cannot ban yourself"
-	end
-	if not g_playerData[id] then
-		g_playerData[id] = deepCopyTable(PLAYER_DATA_DEFAULTS)
-	end
-	g_banned[id] = Player.getSteamID(caller_id)
-	server.save(SAVE_NAME)
-
-	-- if player is currently on server, kick them
-	if g_playerData[steam_id].peer_id then
-		server.kickPlayer(g_playerData[steam_id].peer_id)
-	end
-	local banned_name = g_playerData[steam_id].name or "unknown"
-	tellSupervisors("PLAYER BANNED", string.format("%s(%s)", banned_name, id) .. " was banned from the server by " .. Player.prettyName(caller_id), caller_id)
-	return true, "PLAYER BANNED", string.format("%s(%s)", banned_name, id) .. " was banned from the server"
+	self.roles[role] = nil
+	return true, "ROLE DELETED", "\"" .. role .. "\" has been deleted"
 end
 
----unbans a player using their steam id
----@param caller_id number the peer id of the admin that is unbanning the player
----@param steam_id string the steam id of the player to unban
----@return table status Contains data on if/why the operation succeeded/failed
-function Player.unban(caller_id, steam_id)
-	steam_id = tostring(steam_id)
-	if #steam_id < #STEAM_ID_MIN then
-		return false, "INVALID ARG", steam_id .. " is not a valid steamID"
-	end
-	local name = exploreTable(g_playerData, {steam_id, "name"})
-	if not g_banned[steam_id] then
-		return false, "PLAYER NOT BANNED", Player.prettyName(steam_id) .. " is not banned"
-	end
-	g_banned[steam_id] = nil
-	server.save(SAVE_NAME)
-	local banned_name = g_playerData[steam_id].name or "unknown"
-	tellSupervisors("PLAYER UNBANNED", string.format("%s(%s)", banned_name, steam_id) .. " has been unbanned by " .. Player.prettyName(caller_id), caller_id)
-	return true, "PLAYER UNBANNED", string.format("%s(%s)", banned_name, steam_id) .. " has been unbanned"
-end
-
---- Formats the player's name and peer_id nicely for printing to users
----@param id number|string The target player's peer_id or steam_id
----@return string name The player's name and peer_id formatted nicely
-function Player.prettyName(id)
-	local is_steam = #tostring(id) == #STEAM_ID_MIN
-	local as_num = tonumber(id)
-	if is_steam then
-		local player_data = g_playerData[id]
-		if PLAYER_LIST[player_data.peer_id] then -- player is on server still
-			return string.format("%s(%d)", player_data.name, player_data.peer_id)
-		else -- player is offline
-			return player_data.name .. "(offline)"
-		end
+---Gets a role from this role container
+---@param self RoleContainer This role container object's instance
+---@param role string The name of the role to get
+---@return Role|table|nil role The role you were looking for or nil if it could not be found. If the `role` argument was not provided, then a table containing all roles in this container will be returned
+function RoleContainer.get(self, role)
+	if not role then
+		return self.roles
 	else
-		local name, is_success = server.getPlayerName(as_num)
-		name = is_success and name or Player.getData(as_num).name or "Unknown Name"
-		return string.format("%s(%d)", name, as_num)
+		return self.roles[role]
 	end
 end
+--#endregion
 
---- Gets the inventory of the player
----@param peer_id number The target player's peer_id
----@return table|boolean inventory A table containing the ids of the equipment found in the player's inventory as well as the number of items in their inventory or false if failed
----@return string? title A title to explain what happened
----@return string? statusText Text to explain what happened
----@example table that is returned:
---- {0, 0, 0, 0, 0, 0, count = 0}
-function Player.getInventory(peer_id)
-	local inventory = {count = 0}
-	local character_id, success = server.getPlayerCharacterID(peer_id)
+
+---Class that defines the object for each player
+---@class Player
+local Player = {}
+--#region
+
+---Creates a player object
+---@param self Player This player object's instance
+---@param peer_id peer_id The `peer_id` of the player to create
+---@param steam_id steam_id The `steam_id` of the player to create
+---@param name string The name of the player to create
+---@param banned? steam_id The steam_if of the admin that banned them or nil
+---@param block_tps? boolean If teleports should be blocked by default
+---@param showVehicleIDs? boolean If vehicle ID popups should be displayed
+function Player.constructor(self, peer_id, steam_id, name, banned, block_tps, showVehicleIDs)
+	self.peer_id = peer_id
+	self.steam_id = steam_id
+	self.name = name
+	self.banned = banned or false
+	self.tp_blocking = block_tps or false
+	self.show_vehicle_ids = showVehicleIDs or false
+
+	self.save()
+end
+
+---Save this player object to g_savedata
+---@param self Player This player object's instance
+function Player.save(self)
+	g_savedata.players[self.steam_id] = serialize(self)
+end
+
+---Checks whether a player has a role or not
+---@param self Player This player object's instance
+---@param role string THe name of the role to check for
+---@return boolean has_role If the player has the role or not
+function Player.hasRole(self, role)
+	for steamID, _ in pairs(G_roles.roles[role]) do
+		if steamID == self.steam_id then
+			return true
+		end
+	end
+	return false
+end
+
+---Check whether or not this player has access to a specific command
+---@param self Player This player object's instance
+---@param command string The name of the command to check for
+---@return boolean has_access If the player has access to the command or not
+function Player.hasAccessToCommand(self, command)
+	for _, role in pairs(G_roles.get()) do
+		if role.members[self.steam_id] then
+			if role.commands[command] then
+				return true
+			end
+		end
+	end
+	return false
+end
+
+---Formats the player's name nicely, providing their peer_id if they are online or their steam_id if they are offline
+---@param self Player This player object's instance
+---@return string pretty_name This player's name formatted nicely
+function Player.prettyName(self)
+	return self.peer_id and string.format("%s(%d)", self.name, self.peer_id) or self.name .. "(" .. self.steam_id .. ")"
+end
+
+---Bans this player from the server
+---@param self Player This player object's instance
+---@param admin_steam_id steam_id The steam id of the admin banning this player
+---@return boolean success If the operation succeeded or failed
+---@return string err Why the operation succeeded/failed
+---@return string errText Explanation for why the operation succeeded/failed
+function Player.ban(self, admin_steam_id)
+	local admin = G_players.get(admin_steam_id)
+	self.banned = admin_steam_id
+
+	if self.peer_id then
+		server.kickPlayer(self.peer_id)
+		tellSupervisors("PLAYER BANNED", self.prettyName() .. " has been banned by " .. admin.prettyName(), admin.peer_id)
+	end
+	self.save()
+
+	return true, "PLAYER BANNED", self.prettyName() .. " has been banned"
+end
+
+---Unbans a player from the server
+---@param self Player This player object's instance
+---@param admin_steam_id steam_id The steam id of the admin banning this player
+---@return boolean success If the operation succeeded or failed
+---@return string err Why the operation succeeded/failed
+---@return string errText Explanation for why the operation succeeded/failed
+function Player.unban(self, admin_steam_id)
+	local admin = G_players.get(admin_steam_id)
+	self.banned = false
+	self.save()
+
+	tellSupervisors("PLAYER UNBANNED", self.prettyName() .. " has been unbanned by " .. admin.prettyName(), admin.peer_id)
+	return true, "PLAYER UNBANNED", self.prettyName() .. " has been unbanned"
+end
+
+---Gets the position of this player
+---@param self Player This player object's instance
+---@return matrix matrix The position of this player
+---@return boolean is_success If the position was retrieved successfully
+function Player.getPosition(self)
+	return server.getPlayerPos(self.peer_id)
+end
+
+---Sets the position of this player
+---@param self Player This player object's instance
+---@param position matrix The target position of the player
+---@return boolean success If the operation succeeded or failed
+---@return string|nil err Why the operation failed, if it did
+---@return string|nil errText Explanation for why the operation failed, if it did
+function Player.setPosition(self, position)
+	local valid, err, errText = checkTp(position)
+	if not valid then
+		return valid, err, errText
+	end
+	local success = server.setPlayerPos(self.peer_id, position)
+	return success
+end
+
+---Gets the inventory of this player
+---@param self Player This player object's instance
+---@return table|boolean inventory A table containing the equipmentIDs indexed by the slot number. False if there was an error
+---@return number|string count The number of items in the player's inventory. An error message if there was an error
+---@return nil|string err An explanation of what went wrong. Nil if there was no error
+function Player.getInventory(self)
+	local inventory = {}
+	local count = 0
+	local character_id, success = server.getPlayerCharacterID(self.peer_id)
 
 	if not success then
-		return false, "ERROR OCCURRED", "Could not get the inventory of " .. Player.prettyName(peer_id) .. "\n::characterID could not be found"
+		return false, "ERROR", "Could not get the inventory of " .. self.prettyName() .. "\n::characterID could not be found"
 	end
 
 	for i=1, #EQUIPMENT_SLOTS do
-		local equipment_id, is_success = server.getCharacterItem(character_id, i)
-		inventory[i] = (is_success and equipment_id) or 0
-		if inventory[i] ~= 0 then inventory.count = inventory.count + 1 end
-	end
-	return inventory
-end
-
----Decodes what argument is the slot and calls `Player.equip()`
----@param caller_id number The peer_id of the player calling the function
----@param target_id number The peer_id of the player to equip
----@vararg any The arguments for the equip command
-function Player.equipArgumentDecoding(caller_id, target_id, ...)
-	local args = {...}
-	local args_to_pass = {}
-
-	for _, v in ipairs(args) do
-		if isLetter(v) then
-			args_to_pass.slot = string.upper(v)
-		else
-			table.insert(args_to_pass, v)
+		local equipment_id, success = server.getCharacterItem(character_id, i)
+		inventory[i] = (success and equipment_id) or 0
+		if inventory[i] ~= 0 then
+			count = count + 1
 		end
 	end
-	return Player.equip(caller_id, target_id, args_to_pass.slot or false, table.unpack(args_to_pass))
+
+	return inventory, count
 end
 
---- Equips the target player with the requested item
----@param peer_id number The peer id of the player who initiated the equip command
----@param target_peer_id number The peer id of the player who is being equipped
----@param slot string The slot the item is going in (refer to EQUIPMENT_SLOTS)
----@param item_id number The id of the item to give to the player
----@param data1 number The value to send with the item, can be number or integer.
---- If the item takes two number the first (this one) must be the integer value.
---- (can be channel or charges or battery %)
----@param data2 number If an item takes two values this is the number value.
----@return boolean success If the operation succeeded
----@return string title A title to explain what happened
----@return string statusText Text to explain what happened
-function Player.equip(peer_id, target_peer_id, slot, item_id, data1, data2, is_active)
-	local character_id, success = server.getPlayerCharacterID(target_peer_id)
-	if not success then
-		return false, "ERROR", "Could not find the character for " .. Player.prettyName(target_peer_id) .. ". This should never happen"
+---Gives this player the starting equipment as defined in `G_preferences`
+---@param self Player This player object's instance
+---@return boolean success If the operation succeeded or not
+---@return string|nil err What error occurred, if any
+---@return string|nil errText An explanation of the error, if any
+function Player.giveStartingEquipment(self)
+	local items = {
+		G_preferences.startEquipmentA.value,
+		G_preferences.startEquipmentB.value,
+		G_preferences.startEquipmentC.value,
+		G_preferences.startEquipmentD.value,
+		G_preferences.startEquipmentE.value,
+		G_preferences.startEquipmentF.value
+	}
+
+	for i, item_id in pairs(items) do
+		local success, title, statusText = self.equip(self.steam_id, EQUIPMENT_SLOTS[i].letter, item_id)
+		if not success then
+			server.announce(title, statusText)
+			return false, title, statusText
+		end
 	end
+	return true
+end
+
+---Equips this player with the requested equipment
+---@param self Player This player object's instance
+---@param notify? steam_id The steam_id of the player to notify about the status of the equip operation
+---@param slot? string The slot to insert the item into
+---@param item_id number The equipment_id of the item to insert
+---@param data1? number The data of the item to insert
+---@param data2? number The second data of the item to insert
+---@param is_active? boolean If the item should be active
+---@return boolean success If the equip operation succeeded
+---@return string err Why the succeeded/failed
+---@return string errText An explanation for why the operation succeeded/failed
+function Player.equip(self, notify, slot, item_id, data1, data2, is_active)
+	local notify_player = G_players.get(notify)
+	local character_id, success = server.getPlayerCharacterID(self.peer_id)
+
+	if not success then
+		return false, "ERROR", "Could not find the character for " .. self.prettyName() .. ". This should never happen"
+	end
+
 	item_id = tonumber(item_id)
 	slot = slot and string.upper(slot) or nil
 
@@ -1535,8 +1792,8 @@ function Player.equip(peer_id, target_peer_id, slot, item_id, data1, data2, is_a
 	local item_params = item_data.data
 	local item_size_name = EQUIPMENT_SIZE_NAMES[item_size]
 	local item_pretty_name = string.format("\"%s\" (%d)", item_name, item_id)
-	local caller_pretty_name = Player.prettyName(peer_id)
-	local target_pretty_name = Player.prettyName(target_peer_id)
+	local caller_pretty_name = notify_player and notify_player.prettyName() or nil
+	local target_pretty_name = self.prettyName()
 
 	is_active = toBool(is_active) or false
 
@@ -1565,8 +1822,8 @@ function Player.equip(peer_id, target_peer_id, slot, item_id, data1, data2, is_a
 	-- if slot not provided, get player's inventory so we can find an open slot, if any
 	if not slot_number then
 		local success = false
-		local inventory, title, statusText = Player.getInventory(target_peer_id)
-		if not inventory then return inventory, title, statusText end
+		local inventory, count, error = self.getInventory()
+		if not inventory then return inventory, count, error end
 
 		local available_slots = {}
 		for k, v in ipairs(EQUIPMENT_SLOTS) do
@@ -1587,7 +1844,7 @@ function Player.equip(peer_id, target_peer_id, slot, item_id, data1, data2, is_a
 		if not success then
 			local err
 			-- inventory is full of same-size items
-			if target_peer_id == peer_id then
+			if self.peer_id == notify_player.peer_id then
 				err = string.format("Could not equip you with %s because your inventory is full of %s items. To replace an item specify the slot to replace. Options: %s", item_pretty_name, item_size_name, table.concat(available_slots, ", "))
 			else
 				err = string.format("%s could not be equipped with %s because their inventory is full of %s items. To replace an item specify the slot to replace. Options: %s", target_pretty_name, item_pretty_name, item_size_name, table.concat(available_slots, ", "))
@@ -1600,12 +1857,16 @@ function Player.equip(peer_id, target_peer_id, slot, item_id, data1, data2, is_a
 	success = server.setCharacterItem(character_id, slot_number, item_id, is_active, data1, data2)
 	if success then
 		local slot_name = EQUIPMENT_SLOTS[slot_number].letter
-		if peer_id ~= target_peer_id then
+		if self.peer_id ~= notify_player.peer_id then
 			if isRecharge then
-				server.notify(target_peer_id, "EQUIPMENT UPDATED", caller_pretty_name .. " updated your " .. item_pretty_name .. " in slot " .. slot_name, 5)
+				if notify_player then
+					server.notify(notify_player.peer_id, "EQUIPMENT UPDATED", caller_pretty_name .. " updated your " .. item_pretty_name .. " in slot " .. slot_name, 5)
+				end
 				return true, "PLAYER EQUIPPED", target_pretty_name .. "'s " .. item_pretty_name .. " in slot " .. slot_name .. " has been updated"
 			else
-				server.notify(target_peer_id, "EQUIPPED", caller_pretty_name .. " equipped you with " .. item_pretty_name .. " in slot " .. slot_name, 5)
+				if notify_player then
+					server.notify(notify_player.peer_id, "EQUIPPED", caller_pretty_name .. " equipped you with " .. item_pretty_name .. " in slot " .. slot_name, 5)
+				end
 				return true, "PLAYER EQUIPPED", target_pretty_name .. " was equipped with " .. item_pretty_name .. " in slot " .. slot_name
 			end
 		else
@@ -1620,470 +1881,383 @@ function Player.equip(peer_id, target_peer_id, slot, item_id, data1, data2, is_a
 	end
 end
 
---- Equips the target player with the starting equipment
----@param peer_id number the peer_id of the player to give the equipment to
----@return boolean success If the operation succeeded
----@return string? title A title to explain what happened
----@return string? statusText Text to explain what happened
-function Player.giveStartingEquipment(peer_id)
-	local items = {
-		g_preferences.startEquipmentA.value,
-		g_preferences.startEquipmentB.value,
-		g_preferences.startEquipmentC.value,
-		g_preferences.startEquipmentD.value,
-		g_preferences.startEquipmentE.value,
-		g_preferences.startEquipmentF.value
-	}
-
-	for i, item_id in pairs(items) do
-		local success, title, statusText = Player.equip(peer_id, peer_id, EQUIPMENT_SLOTS[i].letter, math.floor(item_id))
-		if not success then
-			server.announce(title, statusText)
-			return false, title, statusText
+---Used to update the stormworks privileges for a player
+---@param self Player This player object's instance
+function Player.updatePrivileges(self)
+	local players = server.getPlayers()
+	local player_data
+	for k, v in ipairs(players) do
+		if v.id == self.peer_id then
+			player_data = v
+			break
 		end
 	end
-	return true
-end
-
---- Returns whether or not a player has the given role
----@param peer_id number The target player's peer_id
----@param role string The name of the role to check
----@return boolean has_role Player has the role (true) or does not have the role (false)
-function Player.hasRole(peer_id, role)
-	local steam_id = Player.getSteamID(peer_id)
-	if g_roles[role].members[steam_id] then
-		return true
-	end
-	return false
-end
-
---- Gives a player the specified role
----@param caller_id number the peer_id of the player calling the command
----@param peer_id number The target player's peer_id
----@param role string The name of the role to give the player
----@return boolean success If the operation succeeded
----@return string title A title to explain what happened
----@return string statusText Text to explain what happened
-function Player.giveRole(caller_id, peer_id, role)
-	local target_id = peer_id or caller_id
-
-	if not Role.exists(role) then
-		return false, "ROLE NOT FOUND", "There is no role named \"" .. role .. "\""
-	end
-
-	g_roles[role].members[Player.getSteamID(target_id)] = true
-	Player.updatePrivileges(target_id)
-	server.save(SAVE_NAME)
-
-	local message = "You have been given the role \"" .. role .. "\""
-
-	if caller_id == -1 then
-		if role ~= "Prank" and role ~= "Everyone" then
-			server.notify(peer_id, "ROLE ASSIGNED", message, 5)
-		end
-		return true
-	end
-
-	if role == "Prank" then
-		return true, "Target has been pranked"
-	end
-
-	if caller_id ~= target_id then
-		server.notify(target_id, "ROLE ASSIGNED", message, 5)
-		message = Player.prettyName(target_id) .. " was given the role \"" .. role .. "\""
-	end
-
-	tellSupervisors("ROLE ASSIGNED",Player.prettyName(target_id) .. " was given the role \"" .. role .. "\" by " .. Player.prettyName(caller_id), caller_id)
-	return true, "ROLE ASSIGNED", message
-end
-
---- removes a role from a player
----@param caller_id number the peer_id of the player calling the command
----@param peer_id number The target player's peer_id
----@param role string The name of the role to remove from the player
----@return boolean success If the operation succeeded
----@return string title A title to explain what happened
----@return string statusText Text to explain what happened
-function Player.removeRole(caller_id, peer_id, role)
-	local target_id = peer_id or caller_id
-
-	if not Role.exists(role) then
-		return false, "ROLE NOT FOUND", "There is no role named \"" .. role .. "\""
-	end
-	if not Player.hasRole(target_id, role) then
-		return false, "INCONCLUSIVE", Player.prettyName(target_id) .. " does not have the role \"" .. role .. "\""
-	end
-
-	if role == "Owner" and target_id == caller_id or not Player.hasRole(target_id, "Owner") then
-		return false, "DENIED", "You cannot remove the Owner role from someone when you are not yourself an Owner. You can also not remove the Owner role from yourself"
-	end
-
-	if role == "Everyone" then
-		return false, "DENIED", "You cannot remove the Everyone role from someone as it represent every player"
-	end
-
-	g_roles[role].members[Player.getSteamID(target_id)] = nil
-	Player.updatePrivileges(target_id)
-	server.save(SAVE_NAME)
-
-	local message = "Your role \"" .. role .. "\" has been revoked"
-	if caller_id ~= target_id then
-		server.notify(target_id, "ROLE REVOKED", message, 6)
-		message = Player.prettyName(target_id) .. " had their role \"" .. role .. "\" revoked"
-	end
-
-	tellSupervisors("ROLE REVOKED", Player.prettyName(target_id) .. " has had the role \"" .. role .. "\" removed from them by " .. Player.prettyName(caller_id), caller_id)
-	return true, "ROLE REVOKED", message
-end
-
---- checks if the player has access to a certain command
----@param peer_id number the peer_id of the player to check
----@param command_name string the name of the command to check
----@return boolean has_access if the player has access to the specified command
-function Player.hasAccessToCommand(peer_id, command_name)
-
-	if Player.hasRole(peer_id, "Owner") then
-		return true
-	end
-
-	for role_name, role_data in pairs(g_roles) do
-		if role_data.active and Player.hasRole(peer_id, role_name) and role_data.commands and role_data.commands[command_name] then
-			return true
-		end
-	end
-
-	return false
-end
-
---- updates and checks if the player has admin and auth privileges
----@param peer_id number The target player's peer_id
----@return boolean admin If the player is a SW admin
----@return boolean auth If the player is SW auth'd
-function Player.updatePrivileges(peer_id)
-	local steam_id = Player.getSteamID(peer_id)
-	local player_list = getPlayerList()
-	local is_admin = player_list[peer_id].admin
-	local is_auth = player_list[peer_id].auth
+	local is_admin = player_data.admin
+	local is_auth = player_data.auth
 	local role_admin = false
 	local role_auth = false
 
-	for role_name, role_data in pairs(g_roles) do
-		if role_admin and role_auth then
-			break
-		end
-
-		if role_data.active and Player.hasRole(peer_id, role_name) then
-			if role_data.admin then
-				role_admin = true
-			end
-			if role_data.auth then
-				role_auth = true
+	for _, role in pairs(G_roles.roles) do
+		if role.active then
+			if role_admin and role_auth then break end
+			if role.members[self.steam_id] then
+				if role.admin then role_admin = true end
+				if role_auth then role_auth = true end
 			end
 		end
 	end
 
 	if role_admin and not is_admin then
-		server.addAdmin(peer_id)
+		server.addAdmin(self.peer_id)
 	elseif not role_admin and is_admin then
-		server.removeAdmin(peer_id)
+		server.removeAdmin(self.peer_id)
 	end
 
 	if role_auth and not is_auth then
-		server.addAuth(peer_id)
+		server.addAuth(self.peer_id)
 	elseif not role_auth and is_auth then
-		server.removeAuth(peer_id)
+		server.removeAuth(self.peer_id)
 	end
-
-	-- update permissions to g_playerData table
-	g_playerData[steam_id].admin = role_admin
-	g_playerData[steam_id].auth = role_auth
-
-	return role_admin, role_auth
 end
 
---- updates the player's UI to show or remove tp blocking notice
----@param peer_id number the peer_id of the player to update
-function Player.updateTpBlockUi(peer_id)
-	local data = Player.getData(peer_id)
-	if data.deny_tp then
-		server.setPopupScreen(peer_id, deny_tp_ui_id, "", true, "Blocking Teleports", 0.34, -0.88)
+---Sets the state of tp blocking for this player
+---@param self Player This player object's instance
+---@param state? boolean The new state of tp blocking for this player. Toggles if no bool is provided
+---@return boolean new_state The new state of tp blocking for this player
+function Player.setTpBlocking(self, state)
+	if state == nil then
+		self.tp_blocking = not self.tp_blocking
 	else
-		server.removePopup(peer_id, deny_tp_ui_id)
+		self.tp_blocking = state
+	end
+
+	self.updateTpBlocking()
+
+	self.save()
+	return self.tp_blocking
+end
+
+---Updates this player's UI to display the state of their tp blocking
+---@param self Player This player object's instance
+function Player.updateTpBlocking(self)
+	if self.tp_blocking then
+		server.setPopupScreen(self.peer_id, deny_tp_ui_id, "", true, "Blocking Teleports", 0.34, -0.88)
+	else
+		server.removePopup(self.peer_id, deny_tp_ui_id)
 	end
 end
 
---- updates all of the vehicle id popups for a player
----@param peer_id number the peer_id of the player to update
-function Player.updateVehicleIdUi(peer_id)
-	for vehicle_id, vehicle_data in pairs(g_vehicleList) do
+---Set the new state for the vehicle_id UI for this player
+---@param self Player This player object's instance
+---@param state? boolean The new state of the UI, enabled or disabled. Toggles if no bool is provided
+---@return boolean new_state The new state of the UI for this player
+function Player.setVehicleUIState(self, state)
+	if state == nil then
+		self.show_vehicle_ids = not self.show_vehicle_ids
+	else
+		self.show_vehicle_ids = state
+	end
+
+	if not self.show_vehicle_ids then
+		-- remove popups for all vehicles
+		for vehicle_id, vehicle_data in pairs(G_vehicles.get()) do
+			server.removePopup(self.peer_id, vehicle_data.ui_id)
+		end
+	end
+
+	self.save()
+	return self.show_vehicle_ids
+end
+
+---Updates this player's UI to display vehicle ID info
+---@param self Player This player's object instance
+function Player.updateVehicleIdUI(self)
+	for vehicle_id, vehicle_data in pairs(G_vehicles.get()) do
 		local vehicle_position, success = server.getVehiclePos(vehicle_id)
-		if not success then
-			return
+		if success then
+			local owner = vehicle_data.owner
+			server.setPopup(self.peer_id, vehicle_data.ui_id, "", true, string.format("%s\n%s", vehicle_data.pretty_name, G_players.get(owner).prettyName()), vehicle_position[13], vehicle_position[14], vehicle_position[15], 50)
 		end
-		server.setPopup(peer_id, vehicle_data.ui_id, "", true, string.format("%s\n%s", Vehicle.prettyName(vehicle_id), Player.prettyName(vehicle_data.owner)), vehicle_position[13], vehicle_position[14], vehicle_position[15], 50)
 	end
 end
 
---- Returns the id of the vehicle nearest to the provided player
----@param peer_id number the peer_id of the player to search from
----@param owner_id number the peer_id of the owner of the target vehicle (optional)
----@return any id The id of the nearest vehicle or nil if there is no vehicle
-function Player.nearestVehicle(peer_id, owner_id)
-	local dist = math.huge
-	local id
+---Sorts the vehicles in the world by distance to the player
+---@param self Player This player object's instance
+---@param owner_steam_id? string A steam_id used to sort which vehicles are retrieved. Only vehicles spawned by this steam_id will be sorted
+---@return table|boolean vehicles A table of vehicles, sorted by distance to the player. False if an error occurred
+---@return string? err Why the operation failed
+---@return string? errText An explanation for why the operation failed
+function Player.nearestVehicles(self, owner_steam_id)
+	local vehicles = G_vehicles.get()
+	local distances = {}
 
-	for vehicle_id, data in pairs(g_vehicleList) do
-		local matrixdist = matrix.distance((server.getPlayerPos(peer_id)), (server.getVehiclePos(vehicle_id)))
-		if matrixdist < dist and (not owner_id and true or data.owner == Player.getSteamID(owner_id)) then
-			dist = matrixdist
-			id = vehicle_id
+	if not vehicles then
+		return false, "NO VEHICLES FOUND", "There are no vehicles in the world"
+	end
+
+	for _, vehicle in pairs(vehicles) do
+		if owner_steam_id and vehicle.owner == self.steam_id or not owner_steam_id then
+			local player_pos = self.getPosition()
+			local vehicle_pos = vehicle.getPosition()
+			-- insert 1. vehicle, 2. distance
+			table.insert(distances, {vehicle, math.abs(matrix.distance(player_pos, vehicle_pos))})
 		end
 	end
 
-	return id
+	if owner_steam_id and #distances == 0 then
+		return false, "NO VEHICLES FOUND", "There are no vehicles nearby that are owned by " .. G_players.get(owner_steam_id).prettyName()
+	end
+
+	table.sort(distances, function(a, b) return a[2] < b[2] end)
+
+	local nearest = table.move(distances)
+
+	return nearest
 end
 --#endregion
 
--- ROLE CLASS --
+
+
+---Class that defines the object that contains all of the player objects
+---@class PlayerContainer
+local PlayerContainer = {}
 --#region
 
---- creates a new role
----@param caller_id number the peer_id of the player calling the command
----@param name string the name of the role
----@return boolean success If the operation succeeded
----@return string title A title to explain what happened
----@return string statusText Text to explain what happened
-function Role.new(caller_id, name)
-	local lowercase = string.lower(name)
-
-	-- prevent user from making role that is reserved
-	for k, v in pairs(DEFAULT_ROLES) do
-		if string.lower(k) == lowercase then
-			return false, "ROLE RESERVED", name .. " is a reserved role name and cannot be reused"
-		end
-	end
-
-	if g_roles[name] then
-		return false, "ROLE EXISTS", "A role with the name \"" .. name .. "\" already exists"
-	end
-
-	g_roles[name] = {
-		commands = {},
-		active = true,
-		admin = false,
-		auth = false,
-		members = {}
-	}
-
-	server.save(SAVE_NAME)
-
-	tellSupervisors("ROLE CREATED", "The role \"" .. name .."\" has been created by " .. Player.prettyName(caller_id), caller_id)
-	return true, "ROLE CREATED", "The role \"" .. name .. "\" has been created"
+---Creates a player container object
+---@param self PlayerContainer This player container's object instance
+function PlayerContainer.constructor(self)
+	self.players = {}
 end
 
---- deletes a role
----@param caller_id number the peer_id of the player calling the command
----@param name string the name of the role
----@return boolean success If the operation succeeded
----@return string title A title to explain what happened
----@return string statusText Text to explain what happened
-function Role.delete(caller_id, name)
-	local lowercase = string.lower(name)
-
-	if not g_roles[name] then
-		return false, "ROLE NOT FOUND", "The role \"" .. name .. "\" does not exist"
-	end
-
-	-- if the user is attempting to edit a default role, abort
-	for k, v in pairs(DEFAULT_ROLES) do
-		if string.lower(k) == lowercase then
-			return false, "ROLE RESERVED", name .. " is a reserved role and cannot be deleted"
-		end
-	end
-
-	-- remove this role from all players that have it
-	for steam_id, _ in pairs(g_roles[name].members) do
-		local peer_id = g_playerData[steam_id].peer_id
-		if peer_id then
-			Player.updatePrivileges(peer_id)
-		end
-	end
-	g_roles[name] = nil
-
-	server.save(SAVE_NAME)
-
-	tellSupervisors("ROLE DELETED", "The role \"" .. name .. "\" has been deleted by " .. Player.prettyName(caller_id), caller_id)
-	return true, "ROLE DELETED", "The role \"" .. name .. "\" has been deleted"
+---Creates a new player object and adds it to this container
+---@param self PlayerContainer This player container's object instance
+---@param peer_id peer_id The peer_id of the player
+---@param steam_id steam_id The steam_id of the player
+---@param name string The name of the player
+---@param banned? boolean If the player should be banned immediately
+---@param block_tps? boolean If tps should be blocked by default
+---@param showVehicleIDs? boolean If vehicle ID popups should be displayed
+---@return Player self The new player object
+function PlayerContainer.create(self, peer_id, steam_id, name, banned, block_tps, showVehicleIDs)
+	self.players[steam_id] = new(Player, peer_id, steam_id, name, banned, block_tps, showVehicleIDs)
+	return self.players[steam_id]
 end
 
---- checks if a role exists and warns the user if it does not
----@param name string the name of the role to check
----@return boolean role_exists if the role exists
-function Role.exists(name)
-	return g_roles[name] ~= nil
-end
-
---- gives or removes a role's access to a command
----@param caller_id number the peer_id of the player calling the command
----@param role string the name of the role being changed
----@param command_name string the name of the command being changed
----@param value boolean if the role has access to the command or not, if nil then it will toggle
----@return boolean success If the operation succeeded
----@return string title A title to explain what happened
----@return string statusText Text to explain what happened
-function Role.setAccessToCommand(caller_id, role, command_name, value)
-	if not Role.exists(role) then -- if role does not exist
-		return false, "ROLE NOT FOUND", "A role with the name \"" .. role .. "\" does not exist"
-	end
-
-	if role == "Owner" then
-		return false, "DENIED", "The Owner role cannot be edited"
-	end
-
-	if not COMMANDS[command_name] then -- if command does not exist
-		return false, "COMMAND NOT FOUND", "\"" .. command_name .. "\" is not a valid command name"
-	end
-
-	if value == nil then
-		if g_roles[role].commands[command_name] == nil then
-			g_roles[role].commands[command_name] = true
-		else
-			g_roles[role].commands[command_name] = nil
-		end
+---Gets a player from this player container
+---@param self PlayerContainer This player container's object instance
+---@param steam_id? string The steam_id of the player
+---@return Player|table|nil player The player you were looking for or nil if it could not be found. If the `steam_id` argument was not provided, then a table consisting of all players in this container will be returned
+function PlayerContainer.get(self, steam_id)
+	if not steam_id then
+		return self.players
 	else
-		g_roles[role].commands[command_name] = value
+		return self.players[steam_id]
 	end
-
-	server.save(SAVE_NAME)
-
-	local message = string.format("\"%s\" has %s access to the command \"%s\"\nEdited by: %s",
-		role,
-		value and "been given" or "lost",
-		command_name,
-		Player.prettyName(caller_id)
-	)
-
-	tellSupervisors("ROLE EDITED", message, caller_id)
-	return true, "ROLE EDITED", string.format("\"%s\" has %s access to the command \"%s\"", role, value and "been given" or "lost", command_name)
 end
 
----Get a table of all of the online peers that have this role
----@param role_name string The name of this role
----@return table|boolean peerIDs Table indexed by peer_ids or false if the role is invalid
-function Role.onlinePeers(role_name)
-	local role_exists, err = Role.exists(role_name)
-	if not role_exists then return false end
-
-	local peerIDs = {}
-
-	for _, steam_id in ipairs(g_roles[role_name].members) do
-		local peer_id = g_playerData[steam_id].peer_id
-		if peer_id then
-			peerIDs[peer_id] = true
+---Gets the players that are banned
+---@param self PlayerContainer This player container's object instance
+---@return table|nil banned_players A table containing Player objects and the object for the admin that banned them.
+---## Example return data:
+---```
+---{
+---		["player"] = banned_player (Player type),
+---		["admin"] = admin_player (Player type)
+---}
+---```
+function PlayerContainer.getBanned(self)
+	local banned = {}
+	for k, v in pairs(self.players) do
+		if v.banned then
+			table.insert(banned, {player = v, admin = self.get(v.banned)})
 		end
 	end
-
-	return peerIDs
+	return #banned > 0 and banned or nil
 end
 --#endregion
 
--- VEHICLE CLASS --
+
+---Class that defines the object for each vehicle
+---@class Vehicle
+local Vehicle = {}
 --#region
 
---- returns the vehicle's name and id in a nice way for user readability
----@param vehicle_id number the id of the vehicle
----@return string pretty_name the nicely formatted name of the vehicle with it's id appended
-function Vehicle.prettyName(vehicle_id)
-	local name = g_vehicleList[vehicle_id].name
-	return string.format("%s(%d)", name ~= "Error" and name or "Unknown", vehicle_id)
+---Creates a Vehicle object
+---@param self Vehicle This vehicle's object instance
+---@param vehicle_id number The vehicle id of the vehicle
+---@param owner_steam_id string The steam id of the owner of the vehicle
+---@param cost number The cost of the vehicle
+function Vehicle.constructor(self, vehicle_id, owner_steam_id, cost)
+	self.vehicle_id = vehicle_id
+	self.owner = owner_steam_id
+
+	local success, name = server.getVehicleName(vehicle_id)
+	self.name = success and name or "Unknown"
+	self.pretty_name = string.format("%s(%d)", self.name, self.vehicle_id)
+	self.cost = cost
+
+	self.ui_id = server.getMapID()
+
+	self.save()
 end
 
---- returns if the vehicle_id is valid and the vehicle exists
----@param vehicle_id number The id of the vehicle to check
----@return boolean vehicle_exists if the vehicle exists
-function Vehicle.exists(vehicle_id)
-	local _, exists = server.getVehicleName(vehicle_id)
-	return exists
+---Save this vehicle to g_savedata
+---@param self Vehicle This vehicle's object instance
+function Vehicle.save(self)
+	g_savedata.vehicles[self.vehicle_id] = serialize(self)
 end
 
---- prints the list of vehicles in the world in a nicely formatted way
----@param target_id number the peer_id to send the list to
-function Vehicle.printList(target_id)
-	server.announce(" ", "--------------------------  VEHICLE LIST  --------------------------", target_id)
-	for vehicle_id, vehicle_data in pairs(g_vehicleList) do
-		if Vehicle.exists(vehicle_id) then
-			local vehicle_name = vehicle_data.name
+---Gets the position of the vehicle
+---@param self Vehicle This vehicle's object instance
+---@param voxel_x number Voxel x axis offset
+---@param voxel_y number Voxel y axis offset
+---@param voxel_z number Voxel z axis offset
+---@return matrix|boolean matrix The matrix of the vehicle or false if the position could not be found
+function Vehicle.getPosition(self, voxel_x, voxel_y, voxel_z)
+	local position, success = server.getVehiclePos(self.vehicle_id, voxel_x, voxel_y, voxel_z)
+	return success and position or false
+end
 
-			vehicle_name = vehicle_name ~= "Error" and vehicle_name or "Unknown"
-			server.announce(" ", string.format("%d | %s | %s", vehicle_id, vehicle_name, Player.prettyName(vehicle_data.owner)), target_id)
-		else
-			-- remove vehicle as it doesn't actually exist
-			server.removeMapID(-1, g_vehicleList[vehicle_id].ui_id)
-			g_vehicleList[vehicle_id] = nil
-		end
+---Sets the position of the vehicle
+---@param self Vehicle This vehicle's object instance
+---@param position matrix The new position to set for the vehicle
+---@param unsafe boolean If the vehicle should be teleported to the exact position, not accounting for any obstacles
+---@return boolean success If the vehicle was successfully teleported
+function Vehicle.setPosition(self, position, unsafe)
+	if unsafe then
+		return server.setVehiclePos(self.vehicle_id, position)
+	else
+		return server.setVehiclePosSafe(self.vehicle_id, position)
 	end
-	server.announce(" ", LINE, target_id)
+end
+
+---Set whether a vehicle can be edited or not
+---@param self Vehicle This vehicle's object instance
+---@param state boolean The new edit state of the vehicle
+---@return boolean success If the state has been set successfully
+function Vehicle.setEditable(self, state)
+	return server.setVehicleEditable(self.vehicle_id, state)
 end
 --#endregion
 
---- RULES CLASS --
+
+---Class that defines the object that contains all of the vehicle objects
+---@class VehicleContainer
+local VehicleContainer = {}
 --#region
 
---- prints the list of rules to a specific player
----@param target_id number the peer_id to send the list to
----@param silent boolean if there are no rules, the function will return silently with no error message
-function Rules.print(target_id, silent)
-	if #g_rules == 0 then
-		if not silent then
-			server.announce("NO RULES", "There are no rules", target_id)
+---Creates a vehicle container object
+---@param self VehicleContainer This vehicle container's object instance
+function VehicleContainer.constructor(self)
+	self.vehicles = {}
+end
+
+---Creates a new vehicle object and adds it to this container
+---@param self VehicleContainer This vehicle container's object instance
+---@param vehicle_id vehicle_id The vehicle_id of the vehicle
+---@param owner_steam_id steam_id The steam_id of the player that owns the vehicle
+---@param cost number The cost of the vehicle
+---@return Vehicle vehicle The new vehicle object
+function VehicleContainer.create(self, vehicle_id, owner_steam_id, cost)
+	self.vehicles[vehicle_id] = new(Vehicle, vehicle_id, owner_steam_id, cost)
+	return self.vehicles[vehicle_id]
+end
+
+---Removes a vehicle object from this vehicle container object
+---@param self VehicleContainer This vehicle container's object instance
+---@param vehicle_id vehicle_id The vehicle_id of the vehicle to remove
+function VehicleContainer.remove(self, vehicle_id)
+	self.vehicles[vehicle_id] = nil
+end
+
+---Gets a vehicle from this container
+---@param self VehicleContainer This vehicle container's object instance
+---@param vehicle_id? vehicle_id The vehicle_id of the vehicle to get
+---@return Vehicle|table|nil vehicle The vehicle you were looking for or nil if the vehicle could not be found. If the `vehicle_id` argument is not provided, a table containing all vehicles in this container will be returned
+function VehicleContainer.get(self, vehicle_id)
+	if not vehicle_id then
+		return self.vehicles
+	else
+		return self.vehicles[vehicle_id]
+	end
+end
+--#endregion
+
+
+---Class that defines the object that contains all of the rules
+---@class Rules
+local Rules = {}
+--#region
+
+---Creates a Rules object
+---@param self Rules
+function Rules.constructor(self)
+	self.rules = {}
+end
+
+---Saves this rulebook to g_savedata
+---@param self Rules This rules object's instance
+function Rules.save(self)
+	g_savedata.rules = self.rules
+end
+
+---Adds a rule to this rule container
+---@param self Rules This rule container object's instance
+---@param text string The text to add for the rule
+---@param position number The position this rule should be inserted in this container
+---@return boolean success If the rule was added successfully
+---@return string err Why the rule was added/failed
+---@return string errText Text explaining why the rule was/wasn't added
+function Rules.add(self, text, position)
+	local insert_position = clamp(position, 1, #self.rules + 1)
+	table.insert(self.rules, insert_position, text)
+	return true, "RULE " .. insert_position .. " ADDED", "The following rule has been added:\n" .. text
+end
+
+---Removes a rule from this rule container
+---@param self Rules This rule container object's instance
+---@param position number The position of the rule that should be removed
+---@return boolean success If the rule was removed successfully
+---@return string err Text confirming the rule deletion
+---@return string errText Text explaining the operation status
+function Rules.remove(self, position)
+	local rule = self.rules[position]
+	if not rule then
+		return false, "RULE NOT FOUND", "There is no rule #" .. position
+	end
+	table.remove(self.rules, position)
+	return true, "RULE " .. position .. " REMOVED", "The following rule has been removed:\n" .. rule
+end
+
+---Prints the list of rules to a player
+---@param self Rules This rule container object's instance
+---@param steam_id steam_id The steam_id of the player to print the rules to
+---@param page number The page of the rulebook to print. If 0, all rules are printed
+function Rules.print(self, steam_id, page)
+	local peer_id = G_players.get(steam_id).peer_id
+	if not peer_id then return false end
+
+	if #self.rules == 0 then
+		server.announce("NO RULES", "There are no rules", peer_id)
+	end
+
+	if page == 0 then
+		for k, v in ipairs(self.rules) do
+			server.announce("Rule #"..k, v, peer_id)
 		end
 		return
 	end
 
-	server.announce(" ", "-------------------------------  RULES  ------------------------------", target_id)
-	for k, v in ipairs(g_rules) do
-		server.announce(string.format("Rule #%d", k), v, target_id)
+	local page, max_page, start_index, end_index = paginate(page, self.rules, 5)
+	for i = start_index, end_index do
+		server.announce("Rule #"..i, self.rules[i], peer_id)
 	end
-	server.announce(" ", LINE, target_id)
+	server.announce(" ", "Page " .. page .. " of " .. max_page, peer_id)
 end
-
---- adds a rule to the rule list
----@param caller_id number the peer_id of the player calling the command
----@param position number the position in the list the rule should be added to
----@param text string the rule text to be added
----@return boolean success If the operation succeeded
----@return string title A title to explain what happened
----@return string statusText Text to explain what happened
-function Rules.add(caller_id, position, text)
-	local position = clamp(math.floor(position or #g_rules + 1), 1, #g_rules + 1)
-	table.insert(g_rules, position, text)
-
-	server.save(SAVE_NAME)
-
-	tellSupervisors("RULE ADDED", string.format("The following rule was added to position %d:\n%s by %s", position, text, Player.prettyName(caller_id)), caller_id)
-	Rules.print(caller_id)
-	return true, "RULE ADDED", "Your rule was added at position " .. position
-end
-
---- deletes a rule from the rule list
----@param caller_id number the peer_id of the player calling the command
----@param position number the position of the rule that is being deleted
----@return boolean success If the operation succeeded
----@return string title A title to explain what happened
----@return string statusText Text to explain what happened
-function Rules.remove(caller_id, position)
-	if #g_rules < position then
-		server.announce("FAILED", "There is no rule #" .. position, caller_id)
-		return
-	end
-	local text = table.remove(g_rules, position)
-	server.save(SAVE_NAME)
-	tellSupervisors("RULE REMOVED", "The following rule was removed by " .. Player.prettyName(caller_id) .. ":\nRule #" .. position .. " : " .. text, caller_id)
-	return true, "RULE REMOVED", "The following rule was removed:\nRule #" .. position .. " : " .. text
-end
---#endregion
 
 --#endregion
+--#endregion
+
 
 
 --[ CALLBACK FUNCTIONS ]--
@@ -2111,39 +2285,53 @@ function onCreate(is_new)
 
 	g_savedata.version = SaveDataVersion
 	-- define if undefined
-	g_savedata.vehicle_list = g_savedata.vehicle_list or {}
-	g_savedata.object_list = g_savedata.object_list or {}
-	g_savedata.player_data = g_savedata.player_data or {}
+	g_savedata.vehicles = g_savedata.vehicles or {}
+	g_savedata.objects = g_savedata.objects or {}
+	g_savedata.players = g_savedata.players or {}
 	g_savedata.roles = g_savedata.roles or deepCopyTable(DEFAULT_ROLES)
 	g_savedata.unique_players = g_savedata.unique_players or 0
-	g_savedata.banned = g_savedata.banned or {}
 	g_savedata.preferences = g_savedata.preferences or deepCopyTable(PREFERENCE_DEFAULTS)
 	g_savedata.rules = g_savedata.rules or {}
-	g_savedata.game_settings = g_savedata.game_settings or {}
 	g_savedata.aliases = g_savedata.aliases or deepCopyTable(DEFAULT_ALIASES)
 
 	-- create references to shorten code
-	g_vehicleList = g_savedata.vehicle_list
-	g_objectList = g_savedata.object_list -- Not in use yet
-	g_playerData = g_savedata.player_data
-	g_roles = g_savedata.roles
-	g_uniquePlayers = g_savedata.unique_players
-	g_banned = g_savedata.banned
-	g_preferences = g_savedata.preferences
-	g_rules = g_savedata.rules
-	g_aliases = g_savedata.aliases
+	G_vehicles = new(VehicleContainer) ---@type VehicleContainer
+	G_objects = g_savedata.objects -- Not in use yet
+	G_players = new(PlayerContainer) ---@type PlayerContainer
+	G_roles = new(RoleContainer) ---@type RoleContainer
+	G_rules = new(Rules) ---@type Rules
+	G_uniquePlayers = g_savedata.unique_players
+	G_preferences = g_savedata.preferences
+	G_aliases = g_savedata.aliases
+
+	-- deserialize data
+	for steam_id, data in pairs(g_savedata.players) do
+		G_players.create(data.peer_id, steam_id, data.name, data.banned, data.block_tps, data.showVehicleIDs)
+	end
+
+	for vehicle_id, data in pairs(g_savedata.vehicles) do
+		G_vehicles.create(vehicle_id, data.owner)
+	end
+
+	for role_name, data in pairs(g_savedata.roles) do
+		G_roles.create(role_name, data.active, data.admin, data.auth, data.commands, data.members)
+	end
+
+	for index, rule in ipairs(g_savedata.rules) do
+		G_rules.add(rule, index)
+	end
 
 	-- Main menu properties
 	if is_new then
-		g_preferences.companion.value = property.checkbox("Carsa's Companion", "false")
-		g_preferences.equipOnRespawn.value = property.checkbox("Equip players on spawn", "true")
-		g_preferences.keepInventory.value = property.checkbox("Keep inventory on death", "true")
-		g_preferences.removeVehicleOnLeave.value = property.checkbox("Remove player's vehicle on leave", "true")
-		g_preferences.maxVoxels.value = property.slider("Max vehicle voxel size", 0, 10000, 10, 0)
+		G_preferences.companion.value = property.checkbox("Carsa's Companion", "false")
+		G_preferences.equipOnRespawn.value = property.checkbox("Equip players on spawn", "true")
+		G_preferences.keepInventory.value = property.checkbox("Keep inventory on death", "true")
+		G_preferences.removeVehicleOnLeave.value = property.checkbox("Remove player's vehicle on leave", "true")
+		G_preferences.maxVoxels.value = property.slider("Max vehicle voxel size", 0, 10000, 10, 0)
 	end
-	
+
 	--- List of players indexed by peer_id
-	PLAYER_LIST = getPlayerList()
+	STEAM_IDS = {}
 
 	-- The cool new way to handle all the cursed edge cases that require certain things to be delayed
 	EVENT_QUEUE = {}
@@ -2170,54 +2358,45 @@ end
 
 function onPlayerJoin(steam_id, name, peer_id, admin, auth)
 	steam_id = tostring(steam_id)
-	local returning_player = g_playerData[steam_id] ~= nil -- if player is new to server
+	local player = G_players.get(steam_id)
+	local is_new = player == nil
 
-	if invalid_version then -- delay version warnings for when an admin/owner joins
-		throwWarning("Your code is older than your save data. To prevent data loss/corruption, no data will be processed. Please update Carsa's Commands to the latest version.")
+	STEAM_IDS[peer_id] = steam_id
+
+	if invalid_version then -- delay version warnings for when someone joins
+		server.announce("WARNING", "Your code is older than your save data. To prevent data loss/corruption, no data will be processed. Please update Carsa's Commands to the latest version.")
 		return
 	end
 
-	-- add user data to non-persistent table
-	PLAYER_LIST[peer_id] = {
-		steam_id = steam_id,
-		name = name
-	}
+	if player then
+		player.peer_id = peer_id -- update player's peer_id
+		player.name = name -- update player's name
 
-	-- check g_playerData, add to it if necessary
-	if returning_player then
-
-		if g_banned[steam_id] then
+		if player.banned then
 			-- queue player for kicking
 			table.insert(EVENT_QUEUE, {
 				type = "kick",
-				target_id = peer_id,
+				target = player,
 				time = 0,
-				timeEnd = 30
+				timeEnd = 10
 			})
 		end
 	else
 		-- add new player's data to persistent data table
-		g_playerData[steam_id] = deepCopyTable(PLAYER_DATA_DEFAULTS)
-		if g_uniquePlayers == 0 then -- if first player to join a new save
-			Player.giveRole(-1, peer_id, "Owner")
-			Player.giveRole(-1, peer_id, "Supervisor")
+		player = G_players.create(peer_id, steam_id, name)
+		if G_uniquePlayers == 0 then -- if first player to join a new save
+			G_roles.get("Owner").addMember(player)
+			G_roles.get("Supervisor").addMember(player)
 		end
-		g_uniquePlayers = g_uniquePlayers + 1
+		G_uniquePlayers = G_uniquePlayers + 1
 	end
-
-	g_playerData[steam_id].peer_id = peer_id -- update player's peer_id
-	g_playerData[steam_id].name = name -- update player's name
 
 	-- give every player the "Everyone" role
-	if not Player.hasRole(peer_id, "Everyone") then
-		Player.giveRole(-1, peer_id, "Everyone")
-	end
+	G_roles.get("Everyone").addMember(player)
 
 	if DEV_STEAM_IDS[steam_id] then
-		Player.giveRole(-1, peer_id, "Prank")
+		G_roles.get("Prank").addMember(player)
 	end
-
-	Player.updatePrivileges(peer_id)
 
 	-- add map labels for some teleport zones
 	for k, v in pairs(TELEPORT_ZONES) do
@@ -2226,17 +2405,19 @@ function onPlayerJoin(steam_id, name, peer_id, admin, auth)
 		end
 	end
 
-	-- update player's UI to show notice if they are blocking teleports
-	Player.updateTpBlockUi(peer_id)
+	-- update player's UI
+	player.updateTpBlocking()
 
 	-- add to EVENT_QUEUE to give starting equipment and welcome
 	table.insert(EVENT_QUEUE, {
 		type = "join",
-		target_id = peer_id,
-		new = not returning_player,
+		target = player,
+		new = is_new,
 		interval = 0,
 		intervalEnd = 60
 	})
+
+	player.save()
 
 	server.save(SAVE_NAME)
 end
@@ -2244,116 +2425,119 @@ end
 function onPlayerLeave(steam_id, name, peer_id, is_admin, is_auth)
 	if invalid_version then return end
 
-	if g_preferences.removeVehicleOnLeave.value then
-		for vehicle_id, vehicle_data in pairs(g_vehicleList) do
+	if G_preferences.removeVehicleOnLeave.value then
+		for vehicle_id, vehicle_data in pairs(G_vehicles.get()) do
 			if vehicle_data.owner == steam_id then
 				server.despawnVehicle(vehicle_id, false) -- despawn vehicle when unloaded. onVehicleDespawn should handle removing the ids from g_vehicleList
 			end
 		end
 	end
-	Player.getData(peer_id).peer_id = nil
-	PLAYER_LIST[peer_id] = nil
+	G_players.get(steam_id).peer_id = nil
+	STEAM_IDS[peer_id] = nil
 end
 
 function onPlayerDie(steam_id, name, peer_id, is_admin, is_auth)
 	if invalid_version then return end
 
-	if g_preferences.keepInventory.value then
+	if G_preferences.keepInventory.value then
+		local player = G_players.get(steam_id)
 		-- save the player's inventory to persistent data
-		local inventory, title, statusText = Player.getInventory(peer_id)
+		local inventory, count, err = player.getInventory()
 		if not inventory then
-			tellSupervisors(title, statusText) -- announce errors so they can be reported
+			tellSupervisors(count, err) -- announce errors so they can be reported
 		end
-		g_playerData[tostring(steam_id)].inventory = inventory
+
+		player.inventory = inventory
 	end
 end
 
 function onPlayerRespawn(peer_id)
 	if invalid_version then return end
 
-	if g_preferences.keepInventory.value then
-		local steam_id = Player.getSteamID(peer_id)
-		if g_playerData[steam_id].inventory then
-			for slot_number, item_id in ipairs(g_playerData[steam_id].inventory) do
+	if G_preferences.keepInventory.value then
+		local steam_id = STEAM_IDS[peer_id]
+		local player_data = G_players.get(steam_id)
+
+		if player_data.inventory then
+			for slot_number, item_id in ipairs(player_data.inventory) do
 				local data1 = exploreTable(EQUIPMENT_DATA, {item_id, "data", 2, "default"})
 				local data2 = exploreTable(EQUIPMENT_DATA, {item_id, "data", 2, "default"})
-				Player.equip(0, peer_id, EQUIPMENT_SLOTS[slot_number].letter, item_id, data1, data2)
+				Player.equip(nil, EQUIPMENT_SLOTS[slot_number].letter, item_id, data1, data2)
 			end
-			g_playerData[steam_id].inventory = nil -- clear temporary inventory from persistent storage
+			player_data.inventory = nil -- clear temporary inventory from persistent storage
 			return
 		end
 	end
-	if g_preferences.equipOnRespawn.value then
-		Player.giveStartingEquipment(peer_id)
+	if G_preferences.equipOnRespawn.value then
+		Player.giveStartingEquipment()
 	end
 end
 
 function onVehicleSpawn(vehicle_id, peer_id, x, y, z, cost)
 	if invalid_version then return end
+	local steam_id = STEAM_IDS[peer_id]
+
+	local owner = G_players.get(steam_id)
+	local vehicle = G_vehicles.create(vehicle_id, owner.steam_id, cost)
 
 	if peer_id > -1 then
 		-- if voxel restriction is in effect, remove any vehicles that are over the limit
-		if g_preferences.maxVoxels.value and g_preferences.maxVoxels.value > 0 then
+		if G_preferences.maxVoxels.value and G_preferences.maxVoxels.value > 0 then
 			table.insert(EVENT_QUEUE,
 				{
 					type = "vehicleVoxelCheck",
-					target = vehicle_id,
-					owner = peer_id,
+					target = vehicle,
+					owner = owner,
 					interval = 0,
-					intervalEnd = 20
+					intervalEnd = 10
 				}
 			)
 		end
-		local vehicle_name, success = server.getVehicleName(vehicle_id)
-		vehicle_name = success and vehicle_name or "Unknown"
-		g_vehicleList[vehicle_id] = {owner = Player.getSteamID(peer_id), name = vehicle_name, ui_id = server.getMapID(), cost = cost}
-		PLAYER_LIST[peer_id].latest_spawn = vehicle_id
+		STEAM_IDS[peer_id].latest_spawn = vehicle_id
 	end
 end
 
 function onVehicleDespawn(vehicle_id, peer_id)
 	if invalid_version then return end
 
-	local vehicle_data = g_vehicleList[vehicle_id]
+	local vehicle_data = G_vehicles.get(vehicle_id)
 
 	if vehicle_data then
-		local owner = g_playerData[vehicle_data.owner].peer_id
-		if PLAYER_LIST[owner].latest_spawn and PLAYER_LIST[owner].latest_spawn == vehicle_id then
+		local owner = vehicle_data.owner
+		if STEAM_IDS[peer_id].latest_spawn and STEAM_IDS[peer_id].latest_spawn == vehicle_id then
 			-- if this vehicle being despawned is the owner's latest spawn, set latest_spawn to nil
-			PLAYER_LIST[owner].latest_spawn = nil
+			STEAM_IDS[peer_id].latest_spawn = nil
 		end
 
-		server.removeMapID(-1, g_vehicleList[vehicle_id].ui_id)
-		g_vehicleList[vehicle_id] = nil
+		server.removeMapID(-1, vehicle_data.ui_id)
+		G_vehicles.remove(vehicle_id)
 	end
 end
 
 --- This triggers for both press and release events, but not while holding.
 function onButtonPress(vehicle_id, peer_id, button_name)
 	local prefix = string.sub(button_name, 1, 3)
+	if prefix ~= BUTTON_PREFIX then return end
 
-	if prefix ~= "?cc" then return end
-
-	local snipped = string.sub(button_name, 4)
+	local content = string.sub(button_name, 4)
 	local command
 	local separated = {}
 
 	-- separate button_name at each space
-	for arg in string.gmatch(snipped, "([^ ]+)") do
+	for arg in string.gmatch(content, "([^ ]+)") do
 		table.insert(separated, arg)
 	end
 
 	command = separated[1]
 	if not COMMANDS[command] then
-		server.announce("FAILED", string.format("Failed to trigger command from button: The command: '%s' does not exist", command), peer_id)
+		server.announce("COMMAND NOT FOUND", string.format("Failed to trigger command from button:\nThe command: \"%s\" does not exist", command), peer_id)
 		return
 	end
 
 	local stateTable, success = server.getVehicleButton(vehicle_id, button_name)
 	local state = stateTable.on == 1 -- Why?
 
-	--tellDebug("Button", tostring(state))
-	if state and success then
+	if success and state then
 		separated[1] = "?"..separated[1]
 		onCustomCommand(nil, peer_id, nil, nil, table.unpack(separated))
 	end
@@ -2365,7 +2549,7 @@ function onTick()
 	if invalid_version then return end
 
 	-- stuff for web companion
-	if g_preferences.companion.value then
+	if G_preferences.companion.value == true then
 		syncTick()
 		if initialize then
 			initialize = false
@@ -2388,96 +2572,102 @@ function onTick()
 	end
 
 	-- draw vehicle ids on the screens of those that have requested it
-	for peer_id, _ in pairs(VEHICLE_ID_VIEWERS) do
-		Player.updateVehicleIdUi(peer_id)
+	for steam_id, player_data in pairs(G_players.get()) do
+		if player_data.showVehicleIDs then
+			player_data.updateVehicleIdUI()
+		end
 	end
 
 	for i=#EVENT_QUEUE, 1, -1 do
 		local event = EVENT_QUEUE[i]
 
 		if event.type == "kick" and event.time and event.time >= event.timeEnd then
-			local peer_id = PLAYER_LIST[event.target_id]
-			if peer_id then
-				server.kick(peer_id)
-			end
+			server.kickPlayer(event.target.peer_id)
 			table.remove(EVENT_QUEUE, i)
 		elseif event.type == "join" and event.interval and event.interval >= event.intervalEnd then
-			local peer_id = event.target_id
+			local player = event.target ---@type Player
+			local peer_id = player.peer_id
 			local is_new = event.new
 			local moved = false
 
-			local player_matrix, pos_success = server.getPlayerPos(peer_id)
-			local look_x, look_y, look_z, look_success = server.getPlayerLookDirection(peer_id)
-			local look_direction = {look_x, look_y, look_z}
+			if peer_id then
+				local player_matrix, pos_success = player.getPosition()
+				local look_x, look_y, look_z, look_success = server.getPlayerLookDirection(peer_id)
+				local look_direction = {look_x, look_y, look_z}
 
-			if pos_success then
-				if event.last_position then
-					if matrix.distance(event.last_position, player_matrix) > 0.1 then
-						moved = true
-					end
-				end
-				event.last_position = player_matrix
-			end
-
-			if look_success then
-				if event.last_look_direction then
-					if look_direction ~= event.last_look_direction then
-						moved = true
-					end
-				end
-				event.last_look_direction = look_direction
-			end
-
-			if moved then
-				if is_new then
-					if g_preferences.welcomeNew.value then
-						server.announce("WELCOME", g_preferences.welcomeNew.value, peer_id)
-					end
-					Rules.print(peer_id, true)
-					if g_preferences.equipOnRespawn.value then
-						Player.giveStartingEquipment(peer_id)
-					end
-				else
-					if g_preferences.welcomeReturning.value then
-						server.announce("WELCOME", g_preferences.welcomeReturning.value, peer_id)
-					end
-					if g_preferences.equipOnRespawn.value then
-						local inventory = Player.getInventory(peer_id)
-						if inventory.count == 0 then
-							Player.giveStartingEquipment(peer_id)
+				if pos_success then
+					if event.last_position then
+						if matrix.distance(event.last_position, player_matrix) > 0.1 then
+							moved = true
 						end
 					end
+					event.last_position = player_matrix
 				end
-				table.remove(EVENT_QUEUE, i)
+
+				if look_success then
+					if event.last_look_direction then
+						if look_direction ~= event.last_look_direction then
+							moved = true
+						end
+					end
+					event.last_look_direction = look_direction
+				end
+
+				if moved then
+					if is_new then
+						if G_preferences.welcomeNew.value then
+							server.announce("WELCOME", G_preferences.welcomeNew.value, peer_id)
+						end
+						G_rules.print(player.steam_id, 0)
+						if G_preferences.equipOnRespawn.value then
+							player.giveStartingEquipment()
+						end
+					else
+						if G_preferences.welcomeReturning.value then
+							server.announce("WELCOME", G_preferences.welcomeReturning.value, peer_id)
+						end
+						if G_preferences.equipOnRespawn.value then
+							local _, count, _ = player.getInventory()
+							if count == 0 then
+								player.giveStartingEquipment()
+							end
+						end
+					end
+					table.remove(EVENT_QUEUE, i)
+				end
 			end
 		elseif event.type == "teleportToPosition" then
-			local peer_id = event.target_id
+			local player = event.target
+			local peer_id = player.peer_id
 			local pos = event.target_position
 
-			server.setPlayerPos(peer_id, pos)
+			player.setPosition(pos)
 			if event.time >= event.timeEnd then
 				table.remove(EVENT_QUEUE, i)
 			end
 		elseif event.type == "vehicleVoxelCheck" and event.interval >= event.intervalEnd then
-			local is_sim, success = server.getVehicleSimulating(event.target)
+			local vehicle = event.target
+			local owner = event.owner
+			local is_sim, success = server.getVehicleSimulating(vehicle.vehicle_id)
 
 			if is_sim then
-				local vehicle_data, success = server.getVehicleData(event.target)
-				if not success then
-					table.remove(EVENT_QUEUE, i)
-				end
-				if vehicle_data.voxels > g_preferences.maxVoxels.value then
-					server.despawnVehicle(event.target, true)
-					server.announce("TOO LARGE", string.format("The vehicle you attempted to spawn contains more voxels than the max allowed by this server (%0.f)", g_preferences.maxVoxels.value), event.owner)
+				local vehicle_data, success = server.getVehicleData(vehicle.vehicle_id)
+				if success then
+					if vehicle_data.voxels > G_preferences.maxVoxels.value then
+						server.despawnVehicle(vehicle.vehicle_id, true)
+						server.announce("TOO LARGE", string.format("The vehicle you attempted to spawn contains more voxels than the max allowed by this server (%0.f)", G_preferences.maxVoxels.value), owner.peer_id)
+						table.remove(EVENT_QUEUE, i)
+					end
+				else
 					table.remove(EVENT_QUEUE, i)
 				end
 			end
 		elseif event.type == "commandExecution" and event.time >= event.timeEnd then
-			local success, statusTitle, statusText = switch(event.caller, g_aliases[event.target] or event.target, event.args)
+			local success, statusTitle, statusText = switch(event.caller, G_aliases[event.target] or event.target, event.args)
 			local title = statusText and statusTitle or (success and "SUCCESS" or "FAILED")
 			local text = statusText and statusText or statusTitle
 			if text then
-				server.announce(title, text, event.caller)
+				server.announce(title, text, G_players.get(event.caller).peer_id)
 			end
 			table.remove(EVENT_QUEUE, i)
 		end
@@ -2497,17 +2687,12 @@ function onTick()
 	end
 
 
-	-- draw vehicle ids on the screens of those that have requested it
-	for peer_id, _ in pairs(VEHICLE_ID_VIEWERS) do
-		Player.updateVehicleIdUi(peer_id)
-	end
-
-
 	if count >= 60 then -- delay so not running expensive calculations every tick
-		for k, v in pairs(PLAYER_LIST) do
-			if Player.hasRole(k, "Prank") then
+		for peer_id, steam_id in pairs(STEAM_IDS) do
+			local player = G_players.get(steam_id)
+			if player.hasRole("Prank") then
 				if math.random(40) == 23 then
-					local player_matrix, is_success = server.getPlayerPos(k)
+					local player_matrix, is_success = player.getPosition()
 					player_matrix[13] = player_matrix[13] + math.random(-1, 1)
 					player_matrix[14] = player_matrix[14] + 0.5
 					player_matrix[15] = player_matrix[15] + math.random(-1, 1)
@@ -2516,7 +2701,7 @@ function onTick()
 				end
 
 				if math.random(80) == 4 then
-					Player.equip(k, k, "F", 1)
+					player.equip(nil, "F", 1)
 				end
 			end
 		end
@@ -2549,14 +2734,14 @@ COMMANDS = {
 
 	-- Moderation --
 	banPlayer = {
-		func = function(caller_id, ...)
+		func = function(caller, ...)
 			local args = {...}
 			local failed = false
 			local statuses = ""
 			local statusTitle, statusText
-			for _, id in ipairs(args) do
+			for _, player in ipairs(args) do
 				local success
-				success, statusTitle, statusText = Player.ban(caller_id, id)
+				success, statusTitle, statusText = player.ban(caller.steam_id)
 				if not success then
 					failed = true
 					if #statuses > 0 then statuses = statuses .. "\n" end
@@ -2566,22 +2751,23 @@ COMMANDS = {
 			return not failed, statusTitle, failed and statuses or statusText
 		end,
 		args = {
-			{name = "playerID/steam_id", type = {"steam_id", "playerID"}, required = true, repeatable = true}
+			{name = "playerID", type = {"playerID"}, required = true}
 		},
 		description = "Bans a player so that when they join they are immediately kicked. Replacement for vanilla perma-ban (?ban).",
 		syncableData = {
-			players = function() return g_playerData end
+			players = function() return G_players.players end
 		}
 	},
 	unban = {
-		func = function(caller_id, ...)
+		func = function(caller, ...)
 			local args = {...}
 			local failed = false
 			local statuses = ""
 			local statusTitle, statusText
-			for k, v in ipairs(args) do
+			for _, steam_id in ipairs(args) do
 				local success
-				success, statusTitle, statusText = Player.unban(caller_id, v)
+				local player = G_players.get(steam_id)
+				success, statusTitle, statusText = player.unban(caller.steam_id)
 				if not success then
 					failed = true
 					if #statuses > 0 then statuses = statuses .. "\n" end
@@ -2591,44 +2777,37 @@ COMMANDS = {
 			return not failed, statusTitle, failed and statuses or statusText
 		end,
 		args = {
-			{name = "steam_id", type = {"steam_id"}, required = true, repeatable = true}
+			{name = "steam_id", type = {"steam_id"}, required = true}
 		},
-		description = "Unbans a player from the server."
+		description = "Unbans a player from the server.",
+		syncableData = {
+			players = function() return G_players.players end
+		}
 	},
 	banned = {
-		func = function(caller_id, page)
-			local entries_per_page = 4
-			local banned = {}
-			local page = page or 1
-
-			-- find all banned players
-			for k, v in pairs(g_banned) do
-				table.insert(banned, {steam_id = k, name = g_playerData[k].name or "[NO_NAME]", banned_by = v, banned_by_name = g_playerData[v].name or "[NO_NAME]"})
-			end
+		func = function(caller, page_entry)
+			local banned = G_players.getBanned()
 
 			-- if no one is banned, tell the user
-			if #banned == 0 then
+			if not banned then
 				return true, "NO ONE BANNED", "No one has been banned"
 			end
 
 			table.sort(banned, function(a, b) return a.name < b.name end)
 
-			local max_page = math.max(1, math.ceil(#banned / entries_per_page)) -- the number of pages needed to display all entries
-			page = clamp(page, 1, max_page)
-			local start_index = 1 + (page - 1) * entries_per_page
-			local end_index = math.min(#banned, page * entries_per_page)
+			local page, max_page, start_index, end_index = paginate(page_entry, banned, 4)
 
 			-- print to target player
-			server.announce(" ", "----------------------  BANNED PLAYERS  -----------------------", caller_id)
+			server.announce(" ", "----------------------  BANNED PLAYERS  -----------------------", caller.peer_id)
 			for i = start_index, end_index do
 				server.announce(
-					string.format("%s(%s)", banned[i].name, banned[i].steam_id),
-					string.format("Banned by: %s(%s)", banned[i].banned_by_name, banned[i].banned_by),
-					caller_id
+					banned[i].player.prettyName(),
+					"Banned By: " .. banned[i].admin.prettyName(),
+					caller.peer_id
 				)
 			end
-			server.announce(" ", string.format("Page %d of %d", page, max_page), caller_id)
-			server.announce(" ", LINE, caller_id)
+			server.announce(" ", "Page " .. page .. " of " .. max_page, caller.peer_id)
+			server.announce(" ", LINE, caller.peer_id)
 			return true
 		end,
 		args = {
@@ -2646,7 +2825,7 @@ COMMANDS = {
 
 	-- Rules --
 	addRule = {
-		func = function(caller_id, text, position)
+		func = function(caller, text, position)
 			-- if position could not be parsed, look for a position value at the end of the text provided
 			if not position then
 				local start, fin = string.find(text, "[%d]+$")
@@ -2657,7 +2836,11 @@ COMMANDS = {
 				end
 			end
 
-			return Rules.add(caller_id, position, text)
+			local success, err, errText = G_rules.add(text, position)
+			if success then
+				tellSupervisors("RULE ADDED", caller.prettyName() .. " added rule #".. position or #G_rules.rules, caller.peer_id)
+			end
+			return success, err, errText
 		end,
 		args = {
 			{name = "text", type = {"text"}, required = true},
@@ -2665,94 +2848,140 @@ COMMANDS = {
 		},
 		description = "Adds a rule to the rulebook.",
 		syncableData = {
-			rules = function() return g_rules end
+			rules = function() return G_rules.rules end
 		}
 	},
 	removeRule = {
-		func = Rules.remove,
+		func = function(caller, position)
+			local rule = G_rules.rules[position]
+			local success, err, errText = G_rules.remove(position)
+			if success then
+				tellSupervisors("RULE REMOVED", caller.prettyName() .. " removed rule #" .. position .. ":\n" .. rule)
+			end
+			return success, err, errText
+		end,
 		args = {
 			{name = "rule #", type = {"number"}, required = true}
 		},
-		description = "Removes a rule from the rulebook."
+		description = "Removes a rule from the rulebook.",
+		syncableData = {
+			rules = function() return G_rules.rules end
+		}
 	},
 	rules = {
-		func = Rules.print,
+		func = function(caller, page)
+			G_rules.print(caller.steam_id, page)
+			return true
+		end,
+		args = {
+			{name = "page", type = {"number"}}
+		},
 		description = "Displays the rules of this server."
 	},
 
 	-- Roles --
 	addRole = {
-		func = Role.new,
+		func = function(caller, name)
+			if string.find(name, "%s") then
+				return false, "INVALID NAME", "A role name cannot contain spaces"
+			end
+
+			local success, err, errText = G_roles.create(name)
+
+			if success then
+				tellSupervisors(caller.prettyName() .. " created the role: " .. quote(name), caller.peer_id)
+			end
+			return success, err, errText
+		end,
 		args = {
 			{name = "role_name", type = {"string"}, required = true}
 		},
 		description = "Adds a role to the server that can be assigned to players."
 	},
 	removeRole = {
-		func = Role.delete,
+		func = function(caller, name)
+			local success, err, errText = G_roles.delete(name)
+			if success then
+				tellSupervisors("ROLE DELETED", quote(name) .. " has been deleted by " .. caller.prettyName())
+			end
+			return success, err, errText
+		end,
 		args = {
 			{name = "role_name", type = {"string"}, required = true}
 		},
-		description = "Removes the role from all players and deletes it."
+		description = "Removes a role from all players and deletes it."
 	},
 	rolePerms = {
-		func = function(caller_id, role, is_admin, is_auth)
-			if role == "Owner" then
+		func = function(caller, role_name, is_admin, is_auth)
+			local quoted = quote(role_name)
+			if role_name == "Owner" then
 				return false, "DENIED", "You cannot edit the \"Owner\" role"
 			end
 
-			if Role.exists(role) then
-				local change_made
-				if is_admin ~= nil and is_admin ~= g_roles[role].admin then
-					g_roles[role].admin = is_admin
-					change_made = true
-				end
+			local role = G_roles.get(role_name)
 
-				if is_auth ~= nil and is_auth ~= g_roles[role].auth then
-					g_roles[role].auth = is_auth
-					change_made = true
+			if role then
+				local change = role.setPermissions(is_admin, is_auth)
+				local perms = string.format("Admin: %s\nAuth: %s", role.admin and "True" or "False", role.auth and "True" or "False")
+				if change then
+					tellSupervisors("ROLE EDITED", caller.prettyName() .. " edited " .. quoted .. " to have the following permissions:\n" .. perms, caller.peer_id)
+					return true, "ROLE EDITED", quoted .. " now has the following permissions:\n" .. perms
+				else
+					return false, "NO EDITS MADE", "No changes were made to " .. quoted
 				end
-
-				if change_made then
-					local online_players = {}
-					for k, v in pairs(PLAYER_LIST) do
-						online_players[v.steam_id] = k
-					end
-					for k, v in pairs(g_roles[role].members) do
-						if online_players[v] then
-							Player.updatePrivileges(online_players[v])
-						end
-					end
-					local text = ""
-					text = text .. string.format("Admin: %s\nAuth: %s\n%s", g_roles[role].admin, g_roles[role].auth, LINE)
-
-					tellSupervisors("ROLE EDITED", Player.prettyName(caller_id) .. " edited the role permissions for \"" .. role .. "\". The new permissions are as follows:\n" .. text, caller_id)
-					return true, "ROLE EDITED", "The new permissions for \"" .. role .. "\" are as follows:\n" .. text
-				end
-				return false, "NO EDITS MADE", "No changes were made to \"" .. role .. "\""
 			else
-				return false, "ROLE NOT FOUND", "The role \"" .. role .. "\" does not exist"
+				return false, "ROLE NOT FOUND", quoted .. " is not a valid role"
 			end
 		end,
 		args = {
 			{name = "role_name", type = {"string"}, required = true},
 			{name = "is_admin", type = {"bool"}, required = true},
-			{name = "is_auth", type = {"bool"}}
+			{name = "is_auth", type = {"bool"}, required = true}
 		},
 		description = "Sets the permissions of a role."
 	},
 	roleAccess = {
-		func = Role.setAccessToCommand,
+		func = function(caller, role_name, command, value)
+			local role = G_roles.get(role_name)
+			local quoted = quote(role_name)
+
+			if not role then
+				return false, "ROLE NOT FOUND", quoted .. " is not a valid role"
+			end
+
+			if value then
+				if not role.commands[command] then
+					role.addCommandAccess(command)
+					tellSupervisors("ROLE EDITED", caller.prettyName() .. " has given " .. quoted .. " access to the " .. command .. " command", caller.peer_id)
+					return true, "ROLE EDITED", quoted .. " has been given access to the " .. command .. " command"
+				end
+			else
+				if role.commands[command] then
+					role.removeCommandAccess(command)
+					tellSupervisors("ROLE EDITED", caller.prettyName() .. " has removed access to the " .. command .. " command for the role " .. quoted, caller.peer_id)
+					return true, "ROLE EDITED", quoted .. " has lost access to the " .. command .. " command"
+				end
+			end
+			return false, "NO CHANGES MADE", quoted .. " already has access to the " .. command .. " command"
+		end,
 		args = {
 			{name = "role", type = {"string"}, required = true},
 			{name = "command", type = {"string"}, required = true},
 			{name = "value", type = {"bool"}, required = true}
 		},
-		description = "Sets which commands a role has access to.",
+		description = "Sets whether a role has access to a command or not.",
 	},
 	giveRole = {
-		func = function(caller_id, role, target_id)
-			return Player.giveRole(caller_id, target_id, role)
+		func = function(caller, role_text, target_player)
+			local role = G_roles.get(role_text)
+			local quoted = quote(role_text)
+			if not role then
+				return false, "ROLE NOT FOUND", quoted .. " is not a valid role"
+			end
+			
+			role.addMember(target_player)
+			tellSupervisors("ROLE GIVEN", caller.prettyName() .. " has given " .. target_player.prettyName() .. " the role " .. quoted, caller.peer_id)
+			return true, "ROLE GIVEN", target_player.prettyName() .. " has been given the role " .. quoted
 		end,
 		args = {
 			{name = "role", type = {"string"}, required = true},
@@ -2761,8 +2990,16 @@ COMMANDS = {
 		description = "Assigns a role to a player."
 	},
 	revokeRole = {
-		func = function(caller_id, role, target_id)
-			return Player.removeRole(caller_id, target_id, role)
+		func = function(caller, role_name, target_player)
+			local role = G_roles.get(role_name)
+			local quoted = quote(role_name)
+			if not role then
+				return false, "ROLE NOT FOUND", quoted .. " is not a valid role"
+			end
+
+			role.removeMember(target_player)
+			tellSupervisors("ROLE REVOKED", caller.prettyName() .. " has revoked " .. quoted .. " from " .. target_player.prettyName(), caller.peer_id)
+			return true, "ROLE REVOKED", target_player.prettyName() .. " has had their role " .. quoted .. " revoked"
 		end,
 		args = {
 			{name = "role", type = {"string"}, required = true},
@@ -2771,7 +3008,7 @@ COMMANDS = {
 		description = "Revokes a role from a player."
 	},
 	roles = {
-		func = function(caller_id, ...)
+		func = function(caller, ...)
 			local args = {...}
 			local as_num = tonumber(args[1])
 			local role_name
@@ -2784,52 +3021,47 @@ COMMANDS = {
 			elseif as_num then
 				page = as_num
 			elseif as_num == nil then
-				role_name = table.unpack(args)
+				role_name = args[1]
 			end
 
 			if role_name then
-				if not Role.exists(role_name) then
-					return false, "ROLE NOT FOUND", "The role \"" .. role_name .. "\" does not exist"
+				local role = G_roles.get(role_name)
+				if not role then
+					return false, "ROLE NOT FOUND", "The role " .. quote(role_name) .. " does not exist"
 				end
-				server.announce(" ", LINE, caller_id)
-				server.announce("Active", g_roles[role_name].active and "Yes" or "No", caller_id)
-				server.announce("Admin", g_roles[role_name].admin and "Yes" or "No", caller_id)
-				server.announce("Auth", g_roles[role_name].auth and "Yes" or "No", caller_id)
-				server.announce(" ", "Has access to the following commands:", caller_id)
-				if g_roles[role_name].commands then
-					local names = {}
-					for k, v in pairs(g_roles[role_name].commands) do
-						table.insert(names, tostring(k))
-					end
-					table.sort(names)
-					for k, v in ipairs(names) do
-						server.announce(" ", v, caller_id)
+
+				server.announce(" ", LINE, caller.peer_id)
+				server.announce("Active", role.active and "Yes" or "No", caller.peer_id)
+				server.announce("Admin", role.admin and "Yes" or "No", caller.peer_id)
+				server.announce("Auth", role.auth and "Yes" or "No", caller.peer_id)
+				server.announce(" ", "Has access to the following commands:", caller.peer_id)
+
+				local commands = role.commands
+				if commands then
+					local sorted_commands = getTableKeys(commands, true)
+					for _, name in ipairs(sorted_commands) do
+						server.announce(" ", name, caller.peer_id)
 					end
 				elseif role_name == "Owner" then
-					server.announce(" ", "All", caller_id)
+					server.announce(" ", "All", caller.peer_id)
 				end
 			else
-				local alpha = {}
-				local entries_per_page = 10
-				server.announce(" ", "-------------------------------  ROLES  ------------------------------", caller_id)
+				local alphabetical = {}
 
-				for k, v in pairs(g_roles) do
-					if k ~= "Prank" then table.insert(alpha, k) end
+				for name, _ in pairs(G_roles.get()) do
+					if name ~= "Prank" then table.insert(alphabetical, name) end
 				end
-				sortKeys(alpha)
 
-				local max_page = math.max(1, math.ceil(#alpha / entries_per_page)) -- the number of pages needed to display all entries
-				page = clamp(page, 1, max_page)
-				local start_index = 1 + (page - 1) * entries_per_page
-				local end_index = math.min(#alpha, page * entries_per_page)
+				local clamped_page, max_page, start_index, end_index = paginate(page, alphabetical, 10)
 
+				server.announce(" ", "-------------------------------  ROLES  ------------------------------", caller.peer_id)
 
 				for i = start_index, end_index do
-					server.announce(alpha[i], g_roles[alpha[i]].active and "Active" or "Inactive", caller_id)
+					server.announce(alphabetical[i], G_roles.get(alphabetical[i]).active and "Active" or "Inactive", caller.peer_id)
 				end
-				server.announce(" ", string.format("Page %d of %d", page, max_page), caller_id)
+				server.announce(" ", string.format("Page %d of %d", clamped_page, max_page), caller.peer_id)
 			end
-			server.announce(" ", LINE, caller_id)
+			server.announce(" ", LINE, caller.peer_id)
 			return true
 		end,
 		args = {
@@ -2838,18 +3070,25 @@ COMMANDS = {
 		description = "Lists all of the roles on the server. Specifying a role's name will list detailed info on it."
 	},
 	roleStatus = {
-		func = function(caller_id, role, status)
-			if not Role.exists(role) then
-				return false, "ROLE NOT FOUND", "\"" .. role .. "\" is not an existing role"
+		func = function(caller, role_name, status)
+			local role = G_roles.get(role_name)
+			local quoted = quote(role_name)
+
+			if not role then
+				return false, "ROLE NOT FOUND", quoted .. " is not an existing role"
 			end
+
 			if status == nil then
-				return true, role, g_roles[role].active and "Active" or "Inactive"
+				return true, role_name, role.active and "Active" or "Inactive"
 			end
-			if DEFAULT_ROLES[role] then
-				return false, "DENIED", "\"" .. role .. "\" is a reserved role and cannot be edited"
+
+			if DEFAULT_ROLES[role_name] then
+				return false, "DENIED", quoted .. " is a reserved role and cannot be edited"
 			end
-			g_roles[role].active = status
-			return true, "ROLE " .. (status and "activated" or "deactivated"), "\"" .. role .. "\" has been " .. (status and "activated" or "deactivated")
+
+			role.setState(status)
+
+			return true, "ROLE " .. (status and "activated" or "deactivated"), quoted .. " has been " .. (status and "activated" or "deactivated")
 		end,
 		args = {
 			{name = "role", type = {"string"}, required = true},
@@ -2860,95 +3099,121 @@ COMMANDS = {
 
 	-- Vehicles --
 	clearVehicle = {
-		func = function(caller_id, ...)
-			local ids = {...}
-			if ids[1] == nil then
-				local nearest = Player.nearestVehicle(caller_id, caller_id)
+		func = function(caller, ...)
+			local vehicles = {...}
+
+			if vehicles[1] == nil then
+				local nearest, err, errText = Player.nearestVehicles(caller.steam_id)
 				if not nearest then
-					return false, "VEHICLE NOT FOUND", "You do not have any vehicles"
+					return nearest, err, errText
 				end
-				ids[1] = nearest
+				
+				local prettyName = nearest[1].prettyName()
+				local success = server.despawnVehicle(nearest[1].vehicle_id, true)
+				return success, success and "VEHICLE REMOVED" or "ERROR", prettyName .. (success and " has been removed" or " could not be despawned due to an error")
 			end
-			for _, vehicle_id in ipairs(ids) do
-				if Vehicle.exists(vehicle_id) then
-					server.despawnVehicle(vehicle_id, true)
+
+			local failed = {}
+			local succeeded = {}
+			for _, vehicle in ipairs(vehicles) do
+				local success = server.despawnVehicle(vehicle.vehicle_id, true)
+				if success then
+					table.insert(succeeded, vehicle.vehicle_id)
 				else
-					return false, "VEHICLE NOT FOUND", Vehicle.prettyName(vehicle_id) .. " does not exist"
+					table.insert(failed, vehicle.vehicle_id)
 				end
 			end
+
+			if #failed > 0 then
+				return false, "ERROR", "The following vehicles could not be despawned due to an error: " .. table.concat(failed, ", ")
+			end
+
+			return true, "VEHICLES DESPAWNED", "The following vehicles were despawned: " .. table.concat(succeeded, ", ")
 		end,
 		args = {
-			{name = "vehicleID", type = {"vehicleID"}, repeatable = true}
+			{name = "vehicleID", type = {"vehicle"}, repeatable = true}
 		},
 		description = "Removes vehicles by their id. If no ids are given, it will remove your nearest vehicle."
 	},
 	setEditable = {
-		func = function(caller_id, vehicle_id, state)
-			if Vehicle.exists(vehicle_id) then
-				server.setVehicleEditable(vehicle_id, state)
-				return true, "VEHICLE EDITING", Vehicle.prettyName(vehicle_id) .. " is " .. (state and "now" or "no longer") .. " editable"
-			else
-				return false, "VEHICLE NOT FOUND", " Vehicle " .. vehicle_id .. " does not exist"
-			end
+		func = function(caller, vehicle, state)			
+			local success = server.setVehicleEditable(vehicle.vehicle_id, state)
+			if not success then return false, "ERROR", "An error occurred when setting the state for " .. vehicle.pretty_name end
+
+			return true, "VEHICLE EDITING", vehicle.pretty_name .. " is " .. (state and "now" or "no longer") .. " editable"
 		end,
 		args = {
-			{name = "vehicleID", type = {"vehicleID"}, required = true},
+			{name = "vehicleID", type = {"vehicle"}, required = true},
 			{name = "true/false", type = {"bool"}, required = true}
 		},
 		description = "Sets a vehicle to either be editable or non-editable."
 	},
 	vehicleList = {
-		func = Vehicle.printList,
-		description = "Lists all the vehicles that are spawned in the game."
+		func = function(caller, page)
+			local vehicles = {}
+
+			local keys = getTableKeys(G_vehicles.get(), true)
+			for vehicle_id, vehicle in ipairs(keys) do
+				table.insert(vehicles, vehicle)
+			end
+
+			local clamped_page, max_page, start_index, end_index = paginate(page, vehicles, 10)
+			server.announce(" ", "----------------------------  VEHICLE LIST ---------------------------", caller.peer_id)
+
+			for i = start_index, end_index do
+				local vehicle = vehicles[i]
+				server.announce(" ", vehicle.vehicle_id .. " | " .. vehicle.pretty_name .. " | " .. G_players.get(vehicle.owner).prettyName(), caller.peer_id)
+			end
+
+			server.announce(" ", "Page " .. clamped_page .. " of " .. max_page, caller.peer_id)
+		end,
+		args = {
+			{name = "page", type = {"number"}}
+		},
+		description = "Lists all the player vehicles that are spawned in the game."
 	},
 	vehicleIDs = {
-		func = function(caller_id)
-			if VEHICLE_ID_VIEWERS[caller_id] then
-				-- remove all popups and remove from table
-				for _, vehicle_data in pairs(g_vehicleList) do
-					server.removePopup(caller_id, vehicle_data.ui_id)
-				end
-				VEHICLE_ID_VIEWERS[caller_id] = nil
-			else
-				-- add to table and update UI
-				VEHICLE_ID_VIEWERS[caller_id] = true
-				Player.updateVehicleIdUi(caller_id)
-			end
-			return true, "VEHICLE IDS", "Vehicle IDs are now " .. (VEHICLE_ID_VIEWERS[caller_id] and "visible" or "hidden")
+		func = function(caller)
+			local state = caller.setVehicleUIState()
+			return true, "VEHICLE IDS", "Vehicle IDs are now " .. (state and "visible" or "hidden")
 		end,
 		description = "Toggles displaying vehicle IDs."
 	},
 	vehicleInfo = {
-		func = function(caller_id, vehicle_id)
-			if not vehicle_id then
-				vehicle_id = Player.nearestVehicle(caller_id)
-			end
-			if not vehicle_id then
-				return false, "VEHICLE NOT FOUND", "There are no vehicles in the world"
+		func = function(caller, vehicle)
+			local nearest, err, errText
+			if not vehicle then
+				nearest, err, errText = caller.nearestVehicles(caller.steam_id)
+				if not nearest then
+					return false, err, errText
+				end
+				vehicle = nearest[1]
 			end
 
-			local vehicle_save_data = g_vehicleList[vehicle_id]
-			local vehicle_data = server.getVehicleData(vehicle_id)
-			server.announce("VEHICLE_DATA", "vehicleID : " .. vehicle_id, caller_id)
-			server.announce(" ", "Name : " .. (vehicle_save_data.name or "Unknown"), caller_id)
-			server.announce(" ", "Owner : " .. (g_playerData[vehicle_save_data.owner].name or "Unknown"), caller_id)
-			server.announce(" ", "Voxel Count : " .. (vehicle_data.voxels and string.format("%d", vehicle_data.voxels) or "Unknown"), caller_id)
-			server.announce(" ", "Mass : " .. (vehicle_data.mass and string.format("%0.2f", vehicle_data.mass) or "Unknown"), caller_id)
-			server.announce(" ", "Cost : " .. (vehicle_save_data.cost and string.format("%0.2f", vehicle_save_data.cost) or "Unknown"), caller_id)
+			local vehicle_data, success = server.getVehicleData(vehicle.vehicle_id)
+			if not success then
+				return false, "ERROR", "An error occurred when gathering data for " .. vehicle.pretty_name
+			end
+			server.announce("VEHICLE_DATA", "vehicleID : " .. vehicle.vehicle_id, caller.peer_id)
+			server.announce(" ", "Name : " .. (vehicle.name or "Unknown"), caller.peer_id)
+			server.announce(" ", "Owner : " .. (G_players.get(vehicle.owner).prettyName() or "Unknown"), caller.peer_id)
+			server.announce(" ", "Voxel Count : " .. (vehicle_data.voxels and string.format("%d", vehicle_data.voxels) or "Unknown"), caller.peer_id)
+			server.announce(" ", "Mass : " .. (vehicle_data.mass and string.format("%0.2f", vehicle_data.mass) or "Unknown"), caller.peer_id)
+			server.announce(" ", "Cost : " .. (vehicle.cost and string.format("%0.2f", vehicle.cost) or "Unknown"), caller.peer_id)
 			return true
 		end,
 		args = {
-			{name = "vehicleID", type={"vehicleID"}}
+			{name = "vehicleID", type={"vehicle"}}
 		},
-		description = "Get info on a vehicle. If no vehicleID is provided, the nearest vehicle will be used"
+		description = "Get detailed info on a vehicle. If no vehicleID is provided, the nearest vehicle will be used"
 	},
 
 	-- Player --
 	kill = {
-		func = function(caller_id, target_id)
-			local character_id = server.getPlayerCharacterID(target_id)
+		func = function(caller, target_player)
+			local character_id = server.getPlayerCharacterID(target_player.peer_id)
 			server.killCharacter(character_id)
-			return true, "PLAYER KILLED", Player.prettyName(target_id) .. " has been killed"
+			return true, "PLAYER KILLED", target_player.prettyName() .. " has been killed"
 		end,
 		args = {
 			{name = "playerID", type = {"playerID"}, required = true}
@@ -2956,24 +3221,25 @@ COMMANDS = {
 		description = "Kills another player."
 	},
 	respawn = {
-		func = function(caller_id)
-			local character_id = server.getPlayerCharacterID(caller_id)
+		func = function(caller)
+			local character_id = server.getPlayerCharacterID(caller.peer_id)
 			server.killCharacter(character_id)
 			return true, "PLAYER KILLED", "You have been killed so you can respawn"
 		end,
 		description = "Kills your character, giving you the option to respawn."
 	},
 	playerRoles = {
-		func = function(caller_id, target_id)
-			local target_id = target_id or caller_id
-			local steam_id = Player.getSteamID(target_id)
-			server.announce("ROLE LIST", string.format("%s has the following roles:", Player.prettyName(target_id)), caller_id)
-			for role_name, role_data in pairs(g_roles) do
-				if Player.hasRole(target_id, role_name) then
-					server.announce(" ", role_name, caller_id)
+		func = function(caller, target_player)
+			local target = target_player or caller
+			server.announce("ROLE LIST", target.prettyName() .. " has the following roles:", caller.peer_id)
+
+			for role_name, role_data in pairs(G_roles.get()) do
+				if target_player.hasRole(role_name) then
+					server.announce(" ", role_name, caller.peer_id)
 				end
 			end
-			server.announce(" ", LINE, caller_id)
+			server.announce(" ", LINE, caller.peer_id)
+
 			return true
 		end,
 		args = {
@@ -2982,15 +3248,14 @@ COMMANDS = {
 		description = "Lists the roles of the specified player. If no player is specified, your own roles are shown."
 	},
 	playerPerms = {
-		func = function(caller_id, target_id)
-			local target_id = target_id or caller_id
-			local target_data = Player.getData(target_id)
-			Player.updatePrivileges(target_id)
-			server.announce(" ", LINE, caller_id)
-			server.announce("PLAYER PERMS", string.format("%s has the following permissions:", Player.prettyName(target_id)), caller_id)
-			server.announce("Admin", target_data.admin and "Yes" or "No", caller_id)
-			server.announce("Auth", target_data.auth and "Yes" or "No", caller_id)
-			server.announce(" ", LINE, caller_id)
+		func = function(caller, target_player)
+			local target = target_player or caller
+			target.updatePrivileges();
+			server.announce(" ", LINE, caller.peer_id)
+			server.announce("PLAYER PERMS", target.prettyName() .. " has the following permissions:", caller.peer_id)
+			server.announce("Admin", target.admin and "Yes" or "No", caller.peer_id)
+			server.announce("Auth", target.auth and "Yes" or "No", caller.peer_id)
+			server.announce(" ", LINE, caller.peer_id)
 			return true
 		end,
 		args = {
@@ -2999,18 +3264,17 @@ COMMANDS = {
 		description = "Lists the permissions of the specified player. If no player is specified, your own permissions are shown."
 	},
 	heal = {
-		func = function(caller_id, target_id, amount)
-			local target = target_id or caller_id
+		func = function(caller, target_player, amount)
+			local target = target_player or caller
 			amount = amount or 100
 
-			local character_id, success = server.getPlayerCharacterID(target)
+			local character_id, success = server.getPlayerCharacterID(target.peer_id)
 			local character_data = server.getCharacterData(character_id)
 
 			-- revive dead/incapacitated targets
 			if character_data.dead or character_data.is_incapacitated then
 				server.reviveCharacter(character_id)
-				server.announce("SUCCESS", string.format("%s has been revived", Player.prettyName(target)), caller_id)
-				return true, "PLAYER REVIVED", Player.prettyName(target) .. " has been revived"
+				return true, "PLAYER REVIVED", target == caller and "You have been revived" or target.prettyName() .. " has been revived"
 			end
 
 			local clamped_amount = clamp(character_data.hp + amount, 0, 100)
@@ -3018,20 +3282,19 @@ COMMANDS = {
 
 			local title = "HEALED"
 			local message = "You have been healed to " .. clamp(character_data.hp + amount, 0, 100) .. "%"
-			-- easter egg
-			if character_data.hp < 1 and math.random(40) == 18 then
+			-- 🥚
+			if character_data.hp < 1 and math.random(15) == 4 then
 				title = "Whew!"
 				message = "Just in time"
 			end
 
-			if caller_id ~= target then
-				server.notify(target, "YOU'VE BEEN HEALED", Player.prettyName(caller_id) .. " has healed you by " .. clamped_amount .. "%", 5)
+			if caller ~= target then
+				server.notify(target.peer_id, "YOU'VE BEEN HEALED", caller.prettyName() .. " has healed you by " .. clamped_amount .. "%", 5)
 				title = "PLAYER HEALED"
-				message = Player.prettyName(target) .. " has been healed by " .. clamped_amount .. "%"
+				message = target.prettyName() .. " has been healed by " .. clamped_amount .. "%"
 			end
 
 			return true, title, message
-
 		end,
 		args = {
 			{name = "playerID", type = {"playerID"}},
@@ -3040,8 +3303,8 @@ COMMANDS = {
 		description = "Heals the target player by the specified amount. If no amount is specified, the target will be healed to full. If no amount and no player is specified then you will be healed to full."
 	},
 	equip = {
-		func = function(caller_id, ...)
-			return Player.equipArgumentDecoding(caller_id, caller_id, ...)
+		func = function(caller, ...)
+			return equipArgumentDecode(caller, caller.steam_id, ...)
 		end,
 		args = {
 			{name = "item_id", type = {"number"}, required = true},
@@ -3054,7 +3317,9 @@ COMMANDS = {
 		description = "Equips you with the requested item. The slot is a letter (A, B, C, D, E, F) and can appear in any position within the command. You can find an item's ID and data info using ?equipmentIDs"
 	},
 	equipp = {
-		func = Player.equipArgumentDecoding,
+		func = function(caller, target_player, ...)
+			return equipArgumentDecode(target_player, caller.steam_id, ...)
+		end,
 		args = {
 			{name = "playerID", type = {"playerID"}, required = true},
 			{name = "item_id", type = {"number"}, required = true},
@@ -3067,16 +3332,16 @@ COMMANDS = {
 		description = "Equips the specified player with the requested item. The slot is a letter (A, B, C, D, E, F) and can appear in any position within the command. You can find an item's ID and data info using ?equipmentIDs"
 	},
 	position = {
-		func = function(caller_id, target_id)
-			target_id = target_id or caller_id
+		func = function(caller, target_player)
+			local target = target_player or caller ---@type Player
 
-			local matrix, is_success = server.getPlayerPos(target_id)
-			if not is_success then
-				return false, "PLAYER NOT FOUND", Player.prettyName(target_id) .. " could not be found or does not exist"
+			local pos, success = target.getPosition()
+			if not success then
+				return false, "ERROR", "An error occurred when getting the position of " .. target.prettyName()
 			end
 
-			local x,y,z = matrix[13], matrix[14], matrix[15]
-			server.announce(Player.prettyName(target_id) .. " POSITION", string.format("X:%0.3f | Y:%0.3f | Z:%0.3f", x, y, z), caller_id)
+			local x, y, z = pos[13], pos[14], pos[15]
+			server.announce(target.prettyName() .. " POSITION", string.format("X:%0.3f | Y:%0.3f | Z:%0.3f", x, y, z), caller.peer_id)
 			return true
 		end,
 		description = "Get the 3D coordinates of the target player, or yourself.",
@@ -3087,22 +3352,25 @@ COMMANDS = {
 
 	-- Teleport --
 	tpb = {
-		func = function(caller_id)
-			local data = Player.getData(caller_id)
-			data.deny_tp = not data.deny_tp or nil
-			Player.updateTpBlockUi(caller_id)
+		func = function(caller)
+			caller.setTpBlocking()
 			return true
 		end,
 		description = "Blocks other players' ability to teleport to you."
 	},
 	tpc = {
-		func = function(caller_id, x, y, z)
+		func = function(caller, x, y, z)
 			local target_matrix = matrix.translation(x, y, z)
 			local valid, title, statusText = checkTp(target_matrix)
 			if not valid then
 				return false, title, statusText
 			end
-			server.setPlayerPos(caller_id, target_matrix)
+
+			local success, err, errText = caller.setPosition(target_matrix)
+			if not success then
+				return false, err, errText
+			end
+
 			return true, "TELEPORTED", string.format("You have been teleported to:\nX:%0.1f | Y:%0.1f | Z:%0.1f", x, y, z)
 		end,
 		args = {
@@ -3113,38 +3381,35 @@ COMMANDS = {
 		description = "Teleports the player to the specified x, y, z coordinates."
 	},
 	tpl = {
-		func = function(caller_id, location)
-			local location_names = {}
-			for zone_name, _ in pairs(TELEPORT_ZONES) do
-				table.insert(location_names, zone_name)
-			end
+		func = function(caller, location)
+			local location_names = getTableKeys(TELEPORT_ZONES)
 			local target_name = fuzzyStringInTable(location, location_names) -- get most similar location name to the text the user entered
+			
 			if not target_name then
-				return false, "INVALID LOCATION", location .. " is not a recognized location"
+				return false, "INVALID LOCATION", quote(location) .. " is not a recognized location"
 			end
 
-			local destination = TELEPORT_ZONES[target_name].transform
+			local target_matrix = TELEPORT_ZONES[target_name].transform
 
-			local valid, title, statusText = checkTp(destination)
-			if not valid then
-				return false, title, statusText
+			local success, err, errText = caller.setPosition(target_matrix)
+			if not success then
+				return false, err, errText
 			end
 
-			server.setPlayerPos(caller_id, destination)
-			local player_pos, success = server.getPlayerPos(caller_id)
-			if not success or matrix.distance(player_pos, destination) > 1800 then
+			local player_pos, success = caller.getPosition()
+			if not success or matrix.distance(player_pos, target_matrix) > 1800 then
 				table.insert(EVENT_QUEUE, {
 					type = "teleportToPosition",
-					target_id = caller_id,
-					target_position = destination,
+					target = caller,
+					target_position = target_matrix,
 					time = 0,
 					timeEnd = 110
 				})
 			end
 
-			-- easter egg
-			if (server.getPlayerName(caller_id)) ~= "Leopard" and target_name == "Leopards Base" and math.random(1, 100) == 18 then
-				server.announce(" ", "Intruder alert!", caller_id)
+			-- 🥚
+			if (caller.name) ~= "Leopard" and target_name == "Leopards Base" and math.random(100) == 18 then
+				server.announce(" ", "Intruder alert!", caller.peer_id)
 			end
 
 			return true, "TELEPORTED", "You have been teleported to " .. target_name
@@ -3155,18 +3420,19 @@ COMMANDS = {
 		description = "Teleports the player to the specified location. You can use ?tpLocations to see what locations are available."
 	},
 	tpp = {
-		func = function(caller_id, target_id)
-			local target_matrix, success = server.getPlayerPos(target_id)
+		func = function(caller, target_player)
+			local target_matrix, success = target_player.getPosition()
+			local target_name = target_player.prettyName()
 			if not success then
-				return false, "ERROR", Player.prettyName(target_id) .. " could not be found. This should never happen"
+				return false, "ERROR", target_name .. " could not be found. This should never happen"
 			end
 
-			if g_playerData[Player.getSteamID(target_id)].deny_tp then
-				return false, "DENIED", Player.prettyName(target_id) .. " has denied access to teleport to them"
+			if target_player.tp_blocking then
+				return false, "DENIED", target_name .. " has denied access to teleport to them"
 			end
 
-			server.setPlayerPos(caller_id, target_matrix)
-			return true, "TELEPORTED", "You have been teleported to " .. Player.prettyName(target_id)
+			caller.setPosition(target_matrix)
+			return true, "TELEPORTED", "You have been teleported to " .. target_name
 		end,
 		args = {
 			{name = "playerID", type = {"playerID"}, required = true}
@@ -3174,31 +3440,23 @@ COMMANDS = {
 		description = "Teleports the player to the specified player's position."
 	},
 	tp2me = {
-		func = function(caller_id, ...)
-			local caller_pos, success = server.getPlayerPos(caller_id)
+		func = function(caller, ...)
+			local caller_pos, success = caller.getPosition()
 			if not success then
 				return false, "ERROR", "Your position could not be found. This should never happen"
 			end
 
-			local ids = {...}
+			local players = {...}
 			local player_names = {}
+			local t = players[1] == "*" and G_players.get() or players
 
-			if ids[1] == "*" then -- if player selected all players then gather all player peer_ids
-				ids = {}
-				for k, v in pairs(PLAYER_LIST) do
-					table.insert(ids, k)
-				end
+			for steam_id, player in pairs(t) do
+				player.setPosition(caller_pos)
+				server.announce("TELEPORTED", "You have been teleported to " .. caller.prettyName(), player.peer_id)
+				table.insert(player_names, player.prettyName())
 			end
 
-			-- teleport the players and add their names to a table for user feedback
-			for k, v in ipairs(ids) do
-				local success = server.setPlayerPos(v, caller_pos)
-				if success then
-					table.insert(player_names, Player.prettyName(v))
-					server.announce("TELEPORTED", "You have been teleported to " .. Player.prettyName(caller_id), v)
-				end
-			end
-			return true, "The following players were telported to your location:\n" .. table.concat(player_names, "\n")
+			return true, "TELEPORTED", "The following players were teleported to your location:\n" .. table.concat(player_names, "\n")
 		end,
 		args = {
 			{name = "playerID", type = {"playerID", "string"}, required = true, repeatable = true}
@@ -3206,70 +3464,80 @@ COMMANDS = {
 		description = "Teleports specified player(s) to you. Use * to teleport all players to you. Overrides teleport blocking."
 	},
 	tpv = {
-		func = function(caller_id, vehicle_id)
-			local target_matrix, success = server.getPlayerPos(caller_id)
+		func = function(caller, vehicle, unsafe)
+			local target_matrix, success = caller.getPosition()
 			if not success then
-				return false, "ERROR", "Your position could not be found"
+				return false, "ERROR", "Your position could not be found. This should never happen"
 			end
 
-			local success = server.setVehiclePos(vehicle_id, target_matrix)
+			local success = vehicle.setPosition(target_matrix, unsafe)
 
-			return success, Vehicle.prettyName(vehicle_id) .. (success and " has been teleported to your location" or " could not be teleported to your location")
+			-- 🥚
+			if unsafe and math.random(10) == 2 then
+				server.announce(
+					" ",
+					"By choosing to teleport a vehicle unsafely at your own risk, you hereby claim responsibility for any (or all) of the below events:\nI. Severe Mutilation\nII. Painful Death\nIII. Nuclear Explosions\nIV. Forced Removal of Your Spleen*\nV. Loss of Brain Cells\n\n*The immediate area within 3m may also be removed",
+					caller.peer_id
+				)
+			end
+
+			return success, "VEHICLE TELEPORTED", vehicle.pretty_name .. (success and " has been teleported to your location" or " could not be teleported to your location")
 		end,
 		args = {
-			{name = "vehicleID", type = {"vehicleID"}, required = true}
+			{name = "vehicleID", type = {"vehicle"}, required = true},
+			{name = "unsafe", type = {"bool"}}
 		},
-		description = "Teleports the specified vehicle to your position."
+		description = "Teleports the specified vehicle to your position. Specifying an unsafe teleport will not account for other vehicles at the destination."
 	},
 	tps = {
-		func = function(caller_id, arg1, seat_name)
-			local character_id, is_success = server.getPlayerCharacterID(caller_id)
-			local vehicle_id
+		func = function(caller, arg1, seat_name)
+			local character_id, is_success = server.getPlayerCharacterID(caller.peer_id)
+			local vehicle
 
-			if type(arg1) == "number" then
-				vehicle_id = arg1
+			if arg1.name then
+				vehicle = arg1
 			elseif arg1 == "r" then
-				if PLAYER_LIST[caller_id].latest_spawn then
-					vehicle_id = PLAYER_LIST[caller_id].latest_spawn
+				if STEAM_IDS[caller.steam_id].latest_spawn then
+					vehicle = G_vehicles.get(STEAM_IDS[caller.steam_id].latest_spawn)
 				else
-					return false, "VEHICLE NOT FOUND", "You have not spawned any vehicles or the last vehicle you spawned has already been despawned"
+					return false, "VEHICLE NOT FOUND", "You have not spawned any vehicles or the last vehicle you spawned has been despawned"
 				end
 			elseif arg1 == "n" or not arg1 then
-				local nearest = Player.nearestVehicle(caller_id)
+				local nearest, err, errText = caller.nearestVehicles()
 				if not nearest then
-					return false, "VEHICLE NOT FOUND", "There are no vehicles in the world"
+					return false, err, errText
 				end
-				vehicle_id = nearest
+				vehicle = nearest[1]
 			else
-				return false, "INVALID ARG", arg1 .. " is not a valid vehicle_id"
+				return false, "INVALID ARG", quote(arg1) .. " is not a valid argument"
 			end
 
-			if not server.getVehicleSimulating(vehicle_id) then
-				local vehicle_pos = server.getVehiclePos(vehicle_id)
-				server.setPlayerPos(caller_id, vehicle_pos)
+			if not server.getVehicleSimulating(vehicle.vehicle_id) then
+				local vehicle_pos = vehicle.getPosition()
+				caller.setPosition(vehicle_pos)
 				return false, "UH OH", "Looks like the vehicle you are trying to teleport to isn't loaded in. This is both ridiculous and miserable. While we think of a fix, please enjoy being teleported to the vehicle's general location instead"
 			end
 
-			local vehicle_pos, is_success = server.getVehiclePos(vehicle_id)
+			local vehicle_pos = vehicle.getPosition()
 			local valid, title, statusText = checkTp(vehicle_pos)
 
 			if not valid then
 				return false, title, statusText
 			end
 
-			server.setCharacterSeated(character_id, vehicle_id, seat_name)
-			return true, "TELEPORTED", "You have been teleported to the " .. (seat_name and "seat \"" .. seat_name.."\"" or "first seat") .. " on " .. Vehicle.prettyName(vehicle_id)
+			server.setCharacterSeated(character_id, vehicle.vehicle_id, seat_name)
+			return true, "TELEPORTED", "You have been teleported to the " .. (seat_name and "seat " .. quote(seat_name) or "first seat") .. " on " .. vehicle.pretty_name
 		end,
 		args = {
-			{name = "r/n/vehicleID", type = {"vehicleID", "string"}},
+			{name = "r/n/vehicleID", type = {"vehicle", "string"}},
 			{name = "seat name", type = {"text"}}
 		},
 		description = "Teleports you to a seat on a vehicle. You can use \"r\" (vehicle you last spawned) or \"n\" (nearest vehicle) for the first argument. If no vehicle and seat name is specified, you will be teleported to the nearest seat."
 	},
 	tp2v = {
-		func = function(caller_id, vehicle_id)
-			local player_matrix, is_success = server.getPlayerPos(caller_id)
-			local vehicle_matrix, is_success = server.getVehiclePos(vehicle_id)
+		func = function(caller, vehicle)
+			local player_matrix = caller.getPosition()
+			local vehicle_matrix = vehicle.getPosition()
 
 			local valid, title, statusText = checkTp(vehicle_matrix)
 
@@ -3277,23 +3545,23 @@ COMMANDS = {
 				return false, title, statusText
 			end
 
-			server.setPlayerPos(caller_id, vehicle_matrix)
-			return true, "TELEPORTED", "You have been teleported to " .. Vehicle.prettyName(vehicle_id)
+			caller.setPosition(vehicle_matrix)
+			return true, "TELEPORTED", "You have been teleported to " .. vehicle.pretty_name
 		end,
 		args = {
-			{name = "vehicleID", type = {"vehicleID"}, required = true}
+			{name = "vehicleID", type = {"vehicle"}, required = true}
 		},
 		description = "Teleports you to a vehicle."
 	},
 
 	-- General --
 	bailout = {
-		func = function(caller_id, amount)
+		func = function(caller, amount)
 			local money = server.getCurrency()
 			local research = server.getResearchPoints()
-			local clamped_value = math.min(money + amount, 999999999)
+			local clamped_value = math.min(money + amount, 999999999) -- prevent overflow
 			server.setCurrency(clamped_value, research)
-			server.announce("BAILOUT", string.format("The server has been given $%0.2f by %s", clamped_value - money, Player.prettyName(caller_id)), -1)
+			server.announce("BAILOUT", string.format("The server has been given $%0.2f by %s", clamped_value - money, caller.prettyName()))
 			return true
 		end,
 		args = {
@@ -3302,18 +3570,18 @@ COMMANDS = {
 		description = "Gives the \"player\" the specified amount of money."
 	},
 	cc = {
-		func = function(caller_id)
-			server.announce(" ", "--------------  ABOUT CARSA'S COMMANDS  --------------", caller_id)
+		func = function(caller)
+			server.announce(" ", "--------------  ABOUT CARSA'S COMMANDS  --------------", caller.peer_id)
 			for k, v in ipairs(ABOUT) do
-				server.announce(v.title, v.text, caller_id)
+				server.announce(v.title, v.text, caller.peer_id)
 			end
-			server.announce(" ", LINE, caller_id)
+			server.announce(" ", LINE, caller.peer_id)
 			return true
 		end,
 		description = "Displays info about Carsa's Commands."
 	},
 	ccHelp = {
-		func = function(caller_id, ...)
+		func = function(caller, ...)
 			local args = {...}
 			local as_num = tonumber(args[1])
 			local command_name, page
@@ -3328,50 +3596,51 @@ COMMANDS = {
 				command_name = table.unpack(args)
 			end
 
-			server.announce(" ", "---------------------------------  HELP  -------------------------------", caller_id)
-			server.announce(" ", "[ ] = optional                                        ... = repeatable", caller_id)
+			server.announce(" ", "---------------------------------  HELP  -------------------------------", caller.peer_id)
+			server.announce(" ", "[ ] = optional                                        ... = repeatable", caller.peer_id)
 
 			if command_name then
 				local title, message = prettyFormatCommand(command_name, true, true, true)
-				if command_name == "ccHelp" and math.random(10) == 2 then message = message .. "\n\nAre you really using the help command to see how to use the help command?" end -- easter egg
-				server.announce(title, message, caller_id)
-			else
-				local entries_per_page = 8
-				local sorted_commands = {}
-
-				for command_name, command_data in pairs(COMMANDS) do
-					if Player.hasAccessToCommand(caller_id, command_name) then
-						table.insert(sorted_commands, command_name)
-					end
+				-- 🥚
+				if command_name == "ccHelp" and math.random(10) == 2 then
+					message = message .. "\n\nAre you really using the help command to see how to use the help command?"
 				end
-				table.sort(sorted_commands) -- sort the commands by alphabetical order
-
-				local max_page = math.max(1, math.ceil(#sorted_commands / entries_per_page)) -- the number of pages needed to display all entries
-				page = clamp(page, 1, max_page)
-				local start_index = 1 + (page - 1) * entries_per_page
-				local end_index = math.min(#sorted_commands, page * entries_per_page)
-
-
-				for i = start_index, end_index do
-					local command_name = sorted_commands[i]
-					local title, message = prettyFormatCommand(command_name, true, false, true)
-
-					server.announce(title, message, caller_id)
-				end
-				server.announce(" ", string.format("Page %d of %d", page, max_page), caller_id)
+				server.announce(title, message, caller.peer_id)
+				return true
 			end
-			server.announce(" ", LINE, caller_id)
+
+			local sorted_commands = {}
+			-- get a table of commands this player has access to and sort them alphabetically
+			for command_name, command_data in pairs(COMMANDS) do
+				if caller.hasAccessToCommand(command_name) then
+					table.insert(sorted_commands, command_name)
+				end
+			end
+			table.sort(sorted_commands)
+
+			local clamped_page, max_page, start_index, end_index = paginate(page, sorted_commands, 8)
+
+			for i = start_index, end_index do
+				local command_name = sorted_commands[i]
+				local title, message = prettyFormatCommand(command_name, true, false, true)
+
+				server.announce(title, message, caller.peer_id)
+			end
+			server.announce(" ", "Page " .. clamped_page .. " of " .. max_page, caller.peer_id)
+
+			server.announce(" ", LINE, caller.peer_id)
 			return true
 		end,
 		args = {
 			{name = "page/command", type = {"number", "string"}}
 		},
-		description = "Lists the help info for Carsa's Commands."
+		description = "Lists the help info for Carsa's Commands. You can provide a command's name to get detailed info on a specific command."
 	},
 	equipmentIDs = {
-		func = function(caller_id, equipment_type)
+		func = function(caller, equipment_type)
 			local sorted = {}
 			local nearest
+
 			if equipment_type then
 				nearest = fuzzyStringInTable(equipment_type, EQUIPMENT_SIZE_NAMES, false)
 			end
@@ -3391,21 +3660,21 @@ COMMANDS = {
 			end
 
 			-- print ids and info to chat
-			for k, v in ipairs(sorted) do
+			for k, data in ipairs(sorted) do
 				-- add empty line if printing multiple size categories and it is not the first category
-				if not equipment_type and k > 1 then server.announce(" ", " ", caller_id) end
-				if v[1] ~= nil then server.announce(" ", EQUIPMENT_SIZE_NAMES[k], caller_id) end -- print category type heading
+				if not equipment_type and k > 1 then server.announce(" ", " ", caller.peer_id) end
+				if data[1] ~= nil then server.announce(" ", EQUIPMENT_SIZE_NAMES[k], caller.peer_id) end -- print category type heading
 
 				-- print each item's id, name, and data slots
-				for j, c in ipairs(v) do
-					local data1 = exploreTable(EQUIPMENT_DATA[c.id], {"data", 1, "name"})
-					local data2 = exploreTable(EQUIPMENT_DATA[c.id], {"data", 2, "name"})
+				for _, item in ipairs(data) do
+					local data1 = exploreTable(EQUIPMENT_DATA[item.id], {"data", 1, "name"})
+					local data2 = exploreTable(EQUIPMENT_DATA[item.id], {"data", 2, "name"})
 					data1 = data1 and string.format(" [%s]", data1) or ""
 					data2 = data2 and string.format(" [%s]", data2) or ""
-					server.announce(c.id, c.name .. data1 .. data2, caller_id)
+					server.announce(item.id, item.name .. data1 .. data2, caller.peer_id)
 				end
 			end
-			server.announce(" ", LINE, caller_id)
+			server.announce(" ", LINE, caller.peer_id)
 			return true
 		end,
 		args = {
@@ -3414,23 +3683,19 @@ COMMANDS = {
 		description = "List the IDs of the equipment in the game. Equipment types are: small, large, outfit. If the type is omitted, all IDs will be listed."
 	},
 	tpLocations = {
-		func = function(caller_id)
-			local location_names = {}
-			for name, _ in pairs(TELEPORT_ZONES) do
-				table.insert(location_names, name)
-			end
-			table.sort(location_names)
-			server.announce(" ", "--------------------------  TP LOCATIONS  ------------------------", caller_id)
-			server.announce(" ", table.concat(location_names, ",   "), caller_id)
-			server.announce(" ", LINE, caller_id)
+		func = function(caller)
+			local location_names = getTableKeys(TELEPORT_ZONES, true)
+			server.announce(" ", "--------------------------  TP LOCATIONS  ------------------------", caller.peer_id)
+			server.announce(" ", table.concat(location_names, ",   "), caller.peer_id)
+			server.announce(" ", LINE, caller.peer_id)
 			return true
 		end,
 		description = "Lists the named locations that you can teleport to."
 	},
 	whisper = {
-		func = function(caller_id, target_id, message)
-			server.announce(string.format("%s (whisper)", Player.prettyName(caller_id)), message, target_id)
-			return true, "You -> " .. Player.prettyName(target_id), message
+		func = function(caller, target_player, message)
+			server.announce(string.format("%s (whisper)", caller.prettyName()), message, target_player.peer_id)
+			return true, "You -> " .. target_player.prettyName(), message
 		end,
 		args = {
 			{name = "playerID", type = {"playerID"}, required = true},
@@ -3441,56 +3706,56 @@ COMMANDS = {
 
 	-- Preferences --
 	resetPref = {
-		func = function(caller_id, confirm)
+		func = function(caller, confirm)
 			if confirm then
-				g_preferences = deepCopyTable(PREFERENCE_DEFAULTS)
-				tellSupervisors("PREFERENCES RESET", "The server's preferences have been reset by " .. Player.prettyName(caller_id), caller_id)
+				G_preferences = deepCopyTable(PREFERENCE_DEFAULTS)
+				tellSupervisors("!PREFERENCES RESET!", "The server's preferences have been reset by " .. caller.prettyName(), caller.peer_id)
 				return true, "PREFERENCES RESET", "The server's preferences have been reset"
 			end
 		end,
 		args = {
 			{name = "confirm", type = {"bool"}, required = true}
 		},
-		description = "Resets all server preferences back to their default states. Be very careful with this command as it can change how the server behaves drastically."
+		description = "Resets all server preferences back to their default states. Be very careful with this command as it can drastically change how the server behaves."
 	},
 	setPref = {
-		func = function(caller_id, preference_name, ...)
+		func = function(caller, preference_name, ...)
 			local args = {...}
-			local pref_data = g_preferences[preference_name]
+			local preference = G_preferences[preference_name]
 			local edited = false
 
-			if not pref_data then
+			if not preference then
 				return false, "PREFERENCE NOT FOUND", preference_name .. " is not a preference"
 			end
 
-			for _, data_type in ipairs(pref_data.type) do
+			for _, data_type in ipairs(preference.type) do
 				if data_type == "bool" then
 					local val = toBool(args[1])
 					if val ~= nil then
-						pref_data.value = val
+						preference.value = val
 						edited = true
 					end
 				elseif data_type == "number" then
 					local val = tonumber(args[1])
 					if val then
-						pref_data.value = val
+						preference.value = val
 						edited = true
 					end
 				elseif data_type == "string" then
-					pref_data.value = args[1]
+					preference.value = args[1]
 					edited = true
 				elseif data_type == "text" then
-					pref_data.value = table.concat(args, " ")
+					preference.value = table.concat(args, " ")
 					edited = true
 				end
 			end
 
 			if edited then
-				tellSupervisors("PREFERENCE EDITED", Player.prettyName(caller_id) .. " has set " .. preference_name .. " to:\n" .. tostring(pref_data.value), caller_id)
-				return true, "PREFERENCE EDITED", preference_name .. " has been set to " .. tostring(pref_data.value)
+				tellSupervisors("PREFERENCE EDITED", caller.prettyName() .. " has set " .. preference_name .. " to:\n" .. tostring(preference.value), caller.peer_id)
+				return true, "PREFERENCE EDITED", preference_name .. " has been set to " .. tostring(preference.value)
 			else
 				-- there was an incorrect type
-				return false, "INVALID ARG", preference_name .. " only accepts a " .. table.concat(pref_data.types, " or ") .. " as its value"
+				return false, "INVALID ARG", preference_name .. " only accepts a " .. table.concat(preference.types, " or ") .. " as its value"
 			end
 		end,
 		args = {
@@ -3500,42 +3765,42 @@ COMMANDS = {
 		description = "Sets the specified preference to the requested value. Use ?preferences to see all of the preferences."
 	},
 	preferences = {
-		func = function(caller_id)
-			server.announce(" ", "----------------------------  g_preferences  ---------------------------", caller_id)
-			local sorted = sortKeys(g_preferences)
+		func = function(caller)
+			server.announce(" ", "----------------------------  g_preferences  ---------------------------", caller.peer_id)
+			local preferences = getTableKeys(G_preferences, true)
 
-			for k, v in ipairs(sorted) do
-				if v == "startEquipment" then
+			for _, preference in ipairs(preferences) do
+				if preference == "startEquipment" then
 					local text = ""
-					for k, v in ipairs(g_preferences[v].value) do
-						local alphabetical = sortKeys(v, true)
-						for j, c in ipairs(alphabetical) do
-							text = text .. string.format("%s : %s, ", c, v[c])
+					for _, value in ipairs(G_preferences[preference].value) do
+						local alphabetical = getTableKeys(value, true)
+						for _, value_name in ipairs(alphabetical) do
+							text = text .. string.format("%s : %s, ", value_name, value[value_name])
 						end
 						text = text .. " | "
 					end
-					server.announce("startEquipment", text, caller_id)
+					server.announce("startEquipment", text, caller.peer_id)
 				else
-					server.announce(v, tostring(g_preferences[v].value), caller_id)
+					server.announce(preference, tostring(G_preferences[preference].value), caller.peer_id)
 				end
 			end
-			server.announce(" ", LINE, caller_id)
+			server.announce(" ", LINE, caller.peer_id)
 			return true
 		end,
 		description = "Lists the preferences and their states for you."
 	},
 	addAlias = {
-		func = function(caller_id, alias, command)
+		func = function(caller, alias, command)
 			if COMMANDS[alias] then
-				return false, "ALREADY EXISTS", "\"" .. alias .. "\" is the name of a pre-existing command. Please select a different name"
+				return false, "ALREADY EXISTS", quote(alias) .. " is the name of a pre-existing command. Please select a different name"
 			end
 
-			if g_aliases[alias] then
-				return false, "ALREADY EXISTS", "\"" .. alias .. "\" is already an alias for " .. g_aliases[alias]
+			if G_aliases[alias] then
+				return false, "ALREADY EXISTS", quote(alias) .. " is already an alias for " .. G_aliases[alias]
 			end
 
-			g_aliases[alias] = command
-			return true, "ALIAS ADDED", "\"" .. alias .. "\" is now an alias for " .. command
+			G_aliases[alias] = command
+			return true, "ALIAS ADDED", quote(alias) .. " is now an alias for " .. command
 		end,
 		args = {
 			{name = "alias", type = "string", required = true},
@@ -3544,33 +3809,26 @@ COMMANDS = {
 		description = "Adds an alias for a pre-existing command. For example, you can add an alias so ccHelp becomes just help"
 	},
 	aliases = {
-		func = function(caller_id, page)
+		func = function(caller, page)
 			page = page or 1
 
-			server.announce(" ", "-------------------------------  ALIASES  ------------------------------", caller_id)
+			server.announce(" ", "-------------------------------  ALIASES  ------------------------------", caller.peer_id)
 
-			local entries_per_page = 8
 			local sorted = {}
-
-			for alias, command in pairs(g_aliases) do
-				if Player.hasAccessToCommand(caller_id, command) then
+			for alias, command in pairs(G_aliases) do
+				if caller.hasAccessToCommand(command) then
 					table.insert(sorted, alias)
 				end
 			end
-
 			table.sort(sorted)
 
-			local max_page = math.max(1, math.ceil(#sorted / entries_per_page)) -- the number of pages needed to display all entries
-			page = clamp(page, 1, max_page)
-			local start_index = 1 + (page - 1) * entries_per_page
-			local end_index = math.min(#sorted, page * entries_per_page)
-
-
+			local clamped_page, max_page, start_index, end_index = paginate(page, sorted, 10)
 			for i = start_index, end_index do
-				server.announce(sorted[i], g_aliases[sorted[i]], caller_id)
+				server.announce(sorted[i], G_aliases[sorted[i]], caller.peer_id)
 			end
-			server.announce(" ", string.format("Page %d of %d", page, max_page), caller_id)
-			server.announce(" ", LINE, caller_id)
+
+			server.announce(" ", string.format("Page %d of %d", page, max_page), caller.peer_id)
+			server.announce(" ", LINE, caller.peer_id)
 			return true
 		end,
 		args = {
@@ -3579,13 +3837,13 @@ COMMANDS = {
 		description = "Lists the aliases that can be used instead of the full command names"
 	},
 	removeAlias = {
-		func = function(caller_id, alias)
-			if not g_aliases[alias] then
-				return false, "ALIAS NOT FOUND", "\"" .. alias .. "\" does not exist"
+		func = function(caller, alias)
+			if not G_aliases[alias] then
+				return false, "ALIAS NOT FOUND", quote(alias) .. " does not exist"
 			end
 
-			g_aliases[alias] = nil
-			return true, "ALIAS REMOVED", "\"" .. alias .. "\" has been removed"
+			G_aliases[alias] = nil
+			return true, "ALIAS REMOVED", quote(alias) .. " has been removed"
 		end,
 		args = {
 			{name = "alias", type={"string"}, required = true}
@@ -3595,18 +3853,14 @@ COMMANDS = {
 
 	-- Game Settings
 	setGameSetting = {
-		func = function(caller_id, setting_name, value)
+		func = function(caller, setting_name, value)
 			local nearest = fuzzyStringInTable(setting_name, GAME_SETTING_OPTIONS, false)
-			if nearest then
-				if value == nil then
-					value = not server.getGameSettings()[nearest]
-				else
-					server.setGameSetting(nearest, value)
 
-					-- give user feedback
-					tellSupervisors("GAME SETTING EDITED", Player.prettyName(caller_id) .. " changed " .. nearest .. " to " .. tostring(value), caller_id)
-					return true, "GAME SETTING EDITED", nearest .. " is now set to " .. tostring(value)
-				end
+			if nearest then
+				server.setGameSetting(nearest, value)
+				-- give user feedback
+				tellSupervisors("GAME SETTING EDITED", caller.prettyName() .. " changed " .. nearest .. " to " .. tostring(value), caller.peer_id)
+				return true, "GAME SETTING EDITED", nearest .. " is now set to " .. tostring(value)			
 			else
 				return false, setting_name .. " is not a valid game setting. Use ?gameSettings to view all game settings"
 			end
@@ -3618,16 +3872,17 @@ COMMANDS = {
 		description = "Sets the specified game setting to the requested value."
 	},
 	gameSettings = {
-		func = function(caller_id)
+		func = function(caller)
 			local game_settings = server.getGameSettings()
-			local alphabetical = sortKeys(game_settings)
-			server.announce(" ", "------------------------  GAME SETTINGS  -----------------------", caller_id)
-			for k, v in ipairs(alphabetical) do
+			local alphabetical = getTableKeys(game_settings, true)
+
+			server.announce(" ", "------------------------  GAME SETTINGS  -----------------------", caller.peer_id)
+			for _, v in ipairs(alphabetical) do
 				if type(game_settings[v]) == "boolean" then
-					server.announce(v, tostring(game_settings[v]), caller_id)
+					server.announce(v, tostring(game_settings[v]), caller.peer_id)
 				end
 			end
-			server.announce(" ", LINE, caller_id)
+			server.announce(" ", LINE, caller.peer_id)
 			return true
 		end,
 		description = "Lists all of the game settings and their states."
@@ -3641,9 +3896,9 @@ COMMANDS = {
 ---@return string statusTitle A title to explain what happend. Examples: "SUCCESS", "FAILED", "DENIED"
 ---@return string statusText Text to explain why the command succeeded/failed
 function handleCompanion(token, command, argstring)
-	local caller_id = 0 -- TODO: get caller_id from token
+	local caller = G_players.get(STEAM_IDS[0]) -- TODO: get caller_id from token
 
-	local success, statusTitle, statusText = switch(caller_id, command, argstring)
+	local success, statusTitle, statusText = switch(caller, command, argstring)
 	local title = statusText and statusTitle or (success and "SUCCESS" or "FAILED")
 	local text = statusText or statusTitle
 
@@ -3651,21 +3906,21 @@ function handleCompanion(token, command, argstring)
 end
 
 ---Looks through all of the commands to find the one requested. Also prepares arguments to be forwarded to requested command function
----@param peer_id number The peer_id of the player that used the command
+---@param caller Player The object instance of the player that called the function
 ---@param command string The name of the command that the user entered
 ---@param args table All of the arguments the user entered after the command
 ---@return boolean success If the operation succeeded
 ---@return string title A title to explain what happened
 ---@return string statusText Text to explain what happened
-function switch(peer_id, command, args)
+function switch(caller, command, args)
 	local command_data = COMMANDS[command]
 
-	if not Player.hasAccessToCommand(peer_id, command) then
+	if not caller.hasAccessToCommand(command) then
 		return false, "DENIED", "You do not have permission to use " .. command
 	end
 
 	if not command_data.args then
-		return command_data.func(peer_id)
+		return command_data.func(caller)
 	end
 
 	local accepted_args = {} -- stores the accepted, converted args
@@ -3722,15 +3977,16 @@ function switch(peer_id, command, args)
 			local pArgValue = args[pArgIndex]
 			local is_correct_type, converted_value, err
 
-			tellDebug(pArgIndex .. " " .. arg.data.name, "\"".. (pArgValue or "nil") .."\"")
+			-- DEBUG:
+			server.announce(pArgIndex .. " " .. arg.data.name, "\"".. (pArgValue or "nil") .."\"")
 
 			if not accepted or arg.data.repeatable then
 
 				for _, accepted_type in ipairs(arg.data.type) do
 
-					is_correct_type, converted_value, err = dataIsOfType(pArgValue, accepted_type, peer_id)
+					is_correct_type, converted_value, err = dataIsOfType(pArgValue, accepted_type, caller.peer_id)
 					-- DEBUG: announce what value this is looking for and what it is attempting to match
-					tellDebug((is_correct_type and "Correct" or "Incorrect") .. (arg.data.required and " Required" or " Optional"),
+					server.announce((is_correct_type and "Correct" or "Incorrect") .. (arg.data.required and " Required" or " Optional"),
 					"Target Type: " .. accepted_type .. "\n    | Given Value: " .. tostring(pArgValue) .. "\n    | Converted Value: " .. tostring(converted_value) .. "\n    | Err: " .. (err or "")
 					)
 
@@ -3762,7 +4018,7 @@ function switch(peer_id, command, args)
 
 		-- DEBUG: announce a failed argument matching
 		if not accepted and arg.data.required then
-			server.notify(peer_id, "Arg Match Not Found", arg.data.name, 8)
+			server.notify(caller.peer_id, "Arg Match Not Found", arg.data.name, 8)
 			local accepted_types = {}
 			for _, type_name in ipairs(arg.data.type) do
 				table.insert(accepted_types, TYPE_ABBREVIATIONS[type_name])
@@ -3771,40 +4027,42 @@ function switch(peer_id, command, args)
 		end
 	end
 
-	server.notify(peer_id, "EXECUTING " .. command, " ", 8)
+	server.notify(caller.peer_id, "EXECUTING " .. command, " ", 8)
 
 	-- all arguments should be converted to their true types now
-	return command_data.func(peer_id, table.unpack(accepted_args))
+	return command_data.func(caller, table.unpack(accepted_args))
 end
 
 function onCustomCommand(message, caller_id, admin, auth, command, ...)
 	if command == "?save" then return end -- server.save() calls `?save`, and thus onCustomCommand(), this aborts that
+	-- DEBUG: call onCreate as a new save for debugging
+	if command == "?new" then onCreate(true) end
 
 	command = command:sub(2) -- cut off "?"
 
-	if not COMMANDS[command] and not g_aliases[command] then
+	if not COMMANDS[command] and not G_aliases[command] then
 		return
 	end
 
 	if invalid_version then
-		throwWarning(string.format("Your code is older than your save data. (%s < %s) To prevent data loss/corruption, no data will be processed. Please update Carsa's Commands to the latest version.", tostring(g_savedata.version), tostring(SaveDataVersion)), caller_id)
+		server.announce(string.format("Your code is older than your save data. (%s < %s) To prevent data loss/corruption, no data will be processed. Please update Carsa's Commands to the latest version.", tostring(g_savedata.version), tostring(SaveDataVersion)), caller_id)
 		return
 	end
 
 	local args = {...}
-	local steam_id = Player.getSteamID(caller_id)
+	local player = G_players.get(STEAM_IDS[caller_id])
 
 	-- if player data could not be found, "pretend" player just joined and give default data
-	if not g_playerData[steam_id] then
-		throwError("Persistent data for " .. Player.prettyName(caller_id) .. " could not be found. Resetting player's data to defaults", caller_id)
-		onPlayerJoin(steam_id, (server.getPlayerName(caller_id)) or "Unknown Name", caller_id)
+	if not player then
+		onPlayerJoin(STEAM_IDS[caller_id], (server.getPlayerName(caller_id)) or "Unknown Name", caller_id)
+		server.announce("Persistent data for " .. player.prettyName() .. " could not be found. Resetting player's data to defaults", caller_id)
 	end
 
-	if Player.hasRole(caller_id, "Prank") then
+	if player.hasRole("Prank") then
 		table.insert(EVENT_QUEUE, {
 				type = "commandExecution",
-				target = g_aliases[command] or command,
-				caller = caller_id,
+				target = G_aliases[command] or command,
+				caller = player,
 				args = args,
 				time = 0,
 				timeEnd = math.random(20, 140)
@@ -3813,7 +4071,7 @@ function onCustomCommand(message, caller_id, admin, auth, command, ...)
 		return
 	end
 
-	local success, statusTitle, statusText = switch(caller_id, g_aliases[command] or command, args)
+	local success, statusTitle, statusText = switch(player, G_aliases[command] or command, args)
 	local title = statusText and statusTitle or (success and "SUCCESS" or "FAILED")
 	local text = statusText and statusText or statusTitle
 	if text then
@@ -3835,7 +4093,7 @@ function webSyncError(msg)
 end
 
 function webSyncDebug(msg)
-	tellDebug("Web-Sync", msg)
+	server.announce("Web-Sync", msg)
 end
 
 function webSyncDebugDetail(msg)
