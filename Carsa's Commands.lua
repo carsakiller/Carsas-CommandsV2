@@ -1199,39 +1199,40 @@ end
 
 ---Checks if the provided "playerID" is actually valid
 ---@param playerID string This could be a peer_id, name, or "me" but it comes here as a string
----@param caller_id number The peer_id of the player that called this function. Used for translating "me"
+---@param caller Player The player that called this function. Used for translating "me"
 ---@return boolean is_valid If the provided playerID is valid
 ---@return number|nil peer_id The peer_id of the target playerID
 ---@return string|nil err Why the provided playerID is invalid
-function validatePlayerID(playerID, caller_id)
+function validatePlayerID(playerID, caller)
 	local as_num = tonumber(playerID)
 
 	if as_num then
 		if STEAM_IDS[as_num] then
-			return true, as_num
+			return true, G_players.get(STEAM_IDS[as_num])
 		else
-			return false, nil, (playerID .. " is not a valid peerID")
+			return false, nil, (quote(playerID) .. " is not a valid peerID")
 		end
 	else
 		if playerID == "me" then
-			return true, caller_id
+			return true, caller
 		elseif playerID ~= nil then
 			local names = {}
 			local peer_ids = {}
 
-			for peer_id, player_data in pairs(STEAM_IDS) do
-				if peer_ids[player_data.name] then
-					return false, nil, ("Two players have the name \"" .. playerID .. "\". Please use peerIDs instead")
+			for peer_id, steam_id in pairs(STEAM_IDS) do
+				local player = G_players.get(steam_id)
+				if peer_ids[player.name] then
+					return false, nil, "Two players have the name " .. quote(playerID) .. ". Please use peerIDs instead"
 				end
-				table.insert(names, player_data.name)
-				peer_ids[player_data.name] = peer_id
+				table.insert(names, player.name)
+				peer_ids[player.name] = peer_id
 			end
 
 			local nearest = fuzzyStringInTable(playerID, names, false)
 			if nearest then
 				return true, peer_ids[nearest]
 			else
-				return false, nil, ("A player with the name \"" .. playerID .. "\" could not be found")
+				return false, nil, ("A player with the name " .. quote(playerID) .. " could not be found")
 			end
 		end
 	end
@@ -1241,21 +1242,22 @@ end
 ---Check that some data is of a given type
 ---@param data any The data to check
 ---@param target_type string The type this data should be
----@param caller_id number The peer_id of the player calling this function
+---@param caller Player The player calling this function
 ---@return boolean is_valid The data is of the same type as target_type
 ---@return any|nil converted_value The data converted from whatever it was before (likely a string) to it's true type
 ---@return string|nil err Why the data is invalid
-function dataIsOfType(data, target_type, caller_id)
+function dataIsOfType(data, target_type, caller)
 	local as_num = tonumber(data)
 
 	if target_type == "playerID" then
-		return validatePlayerID(data, caller_id)
-	elseif target_type == "vehicleID" then
+		return validatePlayerID(data, caller)
+	elseif target_type == "vehicle" then
 		if not as_num then
 			return false, nil, (tostring(data) .. " is not a number and therefor not a valid vehicleID")
 		end
-		if G_vehicles.get(as_num) then
-			return true, as_num
+		local vehicle = G_vehicles.get(as_num)
+		if vehicle then
+			return true, vehicle
 		end
 	elseif target_type == "steam_id" then
 		if #data == #STEAM_ID_MIN then
@@ -1264,7 +1266,7 @@ function dataIsOfType(data, target_type, caller_id)
 			return false, nil, (data .. " is not a valid steamID")
 		end
 	elseif target_type == "peer_id" then
-		return validatePlayerID(as_num, caller_id)
+		return validatePlayerID(as_num, caller)
 	elseif target_type == "number" then
 		return as_num ~= nil, as_num, not as_num and ((data or "nil") .. " is not a valid number")
 	elseif target_type == "bool" then
@@ -1544,10 +1546,10 @@ end
 ---@return string errText Text explaining why the role was/wasn't created
 function RoleContainer.create(self, role, active, admin, auth, commands, members)
 	if self.roles[role] then
-		return false, "ROLE ALREADY EXISTS", "The role \"" .. role .. "\" already exists"
+		return false, "ROLE ALREADY EXISTS", "The role " .. quote(role) .. " already exists"
 	end
 	self.roles[role] = new(Role, role, active, admin, auth, commands, members)
-	return true, "ROLE CREATED", string.format("\"%s\" has been created", role)
+	return true, "ROLE CREATED", quote(role) .. " has been created"
 end
 
 ---Deletes a role
@@ -1558,10 +1560,14 @@ end
 ---@return string errText Text explaining why the role was/wasn't deleted
 function RoleContainer.delete(self, role)
 	if not self.roles[role] then
-		return false, "ROLE NOT FOUND", "\"" .. role .. "\" is not a valid role"
+		return false, "ROLE NOT FOUND", quote(role) .. " is not a valid role"
 	end
+
 	self.roles[role] = nil
-	return true, "ROLE DELETED", "\"" .. role .. "\" has been deleted"
+
+	g_savedata.roles[role] = nil
+
+	return true, "ROLE DELETED", quote(role) .. " has been deleted"
 end
 
 ---Gets a role from this role container
@@ -1775,7 +1781,7 @@ function Player.equip(self, notify, slot, item_id, data1, data2, is_active)
 	local slot_number = SLOT_LETTER_TO_NUMBER[slot]
 
 	if not item_id then
-		return false, "INVALID ARG", "Could not convert argument \"" .. tostring(item_id) .. "\" to an equipment_id (number)"
+		return false, "INVALID ARG", "Could not convert argument " .. quote(item_id) .. " to an equipment_id (number)"
 	end
 
 	if item_id == 0 then
@@ -2000,7 +2006,7 @@ function Player.nearestVehicles(self, owner_steam_id)
 			local player_pos = self.getPosition()
 			local vehicle_pos = vehicle.getPosition()
 			-- insert 1. vehicle, 2. distance
-			table.insert(distances, {vehicle, math.abs(matrix.distance(player_pos, vehicle_pos))})
+			table.insert(distances, {vehicle = vehicle, distance = math.abs(matrix.distance(player_pos, vehicle_pos))})
 		end
 	end
 
@@ -2008,9 +2014,12 @@ function Player.nearestVehicles(self, owner_steam_id)
 		return false, "NO VEHICLES FOUND", "There are no vehicles nearby that are owned by " .. G_players.get(owner_steam_id).prettyName()
 	end
 
-	table.sort(distances, function(a, b) return a[2] < b[2] end)
+	table.sort(distances, function(a, b) return a.distance < b.distance end)
 
-	local nearest = table.move(distances)
+	local nearest = {}
+	for k, v in pairs(distances) do
+		nearest[k] = v.vehicle
+	end
 
 	return nearest
 end
@@ -2091,7 +2100,7 @@ function Vehicle.constructor(self, vehicle_id, owner_steam_id, cost)
 	self.vehicle_id = vehicle_id
 	self.owner = owner_steam_id
 
-	local success, name = server.getVehicleName(vehicle_id)
+	local name, success = server.getVehicleName(vehicle_id)
 	self.name = success and name or "Unknown"
 	self.pretty_name = string.format("%s(%d)", self.name, self.vehicle_id)
 	self.cost = cost
@@ -2167,6 +2176,17 @@ end
 ---@param self VehicleContainer This vehicle container's object instance
 ---@param vehicle_id vehicle_id The vehicle_id of the vehicle to remove
 function VehicleContainer.remove(self, vehicle_id)
+	local vehicle = self.get(vehicle_id)
+	local owner = G_players.get(vehicle.owner)
+
+	if owner.latest_spawn and owner.latest_spawn == vehicle_id then
+		-- if this vehicle being despawned is the owner's latest spawn, set latest_spawn to nil
+		owner.latest_spawn = nil
+	end
+
+	g_savedata.vehicles[vehicle_id] = nil
+
+	server.removeMapID(-1, self.get(vehicle_id).ui_id)
 	self.vehicles[vehicle_id] = nil
 end
 
@@ -2233,12 +2253,16 @@ end
 ---@param self Rules This rule container object's instance
 ---@param steam_id steam_id The steam_id of the player to print the rules to
 ---@param page number The page of the rulebook to print. If 0, all rules are printed
-function Rules.print(self, steam_id, page)
+---@param silent boolean If there are no rules, nothing will be announced
+function Rules.print(self, steam_id, page, silent)
 	local peer_id = G_players.get(steam_id).peer_id
 	if not peer_id then return false end
 
 	if #self.rules == 0 then
-		server.announce("NO RULES", "There are no rules", peer_id)
+		if not silent then
+			server.announce("NO RULES", "There are no rules", peer_id)
+			return
+		end
 	end
 
 	if page == 0 then
@@ -2306,7 +2330,7 @@ function onCreate(is_new)
 
 	-- deserialize data
 	for steam_id, data in pairs(g_savedata.players) do
-		G_players.create(data.peer_id, steam_id, data.name, data.banned, data.block_tps, data.showVehicleIDs)
+		G_players.create(nil, data.steam_id, data.name, data.banned, data.block_tps, data.showVehicleIDs)
 	end
 
 	for vehicle_id, data in pairs(g_savedata.vehicles) do
@@ -2332,6 +2356,12 @@ function onCreate(is_new)
 
 	--- List of players indexed by peer_id
 	STEAM_IDS = {}
+
+	-- in case of `?reload_scripts`, re-populate table
+	local players = server.getPlayers()
+	for _, data in pairs(players) do
+		STEAM_IDS[data.id] = tostring(data.steam_id)
+	end
 
 	-- The cool new way to handle all the cursed edge cases that require certain things to be delayed
 	EVENT_QUEUE = {}
@@ -2493,25 +2523,15 @@ function onVehicleSpawn(vehicle_id, peer_id, x, y, z, cost)
 				}
 			)
 		end
-		STEAM_IDS[peer_id].latest_spawn = vehicle_id
+		owner.latest_spawn = vehicle_id
+		owner.save()
 	end
 end
 
 function onVehicleDespawn(vehicle_id, peer_id)
 	if invalid_version then return end
 
-	local vehicle_data = G_vehicles.get(vehicle_id)
-
-	if vehicle_data then
-		local owner = vehicle_data.owner
-		if STEAM_IDS[peer_id].latest_spawn and STEAM_IDS[peer_id].latest_spawn == vehicle_id then
-			-- if this vehicle being despawned is the owner's latest spawn, set latest_spawn to nil
-			STEAM_IDS[peer_id].latest_spawn = nil
-		end
-
-		server.removeMapID(-1, vehicle_data.ui_id)
-		G_vehicles.remove(vehicle_id)
-	end
+	G_vehicles.remove(vehicle_id)
 end
 
 --- This triggers for both press and release events, but not while holding.
@@ -2618,7 +2638,7 @@ function onTick()
 						if G_preferences.welcomeNew.value then
 							server.announce("WELCOME", G_preferences.welcomeNew.value, peer_id)
 						end
-						G_rules.print(player.steam_id, 0)
+						G_rules.print(player.steam_id, 0, true)
 						if G_preferences.equipOnRespawn.value then
 							player.giveStartingEquipment()
 						end
@@ -2633,6 +2653,7 @@ function onTick()
 							end
 						end
 					end
+					player.save()
 					table.remove(EVENT_QUEUE, i)
 				end
 			end
@@ -3152,13 +3173,14 @@ COMMANDS = {
 		func = function(caller, page)
 			local vehicles = {}
 
-			local keys = getTableKeys(G_vehicles.get(), true)
-			for vehicle_id, vehicle in ipairs(keys) do
-				table.insert(vehicles, vehicle)
+			local vehicle_list = G_vehicles.get()
+			local keys = getTableKeys(vehicle_list, true)
+			for k, vehicle_id in ipairs(keys) do
+				table.insert(vehicles, vehicle_list[vehicle_id])
 			end
 
-			local clamped_page, max_page, start_index, end_index = paginate(page, vehicles, 10)
-			server.announce(" ", "----------------------------  VEHICLE LIST ---------------------------", caller.peer_id)
+			local clamped_page, max_page, start_index, end_index = paginate(page or 1, vehicles, 10)
+			server.announce(" ", "---------------------------  VEHICLE LIST ---------------------------", caller.peer_id)
 
 			for i = start_index, end_index do
 				local vehicle = vehicles[i]
@@ -3234,7 +3256,7 @@ COMMANDS = {
 			server.announce("ROLE LIST", target.prettyName() .. " has the following roles:", caller.peer_id)
 
 			for role_name, role_data in pairs(G_roles.get()) do
-				if target_player.hasRole(role_name) then
+				if role_data.members[target_player.steam_id] then
 					server.announce(" ", role_name, caller.peer_id)
 				end
 			end
@@ -3494,20 +3516,20 @@ COMMANDS = {
 			local character_id, is_success = server.getPlayerCharacterID(caller.peer_id)
 			local vehicle
 
-			if arg1.name then
-				vehicle = arg1
-			elseif arg1 == "r" then
-				if STEAM_IDS[caller.steam_id].latest_spawn then
-					vehicle = G_vehicles.get(STEAM_IDS[caller.steam_id].latest_spawn)
-				else
-					return false, "VEHICLE NOT FOUND", "You have not spawned any vehicles or the last vehicle you spawned has been despawned"
-				end
-			elseif arg1 == "n" or not arg1 then
+			if not arg1 or arg1 == "n" then
 				local nearest, err, errText = caller.nearestVehicles()
 				if not nearest then
 					return false, err, errText
 				end
 				vehicle = nearest[1]
+			elseif arg1.name then
+				vehicle = arg1
+			elseif arg1 == "r" then
+				if caller.latest_spawn then
+					vehicle = G_vehicles.get(caller.latest_spawn)
+				else
+					return false, "VEHICLE NOT FOUND", "You have not spawned any vehicles or the last vehicle you spawned has been despawned"
+				end
 			else
 				return false, "INVALID ARG", quote(arg1) .. " is not a valid argument"
 			end
@@ -3978,13 +4000,13 @@ function switch(caller, command, args)
 			local is_correct_type, converted_value, err
 
 			-- DEBUG:
-			server.announce(pArgIndex .. " " .. arg.data.name, "\"".. (pArgValue or "nil") .."\"")
+			server.announce(pArgIndex .. " " .. arg.data.name, quote((pArgValue or "nil")))
 
 			if not accepted or arg.data.repeatable then
 
 				for _, accepted_type in ipairs(arg.data.type) do
 
-					is_correct_type, converted_value, err = dataIsOfType(pArgValue, accepted_type, caller.peer_id)
+					is_correct_type, converted_value, err = dataIsOfType(pArgValue, accepted_type, caller)
 					-- DEBUG: announce what value this is looking for and what it is attempting to match
 					server.announce((is_correct_type and "Correct" or "Incorrect") .. (arg.data.required and " Required" or " Optional"),
 					"Target Type: " .. accepted_type .. "\n    | Given Value: " .. tostring(pArgValue) .. "\n    | Converted Value: " .. tostring(converted_value) .. "\n    | Err: " .. (err or "")
