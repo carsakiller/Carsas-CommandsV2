@@ -1258,6 +1258,8 @@ function dataIsOfType(data, target_type, caller)
 		local vehicle = G_vehicles.get(as_num)
 		if vehicle then
 			return true, vehicle
+		else
+			return false, nil, quote(as_num) .. " is not a valid vehicleID"
 		end
 	elseif target_type == "steam_id" then
 		if #data == #STEAM_ID_MIN then
@@ -1277,9 +1279,9 @@ function dataIsOfType(data, target_type, caller)
 		return is_letter, is_letter and data or nil, not is_letter and ((data or "nil") .. " is not a letter") or nil
 	elseif target_type == "string" or target_type == "text" then
 		return data ~= nil, data or nil, not data and (data or "nil") .. " is not a string" or nil
-	else
-		return false, nil, ((data or "nil") .. " is not of a recognized data type")
 	end
+	
+	return false, nil, ((data or "nil") .. " is not of a recognized data type")
 end
 
 ---Decodes the equip arguments and calls equip on the target
@@ -1595,15 +1597,13 @@ local Player = {}
 ---@param steam_id steam_id The `steam_id` of the player to create
 ---@param name string The name of the player to create
 ---@param banned? steam_id The steam_if of the admin that banned them or nil
----@param block_tps? boolean If teleports should be blocked by default
----@param showVehicleIDs? boolean If vehicle ID popups should be displayed
-function Player.constructor(self, peer_id, steam_id, name, banned, block_tps, showVehicleIDs)
+function Player.constructor(self, peer_id, steam_id, name, banned)
 	self.peer_id = peer_id
 	self.steam_id = steam_id
 	self.name = name
-	self.banned = banned or false
-	self.tp_blocking = block_tps or false
-	self.show_vehicle_ids = showVehicleIDs or false
+	self.banned = banned or exploreTable(g_savedata.players, {steam_id, "banned"})
+	self.tp_blocking = exploreTable(g_savedata.players, {steam_id, "block_tps"})
+	self.show_vehicle_ids = exploreTable(g_savedata.players, {steam_id, "show_vehicle_ids"})
 
 	self.save()
 end
@@ -1632,9 +1632,11 @@ end
 ---@param command string The name of the command to check for
 ---@return boolean has_access If the player has access to the command or not
 function Player.hasAccessToCommand(self, command)
-	for _, role in pairs(G_roles.get()) do
+	for role_name, role in pairs(G_roles.get()) do
 		if role.members[self.steam_id] then
-			if role.commands[command] then
+			if role_name == "Owner" then
+				return true
+			elseif role.commands[command] then
 				return true
 			end
 		end
@@ -1646,7 +1648,11 @@ end
 ---@param self Player This player object's instance
 ---@return string pretty_name This player's name formatted nicely
 function Player.prettyName(self)
-	return self.peer_id and string.format("%s(%d)", self.name, self.peer_id) or self.name .. "(" .. self.steam_id .. ")"
+	if self.peer_id then
+		return string.format("%s(%d)", self.name, self.peer_id)
+	else
+		return string.format("%s(%s)", self.name, self.steam_id)
+	end
 end
 
 ---Bans this player from the server
@@ -1966,8 +1972,8 @@ function Player.setVehicleUIState(self, state)
 
 	if not self.show_vehicle_ids then
 		-- remove popups for all vehicles
-		for vehicle_id, vehicle_data in pairs(G_vehicles.get()) do
-			server.removePopup(self.peer_id, vehicle_data.ui_id)
+		for vehicle_id, vehicle in pairs(G_vehicles.get()) do
+			server.removePopup(self.peer_id, vehicle.ui_id)
 		end
 	end
 
@@ -1978,11 +1984,11 @@ end
 ---Updates this player's UI to display vehicle ID info
 ---@param self Player This player's object instance
 function Player.updateVehicleIdUI(self)
-	for vehicle_id, vehicle_data in pairs(G_vehicles.get()) do
-		local vehicle_position, success = server.getVehiclePos(vehicle_id)
-		if success then
-			local owner = vehicle_data.owner
-			server.setPopup(self.peer_id, vehicle_data.ui_id, "", true, string.format("%s\n%s", vehicle_data.pretty_name, G_players.get(owner).prettyName()), vehicle_position[13], vehicle_position[14], vehicle_position[15], 50)
+	for vehicle_id, vehicle in pairs(G_vehicles.get()) do
+		local vehicle_position = vehicle.getPosition()
+		if vehicle_position then
+			local owner = vehicle.owner
+			server.setPopup(self.peer_id, vehicle.ui_id, "", true, string.format("%s\n%s", vehicle.pretty_name, G_players.get(owner).prettyName()), vehicle_position[13], vehicle_position[14], vehicle_position[15], 50)
 		end
 	end
 end
@@ -2044,11 +2050,9 @@ end
 ---@param steam_id steam_id The steam_id of the player
 ---@param name string The name of the player
 ---@param banned? boolean If the player should be banned immediately
----@param block_tps? boolean If tps should be blocked by default
----@param showVehicleIDs? boolean If vehicle ID popups should be displayed
 ---@return Player self The new player object
-function PlayerContainer.create(self, peer_id, steam_id, name, banned, block_tps, showVehicleIDs)
-	self.players[steam_id] = new(Player, peer_id, steam_id, name, banned, block_tps, showVehicleIDs)
+function PlayerContainer.create(self, peer_id, steam_id, name, banned)
+	self.players[steam_id] = new(Player, peer_id, steam_id, name, banned)
 	return self.players[steam_id]
 end
 
@@ -2098,14 +2102,14 @@ local Vehicle = {}
 ---@param cost number The cost of the vehicle
 function Vehicle.constructor(self, vehicle_id, owner_steam_id, cost)
 	self.vehicle_id = vehicle_id
-	self.owner = owner_steam_id
+	self.owner = owner_steam_id or exploreTable(g_savedata.vehicles, {vehicle_id, "owner"})
 
 	local name, success = server.getVehicleName(vehicle_id)
-	self.name = success and name or "Unknown"
+	self.name = success and (name ~= "Error" and name or "Unknown") or "Unknown"
 	self.pretty_name = string.format("%s(%d)", self.name, self.vehicle_id)
-	self.cost = cost
+	self.cost = exploreTable(g_savedata.vehicles, {vehicle_id, "cost"}) or cost
 
-	self.ui_id = server.getMapID()
+	self.ui_id = exploreTable(g_savedata.vehicles, {vehicle_id, "ui_id"}) or server.getMapID()
 
 	self.save()
 end
@@ -2330,7 +2334,7 @@ function onCreate(is_new)
 
 	-- deserialize data
 	for steam_id, data in pairs(g_savedata.players) do
-		G_players.create(nil, data.steam_id, data.name, data.banned, data.block_tps, data.showVehicleIDs)
+		G_players.create(data.peer_id, data.steam_id, data.name, data.banned)
 	end
 
 	for vehicle_id, data in pairs(g_savedata.vehicles) do
@@ -2384,6 +2388,15 @@ function onCreate(is_new)
 	end
 
 	server.save(SAVE_NAME)
+end
+
+function onDestroy()
+	-- set peer_ids to nil for all players
+	-- stop displaying all popups in case of `?reload_scripts`
+	for steam_id, player in pairs(G_players.get()) do
+		player.peer_id = nil
+		player.save()
+	end
 end
 
 function onPlayerJoin(steam_id, name, peer_id, admin, auth)
@@ -2592,9 +2605,9 @@ function onTick()
 	end
 
 	-- draw vehicle ids on the screens of those that have requested it
-	for steam_id, player_data in pairs(G_players.get()) do
-		if player_data.showVehicleIDs then
-			player_data.updateVehicleIdUI()
+	for steam_id, player in pairs(G_players.get()) do
+		if player.show_vehicle_ids then
+			player.updateVehicleIdUI()
 		end
 	end
 
@@ -3216,12 +3229,26 @@ COMMANDS = {
 			if not success then
 				return false, "ERROR", "An error occurred when gathering data for " .. vehicle.pretty_name
 			end
+
+			local cost
+			if vehicle.cost then
+				if vehicle.cost > 0 then
+					cost = string.format("%0.2f", vehicle.cost)
+				else
+					-- 🥚
+					local rnd = math.random(10)
+					cost = rnd == 8 and "$Free.99" or "Free"
+				end
+			else
+				cost = "Unknown"
+			end
+
 			server.announce("VEHICLE_DATA", "vehicleID : " .. vehicle.vehicle_id, caller.peer_id)
 			server.announce(" ", "Name : " .. (vehicle.name or "Unknown"), caller.peer_id)
 			server.announce(" ", "Owner : " .. (G_players.get(vehicle.owner).prettyName() or "Unknown"), caller.peer_id)
 			server.announce(" ", "Voxel Count : " .. (vehicle_data.voxels and string.format("%d", vehicle_data.voxels) or "Unknown"), caller.peer_id)
 			server.announce(" ", "Mass : " .. (vehicle_data.mass and string.format("%0.2f", vehicle_data.mass) or "Unknown"), caller.peer_id)
-			server.announce(" ", "Cost : " .. (vehicle.cost and string.format("%0.2f", vehicle.cost) or "Unknown"), caller.peer_id)
+			server.announce(" ", "Cost : " .. cost, caller.peer_id)
 			return true
 		end,
 		args = {
@@ -3255,8 +3282,8 @@ COMMANDS = {
 			local target = target_player or caller
 			server.announce("ROLE LIST", target.prettyName() .. " has the following roles:", caller.peer_id)
 
-			for role_name, role_data in pairs(G_roles.get()) do
-				if role_data.members[target_player.steam_id] then
+			for role_name, role in pairs(G_roles.get()) do
+				if role.members[target.steam_id] then
 					server.announce(" ", role_name, caller.peer_id)
 				end
 			end
@@ -3498,7 +3525,7 @@ COMMANDS = {
 			if unsafe and math.random(10) == 2 then
 				server.announce(
 					" ",
-					"By choosing to teleport a vehicle unsafely at your own risk, you hereby claim responsibility for any (or all) of the below events:\nI. Severe Mutilation\nII. Painful Death\nIII. Nuclear Explosions\nIV. Forced Removal of Your Spleen*\nV. Loss of Brain Cells\n\n*The immediate area within 3m may also be removed",
+					"By choosing to teleport a vehicle unsafely at your own risk, you hereby claim responsibility for any (or all) of the below events:\n\nI. Severe Mutilation\nII. Painful Death\nIII. Nuclear Explosions\nIV. Forced Removal of Your Spleen*\nV. Loss of Brain Cells\n\n*The immediate area within 3m may also be removed",
 					caller.peer_id
 				)
 			end
