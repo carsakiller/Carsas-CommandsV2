@@ -1231,7 +1231,7 @@ function validatePlayerID(playerID, caller)
 
 			local nearest = fuzzyStringInTable(playerID, names, false)
 			if nearest then
-				return true, peer_ids[nearest]
+				return true, G_players.get(STEAM_IDS[peer_ids[nearest]])
 			else
 				return false, nil, ("A player with the name " .. quote(playerID) .. " could not be found")
 			end
@@ -1286,11 +1286,12 @@ function dataIsOfType(data, target_type, caller)
 end
 
 ---Decodes the equip arguments and calls equip on the target
----@param caller Player The player to run equip on
----@param notify steam_id The steam_id of the player to notify about the status of the equip
+---@param caller Player The player calling the function
+---@param target Player The player to run equip on
+---@param notify boolean If the players involved should be notified of anything
 ---@param ... any equip args
 ---@return any results The results of `caller.equip()`
-function equipArgumentDecode(caller, notify, ...)
+function equipArgumentDecode(caller, target, notify, ...)
 	local args = {...}
 	local args_to_pass = {}
 
@@ -1301,7 +1302,8 @@ function equipArgumentDecode(caller, notify, ...)
 			table.insert(args_to_pass, v)
 		end
 	end
-	return caller.equip(notify, args_to_pass.slot or false, table.unpack(args_to_pass))
+
+	return target.equip(notify and caller, args_to_pass.slot or false, table.unpack(args_to_pass))
 end
 
 ---Assists in paginating data from a table
@@ -1494,6 +1496,7 @@ end
 ---@return boolean change_made If a change was made to the permissions or they are the same as before
 function Role.setPermissions(self, admin, auth)
 	local change = false
+
 	if self.admin ~= admin or self.auth ~= auth then
 		change = true
 	end
@@ -1533,7 +1536,8 @@ end
 ---Update the permissions for all the members of this role
 ---@param self Role This role object's instance
 function Role.updateMembers(self)
-	for steam_id, player in pairs(self.members) do
+	for steam_id, _ in pairs(self.members) do
+		local player = G_players.get(steam_id)
 		player.updatePrivileges()
 	end
 end
@@ -1620,6 +1624,10 @@ function Player.constructor(self, peer_id, steam_id, name, banned)
 	self.banned = banned or exploreTable(g_savedata.players, {steam_id, "banned"})
 	self.tp_blocking = exploreTable(g_savedata.players, {steam_id, "block_tps"})
 	self.show_vehicle_ids = exploreTable(g_savedata.players, {steam_id, "show_vehicle_ids"})
+
+	local admin, auth = self.updatePrivileges()
+	self.admin = admin
+	self.auth = auth
 
 	self.save()
 end
@@ -1758,16 +1766,16 @@ end
 ---@return string|nil errText An explanation of the error, if any
 function Player.giveStartingEquipment(self)
 	local items = {
-		G_preferences.startEquipmentA.value,
-		G_preferences.startEquipmentB.value,
-		G_preferences.startEquipmentC.value,
-		G_preferences.startEquipmentD.value,
-		G_preferences.startEquipmentE.value,
-		G_preferences.startEquipmentF.value
+		G_preferences.startEquipmentA,
+		G_preferences.startEquipmentB,
+		G_preferences.startEquipmentC,
+		G_preferences.startEquipmentD,
+		G_preferences.startEquipmentE,
+		G_preferences.startEquipmentF
 	}
 
-	for i, item_id in pairs(items) do
-		local success, title, statusText = self.equip(self.steam_id, EQUIPMENT_SLOTS[i].letter, item_id)
+	for i, item_data in pairs(items) do
+		local success, title, statusText = self.equip(nil, EQUIPMENT_SLOTS[i].letter, item_data.value)
 		if not success then
 			server.announce(title, statusText)
 			return false, title, statusText
@@ -1778,7 +1786,7 @@ end
 
 ---Equips this player with the requested equipment
 ---@param self Player This player object's instance
----@param notify? steam_id The steam_id of the player to notify about the status of the equip operation
+---@param notify? Player The player that called the operation that will be notified about the status of the equip operation
 ---@param slot? string The slot to insert the item into
 ---@param item_id number The equipment_id of the item to insert
 ---@param data1? number The data of the item to insert
@@ -1788,7 +1796,6 @@ end
 ---@return string err Why the succeeded/failed
 ---@return string errText An explanation for why the operation succeeded/failed
 function Player.equip(self, notify, slot, item_id, data1, data2, is_active)
-	local notify_player = notify and G_players.get(notify) or nil
 	local character_id, success = server.getPlayerCharacterID(self.peer_id)
 
 	if not success then
@@ -1818,7 +1825,7 @@ function Player.equip(self, notify, slot, item_id, data1, data2, is_active)
 	local item_params = item_data.data
 	local item_size_name = EQUIPMENT_SIZE_NAMES[item_size]
 	local item_pretty_name = string.format("\"%s\" (%d)", item_name, item_id)
-	local caller_pretty_name = notify_player and notify_player.prettyName() or nil
+	local caller_pretty_name = notify and notify.prettyName() or nil
 	local target_pretty_name = self.prettyName()
 
 	is_active = toBool(is_active) or false
@@ -1870,7 +1877,7 @@ function Player.equip(self, notify, slot, item_id, data1, data2, is_active)
 		if not success then
 			local err
 			-- inventory is full of same-size items
-			if self.peer_id == notify_player.peer_id then
+			if self.peer_id == notify.peer_id then
 				err = string.format("Could not equip you with %s because your inventory is full of %s items. To replace an item specify the slot to replace. Options: %s", item_pretty_name, item_size_name, table.concat(available_slots, ", "))
 			else
 				err = string.format("%s could not be equipped with %s because their inventory is full of %s items. To replace an item specify the slot to replace. Options: %s", target_pretty_name, item_pretty_name, item_size_name, table.concat(available_slots, ", "))
@@ -1879,19 +1886,18 @@ function Player.equip(self, notify, slot, item_id, data1, data2, is_active)
 		end
 	end
 
-
 	success = server.setCharacterItem(character_id, slot_number, item_id, is_active, data1, data2)
 	if success then
 		local slot_name = EQUIPMENT_SLOTS[slot_number].letter
-		if notify_player and self.peer_id ~= notify_player.peer_id then
+		if notify then
 			if isRecharge then
-				if notify_player then
-					server.notify(notify_player.peer_id, "EQUIPMENT UPDATED", caller_pretty_name .. " updated your " .. item_pretty_name .. " in slot " .. slot_name, 5)
+				if notify then
+					server.notify(self.peer_id, "EQUIPMENT UPDATED", caller_pretty_name .. " updated your " .. item_pretty_name .. " in slot " .. slot_name, 5)
 				end
 				return true, "PLAYER EQUIPPED", target_pretty_name .. "'s " .. item_pretty_name .. " in slot " .. slot_name .. " has been updated"
 			else
-				if notify_player then
-					server.notify(notify_player.peer_id, "EQUIPPED", caller_pretty_name .. " equipped you with " .. item_pretty_name .. " in slot " .. slot_name, 5)
+				if notify then
+					server.notify(self.peer_id, "EQUIPPED", caller_pretty_name .. " equipped you with " .. item_pretty_name .. " in slot " .. slot_name, 5)
 				end
 				return true, "PLAYER EQUIPPED", target_pretty_name .. " was equipped with " .. item_pretty_name .. " in slot " .. slot_name
 			end
@@ -1909,41 +1915,52 @@ end
 
 ---Used to update the stormworks privileges for a player
 ---@param self Player This player object's instance
+---@return boolean admin If the player is an admin
+---@return boolean auth If the player is auth'd
 function Player.updatePrivileges(self)
 	local players = server.getPlayers()
-	local player_data
-	for k, v in ipairs(players) do
-		if v.id == self.peer_id then
-			player_data = v
-			break
-		end
-	end
-	local is_admin = player_data.admin
-	local is_auth = player_data.auth
+	local is_admin = false
+	local is_auth = false
 	local role_admin = false
 	local role_auth = false
 
-	for _, role in pairs(G_roles.roles) do
+	for k, v in pairs(players) do
+		if tostring(v.steam_id) == self.steam_id then
+			is_admin = v.admin
+			is_auth = v.auth
+			break
+		end
+	end
+
+	for _, role in pairs(G_roles.get()) do
+		if role_admin and role_auth then break end
 		if role.active then
-			if role_admin and role_auth then break end
 			if role.members[self.steam_id] then
 				if role.admin then role_admin = true end
-				if role_auth then role_auth = true end
+				if role.auth then role_auth = true end
 			end
 		end
 	end
 
 	if role_admin and not is_admin then
 		server.addAdmin(self.peer_id)
+		self.admin = true
 	elseif not role_admin and is_admin then
 		server.removeAdmin(self.peer_id)
+		self.admin = false
 	end
 
 	if role_auth and not is_auth then
 		server.addAuth(self.peer_id)
+		self.auth = true
 	elseif not role_auth and is_auth then
 		server.removeAuth(self.peer_id)
+		self.auth = false
 	end
+
+	self.save()
+
+	return role_admin, role_auth
 end
 
 ---Sets the state of tp blocking for this player
@@ -2079,28 +2096,6 @@ function PlayerContainer.get(self, steam_id)
 		return self.players[steam_id]
 	end
 end
-
----Gets the players that are banned
----@param self PlayerContainer This player container's object instance
----@return table|nil banned_players A table containing Player objects and the object for the admin that banned them.
----## Example return data:
----```
----{
----		["player"] = banned_player (Player type),
----		["admin"] = admin_player (Player type)
----}
----```
-function PlayerContainer.getBanned(self)
-	local banned = {}
-	for k, v in pairs(self.players) do
-		if v.banned then
-			table.insert(banned, {player = v, admin = self.get(v.banned)})
-		end
-	end
-	return #banned > 0 and banned or nil
-end
---#endregion
-
 
 ---Class that defines the object for each vehicle
 ---@class Vehicle
@@ -2440,7 +2435,7 @@ function onPlayerJoin(steam_id, name, peer_id, admin, auth)
 				type = "kick",
 				target = player,
 				time = 0,
-				timeEnd = 10
+				timeEnd = 30
 			})
 		end
 	else
@@ -2846,28 +2841,33 @@ COMMANDS = {
 		}
 	},
 	banned = {
-		func = function(caller, page_entry)
-			local banned = G_players.getBanned()
+		func = function(caller, page)
+			local banned = {}
+			for steam_id, player in pairs(G_players.get()) do
+				if player.banned then
+					table.insert(banned, {player = player.name .. "("..player.steam_id..")", admin = G_players.get(player.banned).prettyName()})
+				end
+			end
 
 			-- if no one is banned, tell the user
 			if not banned then
 				return true, "NO ONE BANNED", "No one has been banned"
 			end
 
-			table.sort(banned, function(a, b) return a.name < b.name end)
+			table.sort(banned, function(a, b) return a.player < b.player end)
 
-			local page, max_page, start_index, end_index = paginate(page_entry, banned, 4)
+			local clamped_page, max_page, start_index, end_index = paginate(page or 1, banned, 4)
 
 			-- print to target player
 			server.announce(" ", "----------------------  BANNED PLAYERS  -----------------------", caller.peer_id)
 			for i = start_index, end_index do
 				server.announce(
-					banned[i].player.prettyName(),
-					"Banned By: " .. banned[i].admin.prettyName(),
+					banned[i].player,
+					"Banned By: " .. banned[i].admin,
 					caller.peer_id
 				)
 			end
-			server.announce(" ", "Page " .. page .. " of " .. max_page, caller.peer_id)
+			server.announce(" ", "Page " .. clamped_page .. " of " .. max_page, caller.peer_id)
 			server.announce(" ", LINE, caller.peer_id)
 			return true
 		end,
@@ -3333,11 +3333,12 @@ COMMANDS = {
 	playerPerms = {
 		func = function(caller, target_player)
 			local target = target_player or caller
-			target.updatePrivileges();
+
+			local admin, auth = target.updatePrivileges();
 			server.announce(" ", LINE, caller.peer_id)
 			server.announce("PLAYER PERMS", target.prettyName() .. " has the following permissions:", caller.peer_id)
-			server.announce("Admin", target.admin and "Yes" or "No", caller.peer_id)
-			server.announce("Auth", target.auth and "Yes" or "No", caller.peer_id)
+			server.announce("Admin", admin and "Yes" or "No", caller.peer_id)
+			server.announce("Auth", auth and "Yes" or "No", caller.peer_id)
 			server.announce(" ", LINE, caller.peer_id)
 			return true
 		end,
@@ -3349,35 +3350,36 @@ COMMANDS = {
 	heal = {
 		func = function(caller, target_player, amount)
 			local target = target_player or caller
+			local msg = target_player == caller and "You have been " or target_player.prettyName() .. " has been "
 			amount = amount or 100
 
 			local character_id, success = server.getPlayerCharacterID(target.peer_id)
 			local character_data = server.getCharacterData(character_id)
 
 			-- revive dead/incapacitated targets
-			if character_data.dead or character_data.is_incapacitated then
+			if character_data.dead or character_data.incapacitated then
 				server.reviveCharacter(character_id)
-				return true, "PLAYER REVIVED", target == caller and "You have been revived" or target.prettyName() .. " has been revived"
+				msg = msg .. "revived and "
 			end
 
 			local clamped_amount = clamp(character_data.hp + amount, 0, 100)
 			server.setCharacterData(character_id, clamped_amount, false, false)
+			msg = msg .. "healed to " .. clamped_amount .. "%"
 
-			local title = "HEALED"
-			local message = "You have been healed to " .. clamp(character_data.hp + amount, 0, 100) .. "%"
 			-- 🥚
-			if character_data.hp < 1 and math.random(15) == 4 then
-				title = "Whew!"
-				message = "Just in time"
+			if character_data.hp < 1 and not (character_data.incapacitated or character_data.dead) and math.random(15) == 4 then
+				msg = "Just in time"
 			end
 
 			if caller ~= target then
-				server.notify(target.peer_id, "YOU'VE BEEN HEALED", caller.prettyName() .. " has healed you by " .. clamped_amount .. "%", 5)
-				title = "PLAYER HEALED"
-				message = target.prettyName() .. " has been healed by " .. clamped_amount .. "%"
+				local message = "You have been healed to " .. clamped_amount .. "%"
+				if character_data.dead or character_data.incapacitated then
+					message = "You have been revived and healed to " .. clamped_amount .. "%"
+				end
+				server.notify(target.peer_id, "HEALED", message .. " by " .. caller.prettyName(), 5)
 			end
 
-			return true, title, message
+			return true, "HEALED", msg
 		end,
 		args = {
 			{name = "playerID", type = {"playerID"}},
@@ -3387,7 +3389,7 @@ COMMANDS = {
 	},
 	equip = {
 		func = function(caller, ...)
-			return equipArgumentDecode(caller, caller.steam_id, ...)
+			return equipArgumentDecode(nil, caller, true, ...)
 		end,
 		args = {
 			{name = "item_id", type = {"number"}, required = true},
@@ -3401,7 +3403,7 @@ COMMANDS = {
 	},
 	equipp = {
 		func = function(caller, target_player, ...)
-			return equipArgumentDecode(target_player, caller.steam_id, ...)
+			return equipArgumentDecode(caller, target_player, true, ...)
 		end,
 		args = {
 			{name = "playerID", type = {"playerID"}, required = true},
@@ -3531,12 +3533,20 @@ COMMANDS = {
 
 			local players = {...}
 			local player_names = {}
-			local t = players[1] == "*" and G_players.get() or players
+			local t
 
-			for steam_id, player in pairs(t) do
-				player.setPosition(caller_pos)
-				server.announce("TELEPORTED", "You have been teleported to " .. caller.prettyName(), player.peer_id)
-				table.insert(player_names, player.prettyName())
+			if players[1] == "*" then
+				t = G_players.get()
+			else
+				t = players
+			end
+
+			for _, player in pairs(t) do
+				if player ~= caller then
+					player.setPosition(caller_pos)
+					server.announce("TELEPORTED", "You have been teleported to " .. caller.prettyName(), player.peer_id)
+					table.insert(player_names, player.prettyName())
+				end
 			end
 
 			return true, "TELEPORTED", "The following players were teleported to your location:\n" .. table.concat(player_names, "\n")
@@ -4070,7 +4080,8 @@ function switch(caller, command, args)
 					is_correct_type, converted_value, err = dataIsOfType(pArgValue, accepted_type, caller)
 					-- DEBUG: announce what value this is looking for and what it is attempting to match
 					server.announce((is_correct_type and "Correct" or "Incorrect") .. (arg.data.required and " Required" or " Optional"),
-					"Target Type: " .. accepted_type .. "\n    | Given Value: " .. tostring(pArgValue) .. "\n    | Converted Value: " .. tostring(converted_value) .. "\n    | Err: " .. (err or "")
+					"Arg Position: " .. pArgIndex .. "\n    |Target Type: " .. accepted_type .. "\n    | Given Value: " .. tostring(pArgValue) .. "\n    | Converted Value: " .. tostring(converted_value) .. "\n    | Err: " .. (err or ""),
+					caller.peer_id
 					)
 
 					-- if the argument is a segment of text and the rest of the arguments need to be captured and concatenated
@@ -4117,9 +4128,17 @@ function switch(caller, command, args)
 end
 
 function onCustomCommand(message, caller_id, admin, auth, command, ...)
+	local args = {...}
+
 	if command == "?save" then return end -- server.save() calls `?save`, and thus onCustomCommand(), this aborts that
 	-- DEBUG: call onCreate as a new save for debugging
 	if command == "?new" then onCreate(true) end
+
+	if command == "?join" then
+		local steam = STEAM_IDS[args[1]]
+		if not steam then return end
+		onPlayerJoin(steam, (server.getPlayerName(args[1])), args[1])
+	end
 
 	command = command:sub(2) -- cut off "?"
 
@@ -4132,7 +4151,6 @@ function onCustomCommand(message, caller_id, admin, auth, command, ...)
 		return
 	end
 
-	local args = {...}
 	local player = G_players.get(STEAM_IDS[caller_id])
 
 	-- if player data could not be found, "pretend" player just joined and give default data
