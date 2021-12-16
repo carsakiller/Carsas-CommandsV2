@@ -375,6 +375,7 @@ local deny_tp_ui_id
 --#region
 
 local SAVE_NAME = "CC_Autosave"
+local MAX_AUTOSAVES = 5
 local STEAM_ID_MIN = "76561197960265729"
 local BUTTON_PREFIX = "?cc"
 
@@ -1368,6 +1369,21 @@ function tellSupervisors(title, message, ...)
 		server.announce(title, message, peer_id)
 	end
 end
+
+---Autosave the game. Cycles through multiple save file names so as to not overwrite them immediately
+function autosave()
+	local save_index
+
+	if g_savedata.autosave >= MAX_AUTOSAVES then
+		g_savedata.autosave = 1
+		save_index = MAX_AUTOSAVES
+	elseif g_savedata.autosave < MAX_AUTOSAVES then
+	    save_index = g_savedata.autosave
+		g_savedata.autosave = g_savedata.autosave + 1
+	end
+
+	server.save(string.format(string.format("%s_%d", SAVE_NAME, save_index)))
+end
 --#endregion
 
 
@@ -2029,7 +2045,6 @@ end
 --#endregion
 
 
-
 ---Class that defines the object that contains all of the player objects
 ---@class PlayerContainer
 local PlayerContainer = {}
@@ -2316,6 +2331,7 @@ function onCreate(is_new)
 
 
 	g_savedata.version = SaveDataVersion
+	g_savedata.autosave = g_savedata.autosave or 1
 	-- define if undefined
 	g_savedata.vehicles = g_savedata.vehicles or {}
 	g_savedata.objects = g_savedata.objects or {}
@@ -2390,7 +2406,7 @@ function onCreate(is_new)
 		end
 	end
 
-	server.save(SAVE_NAME)
+	autosave()
 end
 
 function onDestroy()
@@ -2465,7 +2481,7 @@ function onPlayerJoin(steam_id, name, peer_id, admin, auth)
 
 	player.save()
 
-	server.save(SAVE_NAME)
+	autosave()
 end
 
 function onPlayerLeave(steam_id, name, peer_id, is_admin, is_auth)
