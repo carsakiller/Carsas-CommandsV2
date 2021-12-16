@@ -2332,7 +2332,6 @@ function onCreate(is_new)
 	G_players = new(PlayerContainer) ---@type PlayerContainer
 	G_roles = new(RoleContainer) ---@type RoleContainer
 	G_rules = new(Rules) ---@type Rules
-	G_uniquePlayers = g_savedata.unique_players
 	G_preferences = g_savedata.preferences
 	G_aliases = g_savedata.aliases
 
@@ -2431,11 +2430,11 @@ function onPlayerJoin(steam_id, name, peer_id, admin, auth)
 	else
 		-- add new player's data to persistent data table
 		player = G_players.create(peer_id, steam_id, name)
-		if G_uniquePlayers == 0 then -- if first player to join a new save
+		if g_savedata.unique_players == 0 then -- if first player to join a new save
 			G_roles.get("Owner").addMember(player)
 			G_roles.get("Supervisor").addMember(player)
 		end
-		G_uniquePlayers = G_uniquePlayers + 1
+		g_savedata.unique_players = g_savedata.unique_players + 1
 	end
 
 	-- give every player the "Everyone" role
