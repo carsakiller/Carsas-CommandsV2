@@ -839,10 +839,6 @@ local PREFERENCE_DEFAULTS = {
 	}
 }
 
-local PLAYER_DATA_DEFAULTS = {
-	name = "unknown",
-}
-
 local DEFAULT_ROLES = {
 	Owner = {
 		active = true,
@@ -901,6 +897,7 @@ local DEFAULT_ROLES = {
 			tpp = true,
 			tps = true,
 			tpv = true,
+			transferOwner = true,
 			unban = true,
 			vehicleIDs = true,
 			vehicleInfo = true,
@@ -940,6 +937,7 @@ local DEFAULT_ROLES = {
 			tpp = true,
 			tps = true,
 			tpv = true,
+			transferOwner = true,
 			unban = true,
 			vehicleIDs = true,
 			vehicleInfo = true,
@@ -981,6 +979,7 @@ local DEFAULT_ROLES = {
 			tpv = true,
 			tps = true,
 			tp2v = true,
+			transferOwner = true,
 			cc = true,
 			ccHelp = true,
 			equipmentIDs = true,
@@ -1013,6 +1012,7 @@ local DEFAULT_ALIASES = {
 	h = "heal",
 	e = "equip",
 	p = "position",
+	pos = "position",
 	eids = "equipmentIDs",
 	tpls = "tpLocations",
 	w = "whisper"
@@ -1892,12 +1892,12 @@ function Player.equip(self, notify, slot, item_id, data1, data2, is_active)
 		if notify then
 			if isRecharge then
 				if notify then
-					server.notify(self.peer_id, "EQUIPMENT UPDATED", caller_pretty_name .. " updated your " .. item_pretty_name .. " in slot " .. slot_name, 5)
+					server.notify(self.peer_id, "EQUIPMENT UPDATED", caller_pretty_name .. " updated your " .. item_pretty_name .. " in slot " .. slot_name, 9)
 				end
 				return true, "PLAYER EQUIPPED", target_pretty_name .. "'s " .. item_pretty_name .. " in slot " .. slot_name .. " has been updated"
 			else
 				if notify then
-					server.notify(self.peer_id, "EQUIPPED", caller_pretty_name .. " equipped you with " .. item_pretty_name .. " in slot " .. slot_name, 5)
+					server.notify(self.peer_id, "EQUIPPED", caller_pretty_name .. " equipped you with " .. item_pretty_name .. " in slot " .. slot_name, 9)
 				end
 				return true, "PLAYER EQUIPPED", target_pretty_name .. " was equipped with " .. item_pretty_name .. " in slot " .. slot_name
 			end
@@ -2096,6 +2096,7 @@ function PlayerContainer.get(self, steam_id)
 		return self.players[steam_id]
 	end
 end
+--#endregion
 
 ---Class that defines the object for each vehicle
 ---@class Vehicle
@@ -2273,11 +2274,11 @@ function Rules.print(self, steam_id, page, silent)
 	local peer_id = G_players.get(steam_id).peer_id
 	if not peer_id then return false end
 
-	if #self.rules == 0 then
+	if #self.rules <= 0 then
 		if not silent then
 			server.announce("NO RULES", "There are no rules", peer_id)
-			return
 		end
+		return
 	end
 
 	server.announce(" ", "--------------------------------  Rules  --------------------------------", peer_id)
@@ -2299,7 +2300,6 @@ end
 
 --#endregion
 --#endregion
-
 
 
 --[ CALLBACK FUNCTIONS ]--
@@ -2406,7 +2406,6 @@ end
 
 function onDestroy()
 	-- set peer_ids to nil for all players
-	-- stop displaying all popups in case of `?reload_scripts`
 	for steam_id, player in pairs(G_players.get()) do
 		player.peer_id = nil
 		player.save()
@@ -3290,6 +3289,22 @@ COMMANDS = {
 		},
 		description = "Get detailed info on a vehicle. If no vehicleID is provided, the nearest vehicle will be used"
 	},
+	transferOwner = {
+		func = function(caller, vehicle, target_player)
+			local owner_steam_id = vehicle.owner
+			if caller.steam_id == owner_steam_id then
+				vehicle.owner = target_player.steam_id
+				server.notify(target_player.peer_id, "OWNERSHIP TRANSFER", caller.prettyName() .. " has made you the owner of one of their vehicles:\n\n" .. vehicle.pretty_name, 9)
+			else
+				server.announce("DENIED", "You cannot transfer ownership on a vehicle you do not own", caller.peer_id)
+			end
+		end,
+		args = {
+			{name = "vehicleID", type = {"vehicle"}, required = true},
+			{name = "playerID", type = {"playerID"}, required = true}
+		},
+		description = "Transfers ownership of a vehicle to another player."
+	},
 
 	-- Player --
 	kill = {
@@ -3376,7 +3391,7 @@ COMMANDS = {
 				if character_data.dead or character_data.incapacitated then
 					message = "You have been revived and healed to " .. clamped_amount .. "%"
 				end
-				server.notify(target.peer_id, "HEALED", message .. " by " .. caller.prettyName(), 5)
+				server.notify(target.peer_id, "HEALED", message .. " by " .. caller.prettyName(), 9)
 			end
 
 			return true, "HEALED", msg
@@ -3558,6 +3573,9 @@ COMMANDS = {
 	},
 	tpv = {
 		func = function(caller, vehicle, unsafe)
+			if G_players.get(vehicle.owner).tp_blocking and vehicle.owner ~= caller.steam_id then
+				return false, "DENIED", "The vehicle you tried teleporting is currently blocking teleports"
+			end
 			local target_matrix, success = caller.getPosition()
 			if not success then
 				return false, "ERROR", "Your position could not be found. This should never happen"
@@ -3592,11 +3610,33 @@ COMMANDS = {
 				if not nearest then
 					return false, err, errText
 				end
-				vehicle = nearest[1]
+
+				for k, vehicle in ipairs(nearest) do
+					if vehicle.owner == caller.steam_id then
+						vehicle = nearest[k]
+						break
+					else
+						if not G_players.get(vehicle.owner).tp_blocking then
+							vehicle = nearest[k]
+							break
+						end
+					end
+				end
+				if not vehicle then
+					return false, "DENIED", "All nearby vehicles are blocking teleports"
+				end
 			elseif arg1.name then
+				local owner = G_players.get(arg1.owner)
+				if owner ~= caller and owner.tp_blocking then
+					return false, "DENIED", "The vehicle you tried teleporting to is currently blocking teleports"
+				end
 				vehicle = arg1
 			elseif arg1 == "r" then
 				if caller.latest_spawn then
+					local v = G_vehicles.get(caller.latest_spawn)
+					if G_players.get(v.owner).tp_blocking and caller.steam_id ~= v.owner then
+						return false, "DENIED", "Your most recently spawned vehicle is no longer yours and is currently blocking teleports"
+					end
 					vehicle = G_vehicles.get(caller.latest_spawn)
 				else
 					return false, "VEHICLE NOT FOUND", "You have not spawned any vehicles or the last vehicle you spawned has been despawned"
@@ -3629,6 +3669,10 @@ COMMANDS = {
 	},
 	tp2v = {
 		func = function(caller, vehicle)
+			if G_players.get(vehicle.owner).tp_blocking and caller.steam_id ~= vehicle.owner then
+				return false, "DENIED", "The vehicle you tried teleporting to is currently blocking teleports"
+			end
+
 			local player_matrix = caller.getPosition()
 			local vehicle_matrix = vehicle.getPosition()
 
@@ -4121,7 +4165,7 @@ function switch(caller, command, args)
 		end
 	end
 
-	server.notify(caller.peer_id, "EXECUTING " .. command, " ", 8)
+	server.notify(caller.peer_id, "EXECUTING " .. command, " ", 7)
 
 	-- all arguments should be converted to their true types now
 	return command_data.func(caller, table.unpack(accepted_args))
@@ -4131,14 +4175,6 @@ function onCustomCommand(message, caller_id, admin, auth, command, ...)
 	local args = {...}
 
 	if command == "?save" then return end -- server.save() calls `?save`, and thus onCustomCommand(), this aborts that
-	-- DEBUG: call onCreate as a new save for debugging
-	if command == "?new" then onCreate(true) end
-
-	if command == "?join" then
-		local steam = STEAM_IDS[args[1]]
-		if not steam then return end
-		onPlayerJoin(steam, (server.getPlayerName(args[1])), args[1])
-	end
 
 	command = command:sub(2) -- cut off "?"
 
