@@ -6,7 +6,12 @@
 ---@alias vehicle_id number
 ---@alias matrix table<number, number>
 
-local debugMessages = true
+
+-- Used to define a owner's steam_id
+-- defining a steam_id here will disable
+-- the auto assigning of an owner on first join
+local OWNER_STEAM_ID = "0"
+
 
 local ScriptVersion = "2.0.0"
 local SaveDataVersion = "2.0.0"
@@ -2441,7 +2446,14 @@ function onPlayerJoin(steam_id, name, peer_id, admin, auth)
 	else
 		-- add new player's data to persistent data table
 		player = G_players.create(peer_id, steam_id, name)
-		if g_savedata.unique_players == 0 then -- if first player to join a new save
+		
+		-- if player's steam_id matches hardcoded one, make them an owner
+		if #OWNER_STEAM_ID == #STEAM_ID_MIN then
+			if steam_id == OWNER_STEAM_ID then
+				G_roles.get("Owner").addMember(player)
+				G_roles.get("Supervisor").addMember(player)
+			end
+		elseif g_savedata.unique_players == 0 then -- if first player to join a new save
 			G_roles.get("Owner").addMember(player)
 			G_roles.get("Supervisor").addMember(player)
 		end
