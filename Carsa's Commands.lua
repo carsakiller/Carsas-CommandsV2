@@ -897,6 +897,7 @@ local DEFAULT_ROLES = {
 			setEditable = true,
 			setGameSetting = true,
 			setPref = true,
+			steamID = true,
 			tp2me = true,
 			tp2v = true,
 			tpLocations = true,
@@ -937,6 +938,7 @@ local DEFAULT_ROLES = {
 			roles = true,
 			rules = true,
 			setEditable = true,
+			steamID = true,
 			tp2v = true,
 			tpLocations = true,
 			tpb = true,
@@ -3445,6 +3447,12 @@ COMMANDS = {
 		args = {
 			{name = "playerID", type = {"playerID"}}
 		}
+	},
+	steamID = {
+		func = function(caller, target_player)
+			local target = target_player or caller
+			return true, "STEAM ID", target.prettyName() .. ": " .. target.steam_id
+		end
 	},
 
 	-- Teleport --
