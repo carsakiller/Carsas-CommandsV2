@@ -3452,7 +3452,11 @@ COMMANDS = {
 		func = function(caller, target_player)
 			local target = target_player or caller
 			return true, "STEAM ID", target.prettyName() .. ": " .. target.steam_id
-		end
+		end,
+		args = {
+			{name = "playerID", type={"playerID"}}
+		},
+		description = "Displays the steamID of the requested player. Displays your steamID if no player is specified."
 	},
 
 	-- Teleport --
