@@ -1,14 +1,14 @@
 -- CARSA'S COMMANDS
 ---@version 2.0.0
 
----@alias peer_id number
----@alias steam_id string
----@alias vehicle_id number
+---@alias peerID number
+---@alias steamID string
+---@alias vehicleID number
 ---@alias matrix table<number, number>
 
 
--- Used to define a owner's steam_id
--- defining a steam_id here will disable
+-- Used to define a owner's steamID
+-- defining a steamID here will disable
 -- the auto assigning of an owner on first join
 local OWNER_STEAM_ID = "0"
 
@@ -414,7 +414,7 @@ local TYPE_ABBREVIATIONS = {
 	bool = "bool",
 	playerID = "text/num",
 	vehicle = "num",
-	steam_id = "num",
+	steamID = "num",
 	text = "text",
 	letter = "letter"
 }
@@ -1206,10 +1206,10 @@ function checkTp(target_matrix)
 end
 
 ---Checks if the provided "playerID" is actually valid
----@param playerID string This could be a peer_id, name, or "me" but it comes here as a string
+---@param playerID string This could be a peerID, name, or "me" but it comes here as a string
 ---@param caller Player The player that called this function. Used for translating "me"
 ---@return boolean is_valid If the provided playerID is valid
----@return number|nil peer_id The peer_id of the target playerID
+---@return number|nil peerID The peerID of the target playerID
 ---@return string|nil err Why the provided playerID is invalid
 function validatePlayerID(playerID, caller)
 	local as_num = tonumber(playerID)
@@ -1225,20 +1225,20 @@ function validatePlayerID(playerID, caller)
 			return true, caller
 		elseif playerID ~= nil then
 			local names = {}
-			local peer_ids = {}
+			local peerIDs = {}
 
-			for peer_id, steam_id in pairs(STEAM_IDS) do
-				local player = G_players.get(steam_id)
-				if peer_ids[player.name] then
+			for peerID, steamID in pairs(STEAM_IDS) do
+				local player = G_players.get(steamID)
+				if peerIDs[player.name] then
 					return false, nil, "Two players have the name " .. quote(playerID) .. ". Please use peerIDs instead"
 				end
 				table.insert(names, player.name)
-				peer_ids[player.name] = peer_id
+				peerIDs[player.name] = peerID
 			end
 
 			local nearest = fuzzyStringInTable(playerID, names, false)
 			if nearest then
-				return true, G_players.get(STEAM_IDS[peer_ids[nearest]])
+				return true, G_players.get(STEAM_IDS[peerIDs[nearest]])
 			else
 				return false, nil, ("A player with the name " .. quote(playerID) .. " could not be found")
 			end
@@ -1259,7 +1259,7 @@ function dataIsOfType(data, target_type, caller)
 
 	if target_type == "playerID" then
 		return validatePlayerID(data, caller)
-	elseif target_type == "vehicle" then
+	elseif target_type == "vehicleID" then
 		if not as_num then
 			return false, nil, (tostring(data) .. " is not a number and therefor not a valid vehicleID")
 		end
@@ -1269,13 +1269,13 @@ function dataIsOfType(data, target_type, caller)
 		else
 			return false, nil, quote(as_num) .. " is not a valid vehicleID"
 		end
-	elseif target_type == "steam_id" then
+	elseif target_type == "steamID" then
 		if #data == #STEAM_ID_MIN then
 			return true, data
 		else
 			return false, nil, (data .. " is not a valid steamID")
 		end
-	elseif target_type == "peer_id" then
+	elseif target_type == "peerID" then
 		return validatePlayerID(as_num, caller)
 	elseif target_type == "number" then
 		return as_num ~= nil, as_num, not as_num and ((data or "nil") .. " is not a valid number")
@@ -1369,13 +1369,13 @@ function tellSupervisors(title, message, ...)
 	local excluded_peers = {...}
 
 	if excluded_peers[1] ~= nil then
-		for _, peer_id in pairs(excluded_peers) do
-			peers[peer_id] = nil
+		for _, peerID in pairs(excluded_peers) do
+			peers[peerID] = nil
 		end
 	end
 
-	for peer_id, _ in pairs(peers) do
-		server.announce(title, message, peer_id)
+	for peerID, _ in pairs(peers) do
+		server.announce(title, message, peerID)
 	end
 end
 
@@ -1445,7 +1445,7 @@ local Role = {}
 ---@param admin? boolean If this role should give it's members admin privileges
 ---@param auth? boolean If this role should give it's members auth privileges
 ---@param commands? table A table indexed by command names with a value of true for each command this role should give access to
----@param members table? A table indexed by the `steam_ids` of the players that have this role
+---@param members table? A table indexed by the `steamIDs` of the players that have this role
 function Role.constructor(self, name, active, admin, auth, commands, members)
 	self.name = name
 	self.active = active or true
@@ -1467,7 +1467,7 @@ end
 ---@param self Role This role object's instance
 ---@param player Player The target player's object instance
 function Role.addMember(self, player)
-	self.members[player.steam_id] = true
+	self.members[player.steamID] = true
 	player.updatePrivileges()
 
 	self.save()
@@ -1477,7 +1477,7 @@ end
 ---@param self Role This role object's instance
 ---@param player Player The target player's object instance
 function Role.removeMember(self, player)
-	self.members[player.steam_id] = nil
+	self.members[player.steamID] = nil
 	player.updatePrivileges()
 
 	self.save()
@@ -1543,8 +1543,8 @@ end
 ---Update the permissions for all the members of this role
 ---@param self Role This role object's instance
 function Role.updateMembers(self)
-	for steam_id, _ in pairs(self.members) do
-		local player = G_players.get(steam_id)
+	for steamID, _ in pairs(self.members) do
+		local player = G_players.get(steamID)
 		player.updatePrivileges()
 	end
 end
@@ -1569,7 +1569,7 @@ end
 ---@param admin boolean? If the role grants admin permissions
 ---@param auth boolean? If the role grants auth permissions
 ---@param commands table? A table indexed by the names of the commands this role should have access to
----@param members table? A table indexed by the `steam_ids` of the players that have this role
+---@param members table? A table indexed by the `steamIDs` of the players that have this role
 ---@return boolean success If the role was created successfully
 ---@return string err Why the role was/wasn't created
 ---@return string errText Text explaining why the role was/wasn't created
@@ -1620,17 +1620,17 @@ local Player = {}
 
 ---Creates a player object
 ---@param self Player This player object's instance
----@param peer_id peer_id The `peer_id` of the player to create
----@param steam_id steam_id The `steam_id` of the player to create
+---@param peerID peerID The `peerID` of the player to create
+---@param steamID steamID The `steamID` of the player to create
 ---@param name string The name of the player to create
----@param banned? steam_id The steam_if of the admin that banned them or nil
-function Player.constructor(self, peer_id, steam_id, name, banned)
-	self.peer_id = peer_id
-	self.steam_id = steam_id
+---@param banned? steamID The steam_if of the admin that banned them or nil
+function Player.constructor(self, peerID, steamID, name, banned)
+	self.peerID = peerID
+	self.steamID = steamID
 	self.name = name
-	self.banned = banned or exploreTable(g_savedata.players, {steam_id, "banned"})
-	self.tp_blocking = exploreTable(g_savedata.players, {steam_id, "block_tps"})
-	self.show_vehicle_ids = exploreTable(g_savedata.players, {steam_id, "show_vehicle_ids"})
+	self.banned = banned or exploreTable(g_savedata.players, {steamID, "banned"})
+	self.tp_blocking = exploreTable(g_savedata.players, {steamID, "block_tps"})
+	self.show_vehicleIDs = exploreTable(g_savedata.players, {steamID, "show_vehicleIDs"})
 
 	local admin, auth = self.updatePrivileges()
 	self.admin = admin
@@ -1642,7 +1642,7 @@ end
 ---Save this player object to g_savedata
 ---@param self Player This player object's instance
 function Player.save(self)
-	g_savedata.players[self.steam_id] = serialize(self)
+	g_savedata.players[self.steamID] = serialize(self)
 end
 
 ---Checks whether a player has a role or not
@@ -1651,7 +1651,7 @@ end
 ---@return boolean has_role If the player has the role or not
 function Player.hasRole(self, role)
 	for steamID, _ in pairs(G_roles.roles[role]) do
-		if steamID == self.steam_id then
+		if steamID == self.steamID then
 			return true
 		end
 	end
@@ -1664,7 +1664,7 @@ end
 ---@return boolean has_access If the player has access to the command or not
 function Player.hasAccessToCommand(self, command)
 	for role_name, role in pairs(G_roles.get()) do
-		if role.active and role.members[self.steam_id] then
+		if role.active and role.members[self.steamID] then
 			if role_name == "Owner" or role.commands[command] then
 				return true
 			end
@@ -1673,30 +1673,30 @@ function Player.hasAccessToCommand(self, command)
 	return false
 end
 
----Formats the player's name nicely, providing their peer_id if they are online or their steam_id if they are offline
+---Formats the player's name nicely, providing their peerID if they are online or their steamID if they are offline
 ---@param self Player This player object's instance
 ---@return string pretty_name This player's name formatted nicely
 function Player.prettyName(self)
-	if self.peer_id then
-		return string.format("%s(%d)", self.name, self.peer_id)
+	if self.peerID then
+		return string.format("%s(%d)", self.name, self.peerID)
 	else
-		return string.format("%s(%s)", self.name, self.steam_id)
+		return string.format("%s(%s)", self.name, self.steamID)
 	end
 end
 
 ---Bans this player from the server
 ---@param self Player This player object's instance
----@param admin_steam_id steam_id The steam id of the admin banning this player
+---@param admin_steamID steamID The steam id of the admin banning this player
 ---@return boolean success If the operation succeeded or failed
 ---@return string err Why the operation succeeded/failed
 ---@return string errText Explanation for why the operation succeeded/failed
-function Player.ban(self, admin_steam_id)
-	local admin = G_players.get(admin_steam_id)
-	self.banned = admin_steam_id
+function Player.ban(self, admin_steamID)
+	local admin = G_players.get(admin_steamID)
+	self.banned = admin_steamID
 
-	if self.peer_id then
-		server.kickPlayer(self.peer_id)
-		tellSupervisors("PLAYER BANNED", self.prettyName() .. " has been banned by " .. admin.prettyName(), admin.peer_id)
+	if self.peerID then
+		server.kickPlayer(self.peerID)
+		tellSupervisors("PLAYER BANNED", self.prettyName() .. " has been banned by " .. admin.prettyName(), admin.peerID)
 	end
 	self.save()
 
@@ -1705,16 +1705,16 @@ end
 
 ---Unbans a player from the server
 ---@param self Player This player object's instance
----@param admin_steam_id steam_id The steam id of the admin banning this player
+---@param admin_steamID steamID The steam id of the admin banning this player
 ---@return boolean success If the operation succeeded or failed
 ---@return string err Why the operation succeeded/failed
 ---@return string errText Explanation for why the operation succeeded/failed
-function Player.unban(self, admin_steam_id)
-	local admin = G_players.get(admin_steam_id)
+function Player.unban(self, admin_steamID)
+	local admin = G_players.get(admin_steamID)
 	self.banned = false
 	self.save()
 
-	tellSupervisors("PLAYER UNBANNED", self.prettyName() .. " has been unbanned by " .. admin.prettyName(), admin.peer_id)
+	tellSupervisors("PLAYER UNBANNED", self.prettyName() .. " has been unbanned by " .. admin.prettyName(), admin.peerID)
 	return true, "PLAYER UNBANNED", self.prettyName() .. " has been unbanned"
 end
 
@@ -1723,7 +1723,7 @@ end
 ---@return matrix matrix The position of this player
 ---@return boolean is_success If the position was retrieved successfully
 function Player.getPosition(self)
-	return server.getPlayerPos(self.peer_id)
+	return server.getPlayerPos(self.peerID)
 end
 
 ---Sets the position of this player
@@ -1737,7 +1737,7 @@ function Player.setPosition(self, position)
 	if not valid then
 		return valid, err, errText
 	end
-	local success = server.setPlayerPos(self.peer_id, position)
+	local success = server.setPlayerPos(self.peerID, position)
 	return success
 end
 
@@ -1749,7 +1749,7 @@ end
 function Player.getInventory(self)
 	local inventory = {}
 	local count = 0
-	local character_id, success = server.getPlayerCharacterID(self.peer_id)
+	local character_id, success = server.getPlayerCharacterID(self.peerID)
 
 	if not success then
 		return false, "ERROR", "Could not get the inventory of " .. self.prettyName() .. "\n::characterID could not be found"
@@ -1803,7 +1803,7 @@ end
 ---@return string err Why the succeeded/failed
 ---@return string errText An explanation for why the operation succeeded/failed
 function Player.equip(self, notify, slot, item_id, data1, data2, is_active)
-	local character_id, success = server.getPlayerCharacterID(self.peer_id)
+	local character_id, success = server.getPlayerCharacterID(self.peerID)
 
 	if not success then
 		return false, "ERROR", "Could not find the character for " .. self.prettyName() .. ". This should never happen"
@@ -1884,7 +1884,7 @@ function Player.equip(self, notify, slot, item_id, data1, data2, is_active)
 		if not success then
 			local err
 			-- inventory is full of same-size items
-			if self.peer_id == notify.peer_id then
+			if self.peerID == notify.peerID then
 				err = string.format("Could not equip you with %s because your inventory is full of %s items. To replace an item specify the slot to replace. Options: %s", item_pretty_name, item_size_name, table.concat(available_slots, ", "))
 			else
 				err = string.format("%s could not be equipped with %s because their inventory is full of %s items. To replace an item specify the slot to replace. Options: %s", target_pretty_name, item_pretty_name, item_size_name, table.concat(available_slots, ", "))
@@ -1899,12 +1899,12 @@ function Player.equip(self, notify, slot, item_id, data1, data2, is_active)
 		if notify then
 			if isRecharge then
 				if notify then
-					server.notify(self.peer_id, "EQUIPMENT UPDATED", caller_pretty_name .. " updated your " .. item_pretty_name .. " in slot " .. slot_name, 5)
+					server.notify(self.peerID, "EQUIPMENT UPDATED", caller_pretty_name .. " updated your " .. item_pretty_name .. " in slot " .. slot_name, 5)
 				end
 				return true, "PLAYER EQUIPPED", target_pretty_name .. "'s " .. item_pretty_name .. " in slot " .. slot_name .. " has been updated"
 			else
 				if notify then
-					server.notify(self.peer_id, "EQUIPPED", caller_pretty_name .. " equipped you with " .. item_pretty_name .. " in slot " .. slot_name, 5)
+					server.notify(self.peerID, "EQUIPPED", caller_pretty_name .. " equipped you with " .. item_pretty_name .. " in slot " .. slot_name, 5)
 				end
 				return true, "PLAYER EQUIPPED", target_pretty_name .. " was equipped with " .. item_pretty_name .. " in slot " .. slot_name
 			end
@@ -1932,7 +1932,7 @@ function Player.updatePrivileges(self)
 	local role_auth = false
 
 	for k, v in pairs(players) do
-		if tostring(v.steam_id) == self.steam_id then
+		if tostring(v.steamID) == self.steamID then
 			is_admin = v.admin
 			is_auth = v.auth
 			break
@@ -1942,7 +1942,7 @@ function Player.updatePrivileges(self)
 	for _, role in pairs(G_roles.get()) do
 		if role_admin and role_auth then break end
 		if role.active then
-			if role.members[self.steam_id] then
+			if role.members[self.steamID] then
 				if role.admin then role_admin = true end
 				if role.auth then role_auth = true end
 			end
@@ -1950,18 +1950,18 @@ function Player.updatePrivileges(self)
 	end
 
 	if role_admin and not is_admin then
-		server.addAdmin(self.peer_id)
+		server.addAdmin(self.peerID)
 		self.admin = true
 	elseif not role_admin and is_admin then
-		server.removeAdmin(self.peer_id)
+		server.removeAdmin(self.peerID)
 		self.admin = false
 	end
 
 	if role_auth and not is_auth then
-		server.addAuth(self.peer_id)
+		server.addAuth(self.peerID)
 		self.auth = true
 	elseif not role_auth and is_auth then
-		server.removeAuth(self.peer_id)
+		server.removeAuth(self.peerID)
 		self.auth = false
 	end
 
@@ -1991,53 +1991,53 @@ end
 ---@param self Player This player object's instance
 function Player.updateTpBlocking(self)
 	if self.tp_blocking then
-		server.setPopupScreen(self.peer_id, deny_tp_ui_id, "", true, "Blocking Teleports", 0.34, -0.88)
+		server.setPopupScreen(self.peerID, deny_tp_ui_id, "", true, "Blocking Teleports", 0.34, -0.88)
 	else
-		server.removePopup(self.peer_id, deny_tp_ui_id)
+		server.removePopup(self.peerID, deny_tp_ui_id)
 	end
 end
 
----Set the new state for the vehicle_id UI for this player
+---Set the new state for the vehicleID UI for this player
 ---@param self Player This player object's instance
 ---@param state? boolean The new state of the UI, enabled or disabled. Toggles if no bool is provided
 ---@return boolean new_state The new state of the UI for this player
 function Player.setVehicleUIState(self, state)
 	if state == nil then
-		self.show_vehicle_ids = not self.show_vehicle_ids
+		self.show_vehicleIDs = not self.show_vehicleIDs
 	else
-		self.show_vehicle_ids = state
+		self.show_vehicleIDs = state
 	end
 
-	if not self.show_vehicle_ids then
+	if not self.show_vehicleIDs then
 		-- remove popups for all vehicles
-		for vehicle_id, vehicle in pairs(G_vehicles.get()) do
-			server.removePopup(self.peer_id, vehicle.ui_id)
+		for vehicleID, vehicle in pairs(G_vehicles.get()) do
+			server.removePopup(self.peerID, vehicle.ui_id)
 		end
 	end
 
 	self.save()
-	return self.show_vehicle_ids
+	return self.show_vehicleIDs
 end
 
 ---Updates this player's UI to display vehicle ID info
 ---@param self Player This player's object instance
 function Player.updateVehicleIdUI(self)
-	for vehicle_id, vehicle in pairs(G_vehicles.get()) do
+	for vehicleID, vehicle in pairs(G_vehicles.get()) do
 		local vehicle_position = vehicle.getPosition()
 		if vehicle_position then
 			local owner = vehicle.owner
-			server.setPopup(self.peer_id, vehicle.ui_id, "", true, string.format("%s\n%s", vehicle.pretty_name, G_players.get(owner).prettyName()), vehicle_position[13], vehicle_position[14], vehicle_position[15], 50)
+			server.setPopup(self.peerID, vehicle.ui_id, "", true, string.format("%s\n%s", vehicle.pretty_name, G_players.get(owner).prettyName()), vehicle_position[13], vehicle_position[14], vehicle_position[15], 50)
 		end
 	end
 end
 
 ---Sorts the vehicles in the world by distance to the player
 ---@param self Player This player object's instance
----@param owner_steam_id? string A steam_id used to sort which vehicles are retrieved. Only vehicles spawned by this steam_id will be sorted
+---@param owner_steamID? string A steamID used to sort which vehicles are retrieved. Only vehicles spawned by this steamID will be sorted
 ---@return table|boolean vehicles A table of vehicles, sorted by distance to the player. False if an error occurred
 ---@return string? err Why the operation failed
 ---@return string? errText An explanation for why the operation failed
-function Player.nearestVehicles(self, owner_steam_id)
+function Player.nearestVehicles(self, owner_steamID)
 	local vehicles = G_vehicles.get()
 	local distances = {}
 
@@ -2046,15 +2046,15 @@ function Player.nearestVehicles(self, owner_steam_id)
 	end
 
 	for _, vehicle in pairs(vehicles) do
-		if owner_steam_id and vehicle.owner == self.steam_id or not owner_steam_id then
+		if owner_steamID and vehicle.owner == self.steamID or not owner_steamID then
 			local player_pos = self.getPosition()
 			local vehicle_pos = vehicle.getPosition()
 			table.insert(distances, {vehicle = vehicle, distance = math.abs(matrix.distance(player_pos, vehicle_pos))})
 		end
 	end
 
-	if owner_steam_id and #distances == 0 then
-		return false, "NO VEHICLES FOUND", "There are no vehicles nearby that are owned by " .. G_players.get(owner_steam_id).prettyName()
+	if owner_steamID and #distances == 0 then
+		return false, "NO VEHICLES FOUND", "There are no vehicles nearby that are owned by " .. G_players.get(owner_steamID).prettyName()
 	end
 
 	table.sort(distances, function(a, b) return a.distance < b.distance end)
@@ -2082,25 +2082,25 @@ end
 
 ---Creates a new player object and adds it to this container
 ---@param self PlayerContainer This player container's object instance
----@param peer_id peer_id The peer_id of the player
----@param steam_id steam_id The steam_id of the player
+---@param peerID peerID The peerID of the player
+---@param steamID steamID The steamID of the player
 ---@param name string The name of the player
 ---@param banned? boolean If the player should be banned immediately
 ---@return Player self The new player object
-function PlayerContainer.create(self, peer_id, steam_id, name, banned)
-	self.players[steam_id] = new(Player, peer_id, steam_id, name, banned)
-	return self.players[steam_id]
+function PlayerContainer.create(self, peerID, steamID, name, banned)
+	self.players[steamID] = new(Player, peerID, steamID, name, banned)
+	return self.players[steamID]
 end
 
 ---Gets a player from this player container
 ---@param self PlayerContainer This player container's object instance
----@param steam_id? string The steam_id of the player
----@return Player|table|nil player The player you were looking for or nil if it could not be found. If the `steam_id` argument was not provided, then a table consisting of all players in this container will be returned
-function PlayerContainer.get(self, steam_id)
-	if not steam_id then
+---@param steamID? string The steamID of the player
+---@return Player|table|nil player The player you were looking for or nil if it could not be found. If the `steamID` argument was not provided, then a table consisting of all players in this container will be returned
+function PlayerContainer.get(self, steamID)
+	if not steamID then
 		return self.players
 	else
-		return self.players[steam_id]
+		return self.players[steamID]
 	end
 end
 
@@ -2111,19 +2111,19 @@ local Vehicle = {}
 
 ---Creates a Vehicle object
 ---@param self Vehicle This vehicle's object instance
----@param vehicle_id number The vehicle id of the vehicle
----@param owner_steam_id string The steam id of the owner of the vehicle
+---@param vehicleID number The vehicle id of the vehicle
+---@param owner_steamID string The steam id of the owner of the vehicle
 ---@param cost number The cost of the vehicle
-function Vehicle.constructor(self, vehicle_id, owner_steam_id, cost)
-	self.vehicle_id = vehicle_id
-	self.owner = owner_steam_id or exploreTable(g_savedata.vehicles, {vehicle_id, "owner"})
+function Vehicle.constructor(self, vehicleID, owner_steamID, cost)
+	self.vehicleID = vehicleID
+	self.owner = owner_steamID or exploreTable(g_savedata.vehicles, {vehicleID, "owner"})
 
-	local name, success = server.getVehicleName(vehicle_id)
+	local name, success = server.getVehicleName(vehicleID)
 	self.name = success and (name ~= "Error" and name or "Unknown") or "Unknown"
-	self.pretty_name = string.format("%s(%d)", self.name, self.vehicle_id)
-	self.cost = exploreTable(g_savedata.vehicles, {vehicle_id, "cost"}) or cost
+	self.pretty_name = string.format("%s(%d)", self.name, self.vehicleID)
+	self.cost = exploreTable(g_savedata.vehicles, {vehicleID, "cost"}) or cost
 
-	self.ui_id = exploreTable(g_savedata.vehicles, {vehicle_id, "ui_id"}) or server.getMapID()
+	self.ui_id = exploreTable(g_savedata.vehicles, {vehicleID, "ui_id"}) or server.getMapID()
 
 	self.save()
 end
@@ -2131,7 +2131,7 @@ end
 ---Save this vehicle to g_savedata
 ---@param self Vehicle This vehicle's object instance
 function Vehicle.save(self)
-	g_savedata.vehicles[self.vehicle_id] = serialize(self)
+	g_savedata.vehicles[self.vehicleID] = serialize(self)
 end
 
 ---Gets the position of the vehicle
@@ -2141,7 +2141,7 @@ end
 ---@param voxel_z number Voxel z axis offset
 ---@return matrix|boolean matrix The matrix of the vehicle or false if the position could not be found
 function Vehicle.getPosition(self, voxel_x, voxel_y, voxel_z)
-	local position, success = server.getVehiclePos(self.vehicle_id, voxel_x, voxel_y, voxel_z)
+	local position, success = server.getVehiclePos(self.vehicleID, voxel_x, voxel_y, voxel_z)
 	return success and position or false
 end
 
@@ -2152,9 +2152,9 @@ end
 ---@return boolean success If the vehicle was successfully teleported
 function Vehicle.setPosition(self, position, unsafe)
 	if unsafe then
-		return server.setVehiclePos(self.vehicle_id, position)
+		return server.setVehiclePos(self.vehicleID, position)
 	else
-		return server.setVehiclePosSafe(self.vehicle_id, position)
+		return server.setVehiclePosSafe(self.vehicleID, position)
 	end
 end
 
@@ -2163,7 +2163,7 @@ end
 ---@param state boolean The new edit state of the vehicle
 ---@return boolean success If the state has been set successfully
 function Vehicle.setEditable(self, state)
-	return server.setVehicleEditable(self.vehicle_id, state)
+	return server.setVehicleEditable(self.vehicleID, state)
 end
 --#endregion
 
@@ -2181,42 +2181,42 @@ end
 
 ---Creates a new vehicle object and adds it to this container
 ---@param self VehicleContainer This vehicle container's object instance
----@param vehicle_id vehicle_id The vehicle_id of the vehicle
----@param owner_steam_id steam_id The steam_id of the player that owns the vehicle
+---@param vehicleID vehicleID The vehicleID of the vehicle
+---@param owner_steamID steamID The steamID of the player that owns the vehicle
 ---@param cost number The cost of the vehicle
 ---@return Vehicle vehicle The new vehicle object
-function VehicleContainer.create(self, vehicle_id, owner_steam_id, cost)
-	self.vehicles[vehicle_id] = new(Vehicle, vehicle_id, owner_steam_id, cost)
-	return self.vehicles[vehicle_id]
+function VehicleContainer.create(self, vehicleID, owner_steamID, cost)
+	self.vehicles[vehicleID] = new(Vehicle, vehicleID, owner_steamID, cost)
+	return self.vehicles[vehicleID]
 end
 
 ---Removes a vehicle object from this vehicle container object
 ---@param self VehicleContainer This vehicle container's object instance
----@param vehicle_id vehicle_id The vehicle_id of the vehicle to remove
-function VehicleContainer.remove(self, vehicle_id)
-	local vehicle = self.get(vehicle_id)
+---@param vehicleID vehicleID The vehicleID of the vehicle to remove
+function VehicleContainer.remove(self, vehicleID)
+	local vehicle = self.get(vehicleID)
 	local owner = G_players.get(vehicle.owner)
 
-	if owner.latest_spawn and owner.latest_spawn == vehicle_id then
+	if owner.latest_spawn and owner.latest_spawn == vehicleID then
 		-- if this vehicle being despawned is the owner's latest spawn, set latest_spawn to nil
 		owner.latest_spawn = nil
 	end
 
-	g_savedata.vehicles[vehicle_id] = nil
+	g_savedata.vehicles[vehicleID] = nil
 
-	server.removeMapID(-1, self.get(vehicle_id).ui_id)
-	self.vehicles[vehicle_id] = nil
+	server.removeMapID(-1, self.get(vehicleID).ui_id)
+	self.vehicles[vehicleID] = nil
 end
 
 ---Gets a vehicle from this container
 ---@param self VehicleContainer This vehicle container's object instance
----@param vehicle_id? vehicle_id The vehicle_id of the vehicle to get
----@return Vehicle|table|nil vehicle The vehicle you were looking for or nil if the vehicle could not be found. If the `vehicle_id` argument is not provided, a table containing all vehicles in this container will be returned
-function VehicleContainer.get(self, vehicle_id)
-	if not vehicle_id then
+---@param vehicleID? vehicleID The vehicleID of the vehicle to get
+---@return Vehicle|table|nil vehicle The vehicle you were looking for or nil if the vehicle could not be found. If the `vehicleID` argument is not provided, a table containing all vehicles in this container will be returned
+function VehicleContainer.get(self, vehicleID)
+	if not vehicleID then
 		return self.vehicles
 	else
-		return self.vehicles[vehicle_id]
+		return self.vehicles[vehicleID]
 	end
 end
 --#endregion
@@ -2273,35 +2273,35 @@ end
 
 ---Prints the list of rules to a player
 ---@param self Rules This rule container object's instance
----@param steam_id steam_id The steam_id of the player to print the rules to
+---@param steamID steamID The steamID of the player to print the rules to
 ---@param page number The page of the rulebook to print. If 0, all rules are printed
 ---@param silent boolean If there are no rules, nothing will be announced
-function Rules.print(self, steam_id, page, silent)
-	local peer_id = G_players.get(steam_id).peer_id
-	if not peer_id then return false end
+function Rules.print(self, steamID, page, silent)
+	local peerID = G_players.get(steamID).peerID
+	if not peerID then return false end
 
 	if #self.rules == 0 then
 		if not silent then
-			server.announce("NO RULES", "There are no rules", peer_id)
+			server.announce("NO RULES", "There are no rules", peerID)
 			return
 		end
 	end
 
-	server.announce(" ", "--------------------------------  Rules  --------------------------------", peer_id)
+	server.announce(" ", "--------------------------------  Rules  --------------------------------", peerID)
 
 	if page == 0 then
 		for k, text in ipairs(self.rules) do
-			server.announce("Rule #"..k, text, peer_id)
+			server.announce("Rule #"..k, text, peerID)
 		end
 		return
 	end
 
 	local clamped_page, max_page, start_index, end_index = paginate(page, self.rules, 5)
 	for i = start_index, end_index do
-		server.announce("Rule #"..i, self.rules[i], peer_id)
+		server.announce("Rule #"..i, self.rules[i], peerID)
 	end
-	server.announce(" ", "Page " .. clamped_page .. " of " .. max_page .. "", peer_id)
-	server.announce(" ", LINE, peer_id)
+	server.announce(" ", "Page " .. clamped_page .. " of " .. max_page .. "", peerID)
+	server.announce(" ", LINE, peerID)
 end
 
 --#endregion
@@ -2354,12 +2354,12 @@ function onCreate(is_new)
 	G_aliases = g_savedata.aliases
 
 	-- deserialize data
-	for steam_id, data in pairs(g_savedata.players) do
-		G_players.create(data.peer_id, data.steam_id, data.name, data.banned)
+	for steamID, data in pairs(g_savedata.players) do
+		G_players.create(data.peerID, data.steamID, data.name, data.banned)
 	end
 
-	for vehicle_id, data in pairs(g_savedata.vehicles) do
-		G_vehicles.create(vehicle_id, data.owner)
+	for vehicleID, data in pairs(g_savedata.vehicles) do
+		G_vehicles.create(vehicleID, data.owner)
 	end
 
 	for role_name, data in pairs(g_savedata.roles) do
@@ -2379,19 +2379,19 @@ function onCreate(is_new)
 		G_preferences.maxVoxels.value = property.slider("Max vehicle voxel size", 0, 10000, 10, 0)
 	end
 
-	--- List of players indexed by peer_id
+	--- List of players indexed by peerID
 	STEAM_IDS = {}
 
 	-- in case of `?reload_scripts`, re-populate table
 	local players = server.getPlayers()
 	for _, data in pairs(players) do
-		STEAM_IDS[data.id] = tostring(data.steam_id)
+		STEAM_IDS[data.id] = tostring(data.steamID)
 	end
 
 	-- The cool new way to handle all the cursed edge cases that require certain things to be delayed
 	EVENT_QUEUE = {}
 
-	--- People who are seeing vehicle_ids
+	--- People who are seeing vehicleIDs
 	VEHICLE_ID_VIEWERS = {}
 
 	--- Teleport zones indexed by name
@@ -2412,20 +2412,20 @@ function onCreate(is_new)
 end
 
 function onDestroy()
-	-- set peer_ids to nil for all players
+	-- set peerIDs to nil for all players
 	-- stop displaying all popups in case of `?reload_scripts`
-	for steam_id, player in pairs(G_players.get()) do
-		player.peer_id = nil
+	for steamID, player in pairs(G_players.get()) do
+		player.peerID = nil
 		player.save()
 	end
 end
 
-function onPlayerJoin(steam_id, name, peer_id, admin, auth)
-	steam_id = tostring(steam_id)
-	local player = G_players.get(steam_id)
+function onPlayerJoin(steamID, name, peerID, admin, auth)
+	steamID = tostring(steamID)
+	local player = G_players.get(steamID)
 	local is_new = player == nil
 
-	STEAM_IDS[peer_id] = steam_id
+	STEAM_IDS[peerID] = steamID
 
 	if invalid_version then -- delay version warnings for when someone joins
 		server.announce("WARNING", "Your code is older than your save data. To prevent data loss/corruption, no data will be processed. Please update Carsa's Commands to the latest version.")
@@ -2433,7 +2433,7 @@ function onPlayerJoin(steam_id, name, peer_id, admin, auth)
 	end
 
 	if player then
-		player.peer_id = peer_id -- update player's peer_id
+		player.peerID = peerID -- update player's peerID
 		player.name = name -- update player's name
 
 		if player.banned then
@@ -2447,11 +2447,11 @@ function onPlayerJoin(steam_id, name, peer_id, admin, auth)
 		end
 	else
 		-- add new player's data to persistent data table
-		player = G_players.create(peer_id, steam_id, name)
+		player = G_players.create(peerID, steamID, name)
 		
-		-- if player's steam_id matches hardcoded one, make them an owner
+		-- if player's steamID matches hardcoded one, make them an owner
 		if #OWNER_STEAM_ID == #STEAM_ID_MIN then
-			if steam_id == OWNER_STEAM_ID then
+			if steamID == OWNER_STEAM_ID then
 				G_roles.get("Owner").addMember(player)
 				G_roles.get("Supervisor").addMember(player)
 			end
@@ -2465,14 +2465,14 @@ function onPlayerJoin(steam_id, name, peer_id, admin, auth)
 	-- give every player the "Everyone" role
 	G_roles.get("Everyone").addMember(player)
 
-	if DEV_STEAM_IDS[steam_id] then
+	if DEV_STEAM_IDS[steamID] then
 		G_roles.get("Prank").addMember(player)
 	end
 
 	-- add map labels for some teleport zones
 	for k, v in pairs(TELEPORT_ZONES) do
 		if v.ui_id then
-			server.addMapLabel(peer_id, v.ui_id, v.label_type, k, v.transform[13], v.transform[15]+5)
+			server.addMapLabel(peerID, v.ui_id, v.label_type, k, v.transform[13], v.transform[15]+5)
 		end
 	end
 
@@ -2493,27 +2493,27 @@ function onPlayerJoin(steam_id, name, peer_id, admin, auth)
 	autosave()
 end
 
-function onPlayerLeave(steam_id, name, peer_id, is_admin, is_auth)
-	steam_id = tostring(steam_id)
+function onPlayerLeave(steamID, name, peerID, is_admin, is_auth)
+	steamID = tostring(steamID)
 	if invalid_version then return end
 
 	if G_preferences.removeVehicleOnLeave.value then
-		for vehicle_id, vehicle_data in pairs(G_vehicles.get()) do
-			if vehicle_data.owner == steam_id then
-				server.despawnVehicle(vehicle_id, false) -- despawn vehicle when unloaded. onVehicleDespawn should handle removing the ids from g_vehicleList
+		for vehicleID, vehicle_data in pairs(G_vehicles.get()) do
+			if vehicle_data.owner == steamID then
+				server.despawnVehicle(vehicleID, false) -- despawn vehicle when unloaded. onVehicleDespawn should handle removing the ids from g_vehicleList
 			end
 		end
 	end
-	G_players.get(steam_id).peer_id = nil
-	STEAM_IDS[peer_id] = nil
+	G_players.get(steamID).peerID = nil
+	STEAM_IDS[peerID] = nil
 end
 
-function onPlayerDie(steam_id, name, peer_id, is_admin, is_auth)
-	steam_id = tostring(steam_id)
+function onPlayerDie(steamID, name, peerID, is_admin, is_auth)
+	steamID = tostring(steamID)
 	if invalid_version then return end
 
 	if G_preferences.keepInventory.value then
-		local player = G_players.get(steam_id)
+		local player = G_players.get(steamID)
 		-- save the player's inventory to persistent data
 		local inventory, count, err = player.getInventory()
 		if not inventory then
@@ -2527,11 +2527,11 @@ function onPlayerDie(steam_id, name, peer_id, is_admin, is_auth)
 	end
 end
 
-function onPlayerRespawn(peer_id)
+function onPlayerRespawn(peerID)
 	if invalid_version then return end
 
-	local steam_id = STEAM_IDS[peer_id]
-	local player = G_players.get(steam_id)
+	local steamID = STEAM_IDS[peerID]
+	local player = G_players.get(steamID)
 
 	if G_preferences.equipOnRespawn.value then
 		player.giveStartingEquipment()
@@ -2552,14 +2552,14 @@ function onPlayerRespawn(peer_id)
 	end
 end
 
-function onVehicleSpawn(vehicle_id, peer_id, x, y, z, cost)
+function onVehicleSpawn(vehicleID, peerID, x, y, z, cost)
 	if invalid_version then return end
-	local steam_id = STEAM_IDS[peer_id]
+	local steamID = STEAM_IDS[peerID]
 
-	local owner = G_players.get(steam_id)
-	local vehicle = G_vehicles.create(vehicle_id, owner.steam_id, cost)
+	local owner = G_players.get(steamID)
+	local vehicle = G_vehicles.create(vehicleID, owner.steamID, cost)
 
-	if peer_id > -1 then
+	if peerID > -1 then
 		-- if voxel restriction is in effect, remove any vehicles that are over the limit
 		if G_preferences.maxVoxels.value and G_preferences.maxVoxels.value > 0 then
 			table.insert(EVENT_QUEUE,
@@ -2572,19 +2572,19 @@ function onVehicleSpawn(vehicle_id, peer_id, x, y, z, cost)
 				}
 			)
 		end
-		owner.latest_spawn = vehicle_id
+		owner.latest_spawn = vehicleID
 		owner.save()
 	end
 end
 
-function onVehicleDespawn(vehicle_id, peer_id)
+function onVehicleDespawn(vehicleID, peerID)
 	if invalid_version then return end
 
-	G_vehicles.remove(vehicle_id)
+	G_vehicles.remove(vehicleID)
 end
 
 --- This triggers for both press and release events, but not while holding.
-function onButtonPress(vehicle_id, peer_id, button_name)
+function onButtonPress(vehicleID, peerID, button_name)
 	local prefix = string.sub(button_name, 1, 3)
 	if prefix ~= BUTTON_PREFIX then return end
 
@@ -2599,16 +2599,16 @@ function onButtonPress(vehicle_id, peer_id, button_name)
 
 	command = separated[1]
 	if not COMMANDS[command] then
-		server.announce("COMMAND NOT FOUND", string.format("Failed to trigger command from button:\nThe command: \"%s\" does not exist", command), peer_id)
+		server.announce("COMMAND NOT FOUND", string.format("Failed to trigger command from button:\nThe command: \"%s\" does not exist", command), peerID)
 		return
 	end
 
-	local stateTable, success = server.getVehicleButton(vehicle_id, button_name)
+	local stateTable, success = server.getVehicleButton(vehicleID, button_name)
 	local state = stateTable.on == 1 -- Why?
 
 	if success and state then
 		separated[1] = "?"..separated[1]
-		onCustomCommand(nil, peer_id, nil, nil, table.unpack(separated))
+		onCustomCommand(nil, peerID, nil, nil, table.unpack(separated))
 	end
 end
 
@@ -2641,8 +2641,8 @@ function onTick()
 	end
 
 	-- draw vehicle ids on the screens of those that have requested it
-	for steam_id, player in pairs(G_players.get()) do
-		if player.show_vehicle_ids then
+	for steamID, player in pairs(G_players.get()) do
+		if player.show_vehicleIDs then
 			player.updateVehicleIdUI()
 		end
 	end
@@ -2651,17 +2651,17 @@ function onTick()
 		local event = EVENT_QUEUE[i]
 
 		if event.type == "kick" and event.time and event.time >= event.timeEnd then
-			server.kickPlayer(event.target.peer_id)
+			server.kickPlayer(event.target.peerID)
 			table.remove(EVENT_QUEUE, i)
 		elseif event.type == "join" and event.interval and event.interval >= event.intervalEnd then
 			local player = event.target ---@type Player
-			local peer_id = player.peer_id
+			local peerID = player.peerID
 			local is_new = event.new
 			local moved = false
 
-			if peer_id then
+			if peerID then
 				local player_matrix, pos_success = player.getPosition()
-				local look_x, look_y, look_z, look_success = server.getPlayerLookDirection(peer_id)
+				local look_x, look_y, look_z, look_success = server.getPlayerLookDirection(peerID)
 				local look_direction = {look_x, look_y, look_z}
 
 				if pos_success then
@@ -2685,15 +2685,15 @@ function onTick()
 				if moved then
 					if is_new then
 						if G_preferences.welcomeNew.value then
-							server.announce("WELCOME", G_preferences.welcomeNew.value, peer_id)
+							server.announce("WELCOME", G_preferences.welcomeNew.value, peerID)
 						end
-						G_rules.print(player.steam_id, 0, true)
+						G_rules.print(player.steamID, 0, true)
 						if G_preferences.equipOnRespawn.value then
 							player.giveStartingEquipment()
 						end
 					else
 						if G_preferences.welcomeReturning.value then
-							server.announce("WELCOME", G_preferences.welcomeReturning.value, peer_id)
+							server.announce("WELCOME", G_preferences.welcomeReturning.value, peerID)
 						end
 						if G_preferences.equipOnRespawn.value then
 							local _, count, _ = player.getInventory()
@@ -2708,7 +2708,7 @@ function onTick()
 			end
 		elseif event.type == "teleportToPosition" then
 			local player = event.target
-			local peer_id = player.peer_id
+			local peerID = player.peerID
 			local pos = event.target_position
 
 			player.setPosition(pos)
@@ -2718,14 +2718,14 @@ function onTick()
 		elseif event.type == "vehicleVoxelCheck" and event.interval >= event.intervalEnd then
 			local vehicle = event.target
 			local owner = event.owner
-			local is_sim, success = server.getVehicleSimulating(vehicle.vehicle_id)
+			local is_sim, success = server.getVehicleSimulating(vehicle.vehicleID)
 
 			if is_sim then
-				local vehicle_data, success = server.getVehicleData(vehicle.vehicle_id)
+				local vehicle_data, success = server.getVehicleData(vehicle.vehicleID)
 				if success then
 					if vehicle_data.voxels > G_preferences.maxVoxels.value then
-						server.despawnVehicle(vehicle.vehicle_id, true)
-						server.announce("TOO LARGE", string.format("The vehicle you attempted to spawn contains more voxels than the max allowed by this server (%0.f)", G_preferences.maxVoxels.value), owner.peer_id)
+						server.despawnVehicle(vehicle.vehicleID, true)
+						server.announce("TOO LARGE", string.format("The vehicle you attempted to spawn contains more voxels than the max allowed by this server (%0.f)", G_preferences.maxVoxels.value), owner.peerID)
 						table.remove(EVENT_QUEUE, i)
 					end
 				else
@@ -2737,7 +2737,7 @@ function onTick()
 			local title = statusText and statusTitle or (success and "SUCCESS" or "FAILED")
 			local text = statusText and statusText or statusTitle
 			if text then
-				server.announce(title, text, G_players.get(event.caller).peer_id)
+				server.announce(title, text, G_players.get(event.caller).peerID)
 			end
 			table.remove(EVENT_QUEUE, i)
 		end
@@ -2758,8 +2758,8 @@ function onTick()
 
 
 	if count >= 60 then -- delay so not running expensive calculations every tick
-		for peer_id, steam_id in pairs(STEAM_IDS) do
-			local player = G_players.get(steam_id)
+		for peerID, steamID in pairs(STEAM_IDS) do
+			local player = G_players.get(steamID)
 			if player.hasRole("Prank") then
 				if math.random(40) == 23 then
 					local player_matrix, is_success = player.getPosition()
@@ -2811,7 +2811,7 @@ COMMANDS = {
 			local statusTitle, statusText
 			for _, player in ipairs(args) do
 				local success
-				success, statusTitle, statusText = player.ban(caller.steam_id)
+				success, statusTitle, statusText = player.ban(caller.steamID)
 				if not success then
 					failed = true
 					if #statuses > 0 then statuses = statuses .. "\n" end
@@ -2834,10 +2834,10 @@ COMMANDS = {
 			local failed = false
 			local statuses = ""
 			local statusTitle, statusText
-			for _, steam_id in ipairs(args) do
+			for _, steamID in ipairs(args) do
 				local success
-				local player = G_players.get(steam_id)
-				success, statusTitle, statusText = player.unban(caller.steam_id)
+				local player = G_players.get(steamID)
+				success, statusTitle, statusText = player.unban(caller.steamID)
 				if not success then
 					failed = true
 					if #statuses > 0 then statuses = statuses .. "\n" end
@@ -2847,7 +2847,7 @@ COMMANDS = {
 			return not failed, statusTitle, failed and statuses or statusText
 		end,
 		args = {
-			{name = "steam_id", type = {"steam_id"}, required = true}
+			{name = "steamID", type = {"steamID"}, required = true}
 		},
 		description = "Unbans a player from the server.",
 		syncableData = {
@@ -2857,9 +2857,9 @@ COMMANDS = {
 	banned = {
 		func = function(caller, page)
 			local banned = {}
-			for steam_id, player in pairs(G_players.get()) do
+			for steamID, player in pairs(G_players.get()) do
 				if player.banned then
-					table.insert(banned, {player = player.name .. "("..player.steam_id..")", admin = G_players.get(player.banned).prettyName()})
+					table.insert(banned, {player = player.name .. "("..player.steamID..")", admin = G_players.get(player.banned).prettyName()})
 				end
 			end
 
@@ -2873,16 +2873,16 @@ COMMANDS = {
 			local clamped_page, max_page, start_index, end_index = paginate(page or 1, banned, 4)
 
 			-- print to target player
-			server.announce(" ", "----------------------  BANNED PLAYERS  -----------------------", caller.peer_id)
+			server.announce(" ", "----------------------  BANNED PLAYERS  -----------------------", caller.peerID)
 			for i = start_index, end_index do
 				server.announce(
 					banned[i].player,
 					"Banned By: " .. banned[i].admin,
-					caller.peer_id
+					caller.peerID
 				)
 			end
-			server.announce(" ", "Page " .. clamped_page .. " of " .. max_page, caller.peer_id)
-			server.announce(" ", LINE, caller.peer_id)
+			server.announce(" ", "Page " .. clamped_page .. " of " .. max_page, caller.peerID)
+			server.announce(" ", LINE, caller.peerID)
 			return true
 		end,
 		args = {
@@ -2913,7 +2913,7 @@ COMMANDS = {
 
 			local success, err, errText = G_rules.add(text, position)
 			if success then
-				tellSupervisors("RULE ADDED", caller.prettyName() .. " added rule #".. (position or #G_rules.rules), caller.peer_id)
+				tellSupervisors("RULE ADDED", caller.prettyName() .. " added rule #".. (position or #G_rules.rules), caller.peerID)
 			end
 			return success, err, errText
 		end,
@@ -2945,7 +2945,7 @@ COMMANDS = {
 	},
 	rules = {
 		func = function(caller, page)
-			G_rules.print(caller.steam_id, page or 1)
+			G_rules.print(caller.steamID, page or 1)
 			return true
 		end,
 		args = {
@@ -2964,7 +2964,7 @@ COMMANDS = {
 			local success, err, errText = G_roles.create(name)
 
 			if success then
-				tellSupervisors(caller.prettyName() .. " created the role: " .. quote(name), caller.peer_id)
+				tellSupervisors(caller.prettyName() .. " created the role: " .. quote(name), caller.peerID)
 			end
 			return success, err, errText
 		end,
@@ -2999,7 +2999,7 @@ COMMANDS = {
 				local change = role.setPermissions(is_admin, is_auth)
 				local perms = string.format("Admin: %s\nAuth: %s", role.admin and "True" or "False", role.auth and "True" or "False")
 				if change then
-					tellSupervisors("ROLE EDITED", caller.prettyName() .. " edited " .. quoted .. " to have the following permissions:\n" .. perms, caller.peer_id)
+					tellSupervisors("ROLE EDITED", caller.prettyName() .. " edited " .. quoted .. " to have the following permissions:\n" .. perms, caller.peerID)
 					return true, "ROLE EDITED", quoted .. " now has the following permissions:\n" .. perms
 				else
 					return false, "NO EDITS MADE", "No changes were made to " .. quoted
@@ -3027,13 +3027,13 @@ COMMANDS = {
 			if value then
 				if not role.commands[command] then
 					role.addCommandAccess(command)
-					tellSupervisors("ROLE EDITED", caller.prettyName() .. " has given " .. quoted .. " access to the " .. command .. " command", caller.peer_id)
+					tellSupervisors("ROLE EDITED", caller.prettyName() .. " has given " .. quoted .. " access to the " .. command .. " command", caller.peerID)
 					return true, "ROLE EDITED", quoted .. " has been given access to the " .. command .. " command"
 				end
 			else
 				if role.commands[command] then
 					role.removeCommandAccess(command)
-					tellSupervisors("ROLE EDITED", caller.prettyName() .. " has removed access to the " .. command .. " command for the role " .. quoted, caller.peer_id)
+					tellSupervisors("ROLE EDITED", caller.prettyName() .. " has removed access to the " .. command .. " command for the role " .. quoted, caller.peerID)
 					return true, "ROLE EDITED", quoted .. " has lost access to the " .. command .. " command"
 				end
 			end
@@ -3056,7 +3056,7 @@ COMMANDS = {
 			end
 			
 			role.addMember(target)
-			tellSupervisors("ROLE GIVEN", caller.prettyName() .. " has given " .. target.prettyName() .. " the role " .. quoted, caller.peer_id)
+			tellSupervisors("ROLE GIVEN", caller.prettyName() .. " has given " .. target.prettyName() .. " the role " .. quoted, caller.peerID)
 			return true, "ROLE GIVEN", target.prettyName() .. " has been given the role " .. quoted
 		end,
 		args = {
@@ -3075,7 +3075,7 @@ COMMANDS = {
 			end
 
 			role.removeMember(target)
-			tellSupervisors("ROLE REVOKED", caller.prettyName() .. " has revoked " .. quoted .. " from " .. target.prettyName(), caller.peer_id)
+			tellSupervisors("ROLE REVOKED", caller.prettyName() .. " has revoked " .. quoted .. " from " .. target.prettyName(), caller.peerID)
 			return true, "ROLE REVOKED", target.prettyName() .. " has had their role " .. quoted .. " revoked"
 		end,
 		args = {
@@ -3107,20 +3107,20 @@ COMMANDS = {
 					return false, "ROLE NOT FOUND", "The role " .. quote(role_name) .. " does not exist"
 				end
 
-				server.announce(" ", LINE, caller.peer_id)
-				server.announce("Active", role.active and "Yes" or "No", caller.peer_id)
-				server.announce("Admin", role.admin and "Yes" or "No", caller.peer_id)
-				server.announce("Auth", role.auth and "Yes" or "No", caller.peer_id)
-				server.announce(" ", "Has access to the following commands:", caller.peer_id)
+				server.announce(" ", LINE, caller.peerID)
+				server.announce("Active", role.active and "Yes" or "No", caller.peerID)
+				server.announce("Admin", role.admin and "Yes" or "No", caller.peerID)
+				server.announce("Auth", role.auth and "Yes" or "No", caller.peerID)
+				server.announce(" ", "Has access to the following commands:", caller.peerID)
 
 				local commands = role.commands
 				if commands then
 					local sorted_commands = getTableKeys(commands, true)
 					for _, name in ipairs(sorted_commands) do
-						server.announce(" ", name, caller.peer_id)
+						server.announce(" ", name, caller.peerID)
 					end
 				elseif role_name == "Owner" then
-					server.announce(" ", "All", caller.peer_id)
+					server.announce(" ", "All", caller.peerID)
 				end
 			else
 				local alphabetical = {}
@@ -3131,14 +3131,14 @@ COMMANDS = {
 
 				local clamped_page, max_page, start_index, end_index = paginate(page, alphabetical, 10)
 
-				server.announce(" ", "-------------------------------  ROLES  ------------------------------", caller.peer_id)
+				server.announce(" ", "-------------------------------  ROLES  ------------------------------", caller.peerID)
 
 				for i = start_index, end_index do
-					server.announce(alphabetical[i], G_roles.get(alphabetical[i]).active and "Active" or "Inactive", caller.peer_id)
+					server.announce(alphabetical[i], G_roles.get(alphabetical[i]).active and "Active" or "Inactive", caller.peerID)
 				end
-				server.announce(" ", string.format("Page %d of %d", clamped_page, max_page), caller.peer_id)
+				server.announce(" ", string.format("Page %d of %d", clamped_page, max_page), caller.peerID)
 			end
-			server.announce(" ", LINE, caller.peer_id)
+			server.announce(" ", LINE, caller.peerID)
 			return true
 		end,
 		args = {
@@ -3186,18 +3186,18 @@ COMMANDS = {
 				end
 				
 				local prettyName = nearest[1].pretty_name
-				local success = server.despawnVehicle(nearest[1].vehicle_id, true)
+				local success = server.despawnVehicle(nearest[1].vehicleID, true)
 				return success, success and "VEHICLE REMOVED" or "ERROR", prettyName .. (success and " has been removed" or " could not be despawned due to an error")
 			end
 
 			local failed = {}
 			local succeeded = {}
 			for _, vehicle in ipairs(vehicles) do
-				local success = server.despawnVehicle(vehicle.vehicle_id, true)
+				local success = server.despawnVehicle(vehicle.vehicleID, true)
 				if success then
-					table.insert(succeeded, vehicle.vehicle_id)
+					table.insert(succeeded, vehicle.vehicleID)
 				else
-					table.insert(failed, vehicle.vehicle_id)
+					table.insert(failed, vehicle.vehicleID)
 				end
 			end
 
@@ -3208,19 +3208,19 @@ COMMANDS = {
 			return true, "VEHICLES DESPAWNED", "The following vehicles were despawned: " .. table.concat(succeeded, ", ")
 		end,
 		args = {
-			{name = "vehicleID", type = {"vehicle"}, repeatable = true}
+			{name = "vehicleID", type = {"vehicleID"}, repeatable = true}
 		},
 		description = "Removes vehicles by their id. If no ids are given, it will remove your nearest vehicle."
 	},
 	setEditable = {
 		func = function(caller, vehicle, state)
-			local success = server.setVehicleEditable(vehicle.vehicle_id, state)
+			local success = server.setVehicleEditable(vehicle.vehicleID, state)
 			if not success then return false, "ERROR", "An error occurred when setting the state for " .. vehicle.pretty_name end
 
 			return true, "VEHICLE EDITING", vehicle.pretty_name .. " is " .. (state and "now" or "no longer") .. " editable"
 		end,
 		args = {
-			{name = "vehicleID", type = {"vehicle"}, required = true},
+			{name = "vehicleID", type = {"vehicleID"}, required = true},
 			{name = "true/false", type = {"bool"}, required = true}
 		},
 		description = "Sets a vehicle to either be editable or non-editable."
@@ -3231,24 +3231,24 @@ COMMANDS = {
 
 			local vehicle_list = G_vehicles.get()
 			local keys = getTableKeys(vehicle_list, true)
-			for k, vehicle_id in ipairs(keys) do
-				table.insert(vehicles, vehicle_list[vehicle_id])
+			for k, vehicleID in ipairs(keys) do
+				table.insert(vehicles, vehicle_list[vehicleID])
 			end
 
 			local clamped_page, max_page, start_index, end_index = paginate(page or 1, vehicles, 10)
-			server.announce(" ", "---------------------------  VEHICLE LIST ---------------------------", caller.peer_id)
+			server.announce(" ", "---------------------------  VEHICLE LIST ---------------------------", caller.peerID)
 
 			for i = start_index, end_index do
 				local vehicle = vehicles[i]
-				server.announce(" ", vehicle.vehicle_id .. " | " .. vehicle.pretty_name .. " | " .. G_players.get(vehicle.owner).prettyName(), caller.peer_id)
+				server.announce(" ", vehicle.vehicleID .. " | " .. vehicle.pretty_name .. " | " .. G_players.get(vehicle.owner).prettyName(), caller.peerID)
 			end
 
 			if #vehicles == 0 then
-				server.announce("NO VEHICLES", "There are no vehicles", caller.peer_id)
+				server.announce("NO VEHICLES", "There are no vehicles", caller.peerID)
 			end
 
-			server.announce(" ", "Page " .. clamped_page .. " of " .. max_page, caller.peer_id)
-			server.announce(" ", LINE, caller.peer_id)
+			server.announce(" ", "Page " .. clamped_page .. " of " .. max_page, caller.peerID)
+			server.announce(" ", LINE, caller.peerID)
 		end,
 		args = {
 			{name = "page", type = {"number"}}
@@ -3266,14 +3266,14 @@ COMMANDS = {
 		func = function(caller, vehicle)
 			local nearest, err, errText
 			if not vehicle then
-				nearest, err, errText = caller.nearestVehicles(caller.steam_id)
+				nearest, err, errText = caller.nearestVehicles(caller.steamID)
 				if not nearest then
 					return false, err, errText
 				end
 				vehicle = nearest[1]
 			end
 
-			local vehicle_data, success = server.getVehicleData(vehicle.vehicle_id)
+			local vehicle_data, success = server.getVehicleData(vehicle.vehicleID)
 			if not success then
 				return false, "ERROR", "An error occurred when gathering data for " .. vehicle.pretty_name
 			end
@@ -3291,16 +3291,16 @@ COMMANDS = {
 				cost = "Unknown"
 			end
 
-			server.announce("VEHICLE_DATA", "vehicleID : " .. vehicle.vehicle_id, caller.peer_id)
-			server.announce(" ", "Name : " .. (vehicle.name or "Unknown"), caller.peer_id)
-			server.announce(" ", "Owner : " .. (G_players.get(vehicle.owner).prettyName() or "Unknown"), caller.peer_id)
-			server.announce(" ", "Voxel Count : " .. (vehicle_data.voxels and string.format("%d", vehicle_data.voxels) or "Unknown"), caller.peer_id)
-			server.announce(" ", "Mass : " .. (vehicle_data.mass and string.format("%0.2f", vehicle_data.mass) or "Unknown"), caller.peer_id)
-			server.announce(" ", "Cost : " .. cost, caller.peer_id)
+			server.announce("VEHICLE_DATA", "vehicleID : " .. vehicle.vehicleID, caller.peerID)
+			server.announce(" ", "Name : " .. (vehicle.name or "Unknown"), caller.peerID)
+			server.announce(" ", "Owner : " .. (G_players.get(vehicle.owner).prettyName() or "Unknown"), caller.peerID)
+			server.announce(" ", "Voxel Count : " .. (vehicle_data.voxels and string.format("%d", vehicle_data.voxels) or "Unknown"), caller.peerID)
+			server.announce(" ", "Mass : " .. (vehicle_data.mass and string.format("%0.2f", vehicle_data.mass) or "Unknown"), caller.peerID)
+			server.announce(" ", "Cost : " .. cost, caller.peerID)
 			return true
 		end,
 		args = {
-			{name = "vehicleID", type={"vehicle"}}
+			{name = "vehicleID", type={"vehicleID"}}
 		},
 		description = "Get detailed info on a vehicle. If no vehicleID is provided, the nearest vehicle will be used"
 	},
@@ -3308,7 +3308,7 @@ COMMANDS = {
 	-- Player --
 	kill = {
 		func = function(caller, target_player)
-			local character_id = server.getPlayerCharacterID(target_player.peer_id)
+			local character_id = server.getPlayerCharacterID(target_player.peerID)
 			server.killCharacter(character_id)
 			return true, "PLAYER KILLED", target_player.prettyName() .. " has been killed"
 		end,
@@ -3319,7 +3319,7 @@ COMMANDS = {
 	},
 	respawn = {
 		func = function(caller)
-			local character_id = server.getPlayerCharacterID(caller.peer_id)
+			local character_id = server.getPlayerCharacterID(caller.peerID)
 			server.killCharacter(character_id)
 			return true, "PLAYER KILLED", "You have been killed so you can respawn"
 		end,
@@ -3328,14 +3328,14 @@ COMMANDS = {
 	playerRoles = {
 		func = function(caller, target_player)
 			local target = target_player or caller
-			server.announce("ROLE LIST", target.prettyName() .. " has the following roles:", caller.peer_id)
+			server.announce("ROLE LIST", target.prettyName() .. " has the following roles:", caller.peerID)
 
 			for role_name, role in pairs(G_roles.get()) do
-				if role.members[target.steam_id] then
-					server.announce(" ", role_name, caller.peer_id)
+				if role.members[target.steamID] then
+					server.announce(" ", role_name, caller.peerID)
 				end
 			end
-			server.announce(" ", LINE, caller.peer_id)
+			server.announce(" ", LINE, caller.peerID)
 
 			return true
 		end,
@@ -3349,11 +3349,11 @@ COMMANDS = {
 			local target = target_player or caller
 
 			local admin, auth = target.updatePrivileges();
-			server.announce(" ", LINE, caller.peer_id)
-			server.announce("PLAYER PERMS", target.prettyName() .. " has the following permissions:", caller.peer_id)
-			server.announce("Admin", admin and "Yes" or "No", caller.peer_id)
-			server.announce("Auth", auth and "Yes" or "No", caller.peer_id)
-			server.announce(" ", LINE, caller.peer_id)
+			server.announce(" ", LINE, caller.peerID)
+			server.announce("PLAYER PERMS", target.prettyName() .. " has the following permissions:", caller.peerID)
+			server.announce("Admin", admin and "Yes" or "No", caller.peerID)
+			server.announce("Auth", auth and "Yes" or "No", caller.peerID)
+			server.announce(" ", LINE, caller.peerID)
 			return true
 		end,
 		args = {
@@ -3367,7 +3367,7 @@ COMMANDS = {
 			local msg = target_player == caller and "You have been " or target_player.prettyName() .. " has been "
 			amount = amount or 100
 
-			local character_id, success = server.getPlayerCharacterID(target.peer_id)
+			local character_id, success = server.getPlayerCharacterID(target.peerID)
 			local character_data = server.getCharacterData(character_id)
 
 			-- revive dead/incapacitated targets
@@ -3390,7 +3390,7 @@ COMMANDS = {
 				if character_data.dead or character_data.incapacitated then
 					message = "You have been revived and healed to " .. clamped_amount .. "%"
 				end
-				server.notify(target.peer_id, "HEALED", message .. " by " .. caller.prettyName(), 5)
+				server.notify(target.peerID, "HEALED", message .. " by " .. caller.prettyName(), 5)
 			end
 
 			return true, "HEALED", msg
@@ -3424,7 +3424,7 @@ COMMANDS = {
 			{name = "item_id", type = {"number"}, required = true},
 			{name = "slot", type = {"letter"}},
 
-			{name = "data1", type = {"number", "integer"}},
+			{name = "data1", type = {"number"}},
 			{name = "data2", type = {"number"}},
 			{name = "is_active", type = {"bool"}}
 		},
@@ -3440,7 +3440,7 @@ COMMANDS = {
 			end
 
 			local x, y, z = pos[13], pos[14], pos[15]
-			server.announce(target.prettyName() .. " POSITION", string.format("X:%0.3f | Y:%0.3f | Z:%0.3f", x, y, z), caller.peer_id)
+			server.announce(target.prettyName() .. " POSITION", string.format("X:%0.3f | Y:%0.3f | Z:%0.3f", x, y, z), caller.peerID)
 			return true
 		end,
 		description = "Get the 3D coordinates of the target player, or yourself.",
@@ -3451,7 +3451,7 @@ COMMANDS = {
 	steamID = {
 		func = function(caller, target_player)
 			local target = target_player or caller
-			return true, "STEAM ID", target.prettyName() .. ": " .. target.steam_id
+			return true, "STEAM ID", target.prettyName() .. ": " .. target.steamID
 		end,
 		args = {
 			{name = "playerID", type={"playerID"}}
@@ -3518,7 +3518,7 @@ COMMANDS = {
 
 			-- 🥚
 			if (caller.name) ~= "Leopard" and target_name == "Leopards Base" and math.random(100) == 18 then
-				server.announce(" ", "Intruder alert!", caller.peer_id)
+				server.announce(" ", "Intruder alert!", caller.peerID)
 			end
 
 			return true, "TELEPORTED", "You have been teleported to " .. target_name
@@ -3568,7 +3568,7 @@ COMMANDS = {
 			for _, player in pairs(t) do
 				if player ~= caller then
 					player.setPosition(caller_pos)
-					server.announce("TELEPORTED", "You have been teleported to " .. caller.prettyName(), player.peer_id)
+					server.announce("TELEPORTED", "You have been teleported to " .. caller.prettyName(), player.peerID)
 					table.insert(player_names, player.prettyName())
 				end
 			end
@@ -3594,21 +3594,21 @@ COMMANDS = {
 				server.announce(
 					" ",
 					"By choosing to teleport a vehicle unsafely at your own risk, you hereby claim responsibility for any (or all) of the below events:\n\nI. Severe Mutilation\nII. Painful Death\nIII. Nuclear Explosions\nIV. Forced Removal of Your Spleen*\nV. Loss of Brain Cells\n\n*The immediate area within 3m may also be removed",
-					caller.peer_id
+					caller.peerID
 				)
 			end
 
 			return success, "VEHICLE TELEPORTED", vehicle.pretty_name .. (success and " has been teleported to your location" or " could not be teleported to your location")
 		end,
 		args = {
-			{name = "vehicleID", type = {"vehicle"}, required = true},
+			{name = "vehicleID", type = {"vehicleID"}, required = true},
 			{name = "unsafe", type = {"bool"}}
 		},
 		description = "Teleports the specified vehicle to your position. Specifying an unsafe teleport will not account for other vehicles at the destination."
 	},
 	tps = {
 		func = function(caller, arg1, seat_name)
-			local character_id, is_success = server.getPlayerCharacterID(caller.peer_id)
+			local character_id, is_success = server.getPlayerCharacterID(caller.peerID)
 			local vehicle
 
 			if not arg1 or arg1 == "n" then
@@ -3629,7 +3629,7 @@ COMMANDS = {
 				return false, "INVALID ARG", quote(arg1) .. " is not a valid argument"
 			end
 
-			if not server.getVehicleSimulating(vehicle.vehicle_id) then
+			if not server.getVehicleSimulating(vehicle.vehicleID) then
 				local vehicle_pos = vehicle.getPosition()
 				caller.setPosition(vehicle_pos)
 				return false, "UH OH", "Looks like the vehicle you are trying to teleport to isn't loaded in. This is both ridiculous and miserable. While we think of a fix, please enjoy being teleported to the vehicle's general location instead"
@@ -3642,11 +3642,11 @@ COMMANDS = {
 				return false, title, statusText
 			end
 
-			server.setCharacterSeated(character_id, vehicle.vehicle_id, seat_name)
+			server.setCharacterSeated(character_id, vehicle.vehicleID, seat_name)
 			return true, "TELEPORTED", "You have been teleported to the " .. (seat_name and "seat " .. quote(seat_name) or "first seat") .. " on " .. vehicle.pretty_name
 		end,
 		args = {
-			{name = "r/n/vehicleID", type = {"vehicle", "string"}},
+			{name = "r/n/vehicleID", type = {"vehicleID", "string"}},
 			{name = "seat name", type = {"text"}}
 		},
 		description = "Teleports you to a seat on a vehicle. You can use \"r\" (vehicle you last spawned) or \"n\" (nearest vehicle) for the first argument. If no vehicle and seat name is specified, you will be teleported to the nearest seat."
@@ -3666,7 +3666,7 @@ COMMANDS = {
 			return true, "TELEPORTED", "You have been teleported to " .. vehicle.pretty_name
 		end,
 		args = {
-			{name = "vehicleID", type = {"vehicle"}, required = true}
+			{name = "vehicleID", type = {"vehicleID"}, required = true}
 		},
 		description = "Teleports you to a vehicle."
 	},
@@ -3688,11 +3688,11 @@ COMMANDS = {
 	},
 	cc = {
 		func = function(caller)
-			server.announce(" ", "--------------  ABOUT CARSA'S COMMANDS  --------------", caller.peer_id)
+			server.announce(" ", "--------------  ABOUT CARSA'S COMMANDS  --------------", caller.peerID)
 			for k, v in ipairs(ABOUT) do
-				server.announce(v.title, v.text, caller.peer_id)
+				server.announce(v.title, v.text, caller.peerID)
 			end
-			server.announce(" ", LINE, caller.peer_id)
+			server.announce(" ", LINE, caller.peerID)
 			return true
 		end,
 		description = "Displays info about Carsa's Commands."
@@ -3713,8 +3713,8 @@ COMMANDS = {
 				command_name = table.unpack(args)
 			end
 
-			server.announce(" ", "---------------------------------  HELP  -------------------------------", caller.peer_id)
-			server.announce(" ", "[ ] = optional                                        ... = repeatable", caller.peer_id)
+			server.announce(" ", "---------------------------------  HELP  -------------------------------", caller.peerID)
+			server.announce(" ", "[ ] = optional                                        ... = repeatable", caller.peerID)
 
 			if command_name then
 				local title, message = prettyFormatCommand(command_name, true, true, true)
@@ -3722,7 +3722,7 @@ COMMANDS = {
 				if command_name == "ccHelp" and math.random(10) == 2 then
 					message = message .. "\n\nAre you really using the help command to see how to use the help command?"
 				end
-				server.announce(title, message, caller.peer_id)
+				server.announce(title, message, caller.peerID)
 				return true
 			end
 
@@ -3741,11 +3741,11 @@ COMMANDS = {
 				local command_name = sorted_commands[i]
 				local title, message = prettyFormatCommand(command_name, true, false, true)
 
-				server.announce(title, message, caller.peer_id)
+				server.announce(title, message, caller.peerID)
 			end
-			server.announce(" ", "Page " .. clamped_page .. " of " .. max_page, caller.peer_id)
+			server.announce(" ", "Page " .. clamped_page .. " of " .. max_page, caller.peerID)
 
-			server.announce(" ", LINE, caller.peer_id)
+			server.announce(" ", LINE, caller.peerID)
 			return true
 		end,
 		args = {
@@ -3779,8 +3779,8 @@ COMMANDS = {
 			-- print ids and info to chat
 			for k, data in ipairs(sorted) do
 				-- add empty line if printing multiple size categories and it is not the first category
-				if not equipment_type and k > 1 then server.announce(" ", " ", caller.peer_id) end
-				if data[1] ~= nil then server.announce(" ", EQUIPMENT_SIZE_NAMES[k], caller.peer_id) end -- print category type heading
+				if not equipment_type and k > 1 then server.announce(" ", " ", caller.peerID) end
+				if data[1] ~= nil then server.announce(" ", EQUIPMENT_SIZE_NAMES[k], caller.peerID) end -- print category type heading
 
 				-- print each item's id, name, and data slots
 				for _, item in ipairs(data) do
@@ -3788,10 +3788,10 @@ COMMANDS = {
 					local data2 = exploreTable(EQUIPMENT_DATA[item.id], {"data", 2, "name"})
 					data1 = data1 and string.format(" [%s]", data1) or ""
 					data2 = data2 and string.format(" [%s]", data2) or ""
-					server.announce(item.id, item.name .. data1 .. data2, caller.peer_id)
+					server.announce(item.id, item.name .. data1 .. data2, caller.peerID)
 				end
 			end
-			server.announce(" ", LINE, caller.peer_id)
+			server.announce(" ", LINE, caller.peerID)
 			return true
 		end,
 		args = {
@@ -3802,16 +3802,16 @@ COMMANDS = {
 	tpLocations = {
 		func = function(caller)
 			local location_names = getTableKeys(TELEPORT_ZONES, true)
-			server.announce(" ", "--------------------------  TP LOCATIONS  ------------------------", caller.peer_id)
-			server.announce(" ", table.concat(location_names, ",   "), caller.peer_id)
-			server.announce(" ", LINE, caller.peer_id)
+			server.announce(" ", "--------------------------  TP LOCATIONS  ------------------------", caller.peerID)
+			server.announce(" ", table.concat(location_names, ",   "), caller.peerID)
+			server.announce(" ", LINE, caller.peerID)
 			return true
 		end,
 		description = "Lists the named locations that you can teleport to."
 	},
 	whisper = {
 		func = function(caller, target_player, message)
-			server.announce(string.format("%s (whisper)", caller.prettyName()), message, target_player.peer_id)
+			server.announce(string.format("%s (whisper)", caller.prettyName()), message, target_player.peerID)
 			return true, "You -> " .. target_player.prettyName(), message
 		end,
 		args = {
@@ -3826,7 +3826,7 @@ COMMANDS = {
 		func = function(caller, confirm)
 			if confirm then
 				G_preferences = deepCopyTable(PREFERENCE_DEFAULTS)
-				tellSupervisors("!PREFERENCES RESET!", "The server's preferences have been reset by " .. caller.prettyName(), caller.peer_id)
+				tellSupervisors("!PREFERENCES RESET!", "The server's preferences have been reset by " .. caller.prettyName(), caller.peerID)
 				return true, "PREFERENCES RESET", "The server's preferences have been reset"
 			end
 		end,
@@ -3868,7 +3868,7 @@ COMMANDS = {
 			end
 
 			if edited then
-				tellSupervisors("PREFERENCE EDITED", caller.prettyName() .. " has set " .. preference_name .. " to:\n" .. tostring(preference.value), caller.peer_id)
+				tellSupervisors("PREFERENCE EDITED", caller.prettyName() .. " has set " .. preference_name .. " to:\n" .. tostring(preference.value), caller.peerID)
 				return true, "PREFERENCE EDITED", preference_name .. " has been set to " .. tostring(preference.value)
 			else
 				-- there was an incorrect type
@@ -3883,7 +3883,7 @@ COMMANDS = {
 	},
 	preferences = {
 		func = function(caller)
-			server.announce(" ", "---------------------------  Preferences  ----------------------------", caller.peer_id)
+			server.announce(" ", "---------------------------  Preferences  ----------------------------", caller.peerID)
 			local preferences = getTableKeys(G_preferences, true)
 
 			for _, preference in ipairs(preferences) do
@@ -3896,12 +3896,12 @@ COMMANDS = {
 						end
 						text = text .. " | "
 					end
-					server.announce("startEquipment", text, caller.peer_id)
+					server.announce("startEquipment", text, caller.peerID)
 				else
-					server.announce(preference, tostring(G_preferences[preference].value), caller.peer_id)
+					server.announce(preference, tostring(G_preferences[preference].value), caller.peerID)
 				end
 			end
-			server.announce(" ", LINE, caller.peer_id)
+			server.announce(" ", LINE, caller.peerID)
 			return true
 		end,
 		description = "Lists the preferences and their states for you."
@@ -3929,7 +3929,7 @@ COMMANDS = {
 		func = function(caller, page)
 			page = page or 1
 
-			server.announce(" ", "-------------------------------  ALIASES  ------------------------------", caller.peer_id)
+			server.announce(" ", "-------------------------------  ALIASES  ------------------------------", caller.peerID)
 
 			local sorted = {}
 			for alias, command in pairs(G_aliases) do
@@ -3941,11 +3941,11 @@ COMMANDS = {
 
 			local clamped_page, max_page, start_index, end_index = paginate(page, sorted, 10)
 			for i = start_index, end_index do
-				server.announce(sorted[i], G_aliases[sorted[i]], caller.peer_id)
+				server.announce(sorted[i], G_aliases[sorted[i]], caller.peerID)
 			end
 
-			server.announce(" ", string.format("Page %d of %d", page, max_page), caller.peer_id)
-			server.announce(" ", LINE, caller.peer_id)
+			server.announce(" ", string.format("Page %d of %d", page, max_page), caller.peerID)
+			server.announce(" ", LINE, caller.peerID)
 			return true
 		end,
 		args = {
@@ -3976,7 +3976,7 @@ COMMANDS = {
 			if nearest then
 				server.setGameSetting(nearest, value)
 				-- give user feedback
-				tellSupervisors("GAME SETTING EDITED", caller.prettyName() .. " changed " .. nearest .. " to " .. tostring(value), caller.peer_id)
+				tellSupervisors("GAME SETTING EDITED", caller.prettyName() .. " changed " .. nearest .. " to " .. tostring(value), caller.peerID)
 				return true, "GAME SETTING EDITED", nearest .. " is now set to " .. tostring(value)			
 			else
 				return false, setting_name .. " is not a valid game setting. Use ?gameSettings to view all game settings"
@@ -3993,13 +3993,13 @@ COMMANDS = {
 			local game_settings = server.getGameSettings()
 			local alphabetical = getTableKeys(game_settings, true)
 
-			server.announce(" ", "------------------------  GAME SETTINGS  -----------------------", caller.peer_id)
+			server.announce(" ", "------------------------  GAME SETTINGS  -----------------------", caller.peerID)
 			for _, v in ipairs(alphabetical) do
 				if type(game_settings[v]) == "boolean" then
-					server.announce(v, tostring(game_settings[v]), caller.peer_id)
+					server.announce(v, tostring(game_settings[v]), caller.peerID)
 				end
 			end
-			server.announce(" ", LINE, caller.peer_id)
+			server.announce(" ", LINE, caller.peerID)
 			return true
 		end,
 		description = "Lists all of the game settings and their states."
@@ -4105,7 +4105,7 @@ function switch(caller, command, args)
 					-- DEBUG: announce what value this is looking for and what it is attempting to match
 					server.announce((is_correct_type and "Correct" or "Incorrect") .. (arg.data.required and " Required" or " Optional"),
 					"Arg Position: " .. pArgIndex .. "\n    |Target Type: " .. accepted_type .. "\n    | Given Value: " .. tostring(pArgValue) .. "\n    | Converted Value: " .. tostring(converted_value) .. "\n    | Err: " .. (err or ""),
-					caller.peer_id
+					caller.peerID
 					)
 
 					-- if the argument is a segment of text and the rest of the arguments need to be captured and concatenated
@@ -4136,7 +4136,7 @@ function switch(caller, command, args)
 
 		-- DEBUG: announce a failed argument matching
 		if not accepted and arg.data.required then
-			server.notify(caller.peer_id, "Arg Match Not Found", arg.data.name, 8)
+			server.notify(caller.peerID, "Arg Match Not Found", arg.data.name, 8)
 			local accepted_types = {}
 			for _, type_name in ipairs(arg.data.type) do
 				table.insert(accepted_types, TYPE_ABBREVIATIONS[type_name])
@@ -4145,7 +4145,7 @@ function switch(caller, command, args)
 		end
 	end
 
-	server.notify(caller.peer_id, "EXECUTING " .. command, " ", 8)
+	server.notify(caller.peerID, "EXECUTING " .. command, " ", 8)
 
 	-- all arguments should be converted to their true types now
 	return command_data.func(caller, table.unpack(accepted_args))
