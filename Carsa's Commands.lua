@@ -844,10 +844,6 @@ local PREFERENCE_DEFAULTS = {
 	}
 }
 
-local PLAYER_DATA_DEFAULTS = {
-	name = "unknown",
-}
-
 local DEFAULT_ROLES = {
 	Owner = {
 		active = true,
@@ -2306,7 +2302,7 @@ end
 
 --#endregion
 --#endregion
-
+--#endregion
 
 
 --[ CALLBACK FUNCTIONS ]--
@@ -2687,7 +2683,9 @@ function onTick()
 						if G_preferences.welcomeNew.value then
 							server.announce("WELCOME", G_preferences.welcomeNew.value, peerID)
 						end
-						G_rules.print(player.steamID, 0, true)
+						if #G_rules.rules > 0 then
+							G_rules.print(player.steamID, 0, true)
+						end
 						if G_preferences.equipOnRespawn.value then
 							player.giveStartingEquipment()
 						end
@@ -3054,7 +3052,7 @@ COMMANDS = {
 			if not role then
 				return false, "ROLE NOT FOUND", quoted .. " is not a valid role"
 			end
-			
+
 			role.addMember(target)
 			tellSupervisors("ROLE GIVEN", caller.prettyName() .. " has given " .. target.prettyName() .. " the role " .. quoted, caller.peerID)
 			return true, "ROLE GIVEN", target.prettyName() .. " has been given the role " .. quoted
