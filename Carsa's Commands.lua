@@ -2818,6 +2818,7 @@ COMMANDS = {
 			end
 			return not failed, statusTitle, failed and statuses or statusText
 		end,
+		category = "Moderation",
 		args = {
 			{name = "playerID", type = {"playerID"}, required = true}
 		},
@@ -2844,6 +2845,7 @@ COMMANDS = {
 			end
 			return not failed, statusTitle, failed and statuses or statusText
 		end,
+		category = "Moderation",
 		args = {
 			{name = "steamID", type = {"steamID"}, required = true}
 		},
@@ -2883,6 +2885,7 @@ COMMANDS = {
 			server.announce(" ", LINE, caller.peerID)
 			return true
 		end,
+		category = "Moderation",
 		args = {
 			{name = "page", type = {"number"}}
 		},
@@ -2893,6 +2896,7 @@ COMMANDS = {
 			server.clearRadiation()
 			return true, "All irradiated areas have been cleaned up"
 		end,
+		category = "Moderation",
 		description = "Cleans up all irradiated areas on the map."
 	},
 
@@ -2915,6 +2919,7 @@ COMMANDS = {
 			end
 			return success, err, errText
 		end,
+		category = "Rules",
 		args = {
 			{name = "text", type = {"text"}, required = true},
 			{name = "position", type = {"number"}}
@@ -2933,6 +2938,7 @@ COMMANDS = {
 			end
 			return success, err, errText
 		end,
+		category = "Rules",
 		args = {
 			{name = "rule #", type = {"number"}, required = true}
 		},
@@ -2946,6 +2952,7 @@ COMMANDS = {
 			G_rules.print(caller.steamID, page or 1)
 			return true
 		end,
+		category = "Rules",
 		args = {
 			{name = "page", type = {"number"}}
 		},
@@ -2966,6 +2973,7 @@ COMMANDS = {
 			end
 			return success, err, errText
 		end,
+		category = "Roles",
 		args = {
 			{name = "role_name", type = {"string"}, required = true}
 		},
@@ -2979,6 +2987,7 @@ COMMANDS = {
 			end
 			return success, err, errText
 		end,
+		category = "Roles",
 		args = {
 			{name = "role_name", type = {"string"}, required = true}
 		},
@@ -3006,6 +3015,7 @@ COMMANDS = {
 				return false, "ROLE NOT FOUND", quoted .. " is not a valid role"
 			end
 		end,
+		category = "Roles",
 		args = {
 			{name = "role_name", type = {"string"}, required = true},
 			{name = "is_admin", type = {"bool"}, required = true},
@@ -3037,6 +3047,7 @@ COMMANDS = {
 			end
 			return false, "NO CHANGES MADE", quoted .. " already has access to the " .. command .. " command"
 		end,
+		category = "Roles",
 		args = {
 			{name = "role", type = {"string"}, required = true},
 			{name = "command", type = {"string"}, required = true},
@@ -3057,6 +3068,7 @@ COMMANDS = {
 			tellSupervisors("ROLE GIVEN", caller.prettyName() .. " has given " .. target.prettyName() .. " the role " .. quoted, caller.peerID)
 			return true, "ROLE GIVEN", target.prettyName() .. " has been given the role " .. quoted
 		end,
+		category = "Roles",
 		args = {
 			{name = "role", type = {"string"}, required = true},
 			{name = "playerID", type = {"playerID"}}
@@ -3076,6 +3088,7 @@ COMMANDS = {
 			tellSupervisors("ROLE REVOKED", caller.prettyName() .. " has revoked " .. quoted .. " from " .. target.prettyName(), caller.peerID)
 			return true, "ROLE REVOKED", target.prettyName() .. " has had their role " .. quoted .. " revoked"
 		end,
+		category = "Roles",
 		args = {
 			{name = "role", type = {"string"}, required = true},
 			{name = "playerID", type = {"playerID"}}
@@ -3139,6 +3152,7 @@ COMMANDS = {
 			server.announce(" ", LINE, caller.peerID)
 			return true
 		end,
+		category = "Roles",
 		args = {
 			{name = "page/role_name", type = {"number", "string"}}
 		},
@@ -3165,6 +3179,7 @@ COMMANDS = {
 
 			return true, "ROLE " .. (status and "activated" or "deactivated"), quoted .. " has been " .. (status and "activated" or "deactivated")
 		end,
+		category = "Roles",
 		args = {
 			{name = "role", type = {"string"}, required = true},
 			{name = "status", type = {"bool"}}
@@ -3205,6 +3220,7 @@ COMMANDS = {
 
 			return true, "VEHICLES DESPAWNED", "The following vehicles were despawned: " .. table.concat(succeeded, ", ")
 		end,
+		category = "Vehicles",
 		args = {
 			{name = "vehicleID", type = {"vehicleID"}, repeatable = true}
 		},
@@ -3217,6 +3233,7 @@ COMMANDS = {
 
 			return true, "VEHICLE EDITING", vehicle.pretty_name .. " is " .. (state and "now" or "no longer") .. " editable"
 		end,
+		category = "Vehicles",
 		args = {
 			{name = "vehicleID", type = {"vehicleID"}, required = true},
 			{name = "true/false", type = {"bool"}, required = true}
@@ -3248,6 +3265,7 @@ COMMANDS = {
 			server.announce(" ", "Page " .. clamped_page .. " of " .. max_page, caller.peerID)
 			server.announce(" ", LINE, caller.peerID)
 		end,
+		category = "Vehicles",
 		args = {
 			{name = "page", type = {"number"}}
 		},
@@ -3258,6 +3276,7 @@ COMMANDS = {
 			local state = caller.setVehicleUIState()
 			return true, "VEHICLE IDS", "Vehicle IDs are now " .. (state and "visible" or "hidden")
 		end,
+		category = "Vehicles",
 		description = "Toggles displaying vehicle IDs."
 	},
 	vehicleInfo = {
@@ -3297,6 +3316,7 @@ COMMANDS = {
 			server.announce(" ", "Cost : " .. cost, caller.peerID)
 			return true
 		end,
+		category = "Vehicles",
 		args = {
 			{name = "vehicleID", type={"vehicleID"}}
 		},
@@ -3310,6 +3330,7 @@ COMMANDS = {
 			server.killCharacter(character_id)
 			return true, "PLAYER KILLED", target_player.prettyName() .. " has been killed"
 		end,
+		category = "Players",
 		args = {
 			{name = "playerID", type = {"playerID"}, required = true}
 		},
@@ -3321,6 +3342,7 @@ COMMANDS = {
 			server.killCharacter(character_id)
 			return true, "PLAYER KILLED", "You have been killed so you can respawn"
 		end,
+		category = "Players",
 		description = "Kills your character, giving you the option to respawn."
 	},
 	playerRoles = {
@@ -3337,6 +3359,7 @@ COMMANDS = {
 
 			return true
 		end,
+		category = "Players",
 		args = {
 			{name = "playerID", type = {"playerID"}}
 		},
@@ -3354,6 +3377,7 @@ COMMANDS = {
 			server.announce(" ", LINE, caller.peerID)
 			return true
 		end,
+		category = "Players",
 		args = {
 			{name = "playerID", type = {"playerID"}}
 		},
@@ -3393,6 +3417,7 @@ COMMANDS = {
 
 			return true, "HEALED", msg
 		end,
+		category = "Players",
 		args = {
 			{name = "playerID", type = {"playerID"}},
 			{name = "amount", type = {"number"}}
@@ -3403,6 +3428,7 @@ COMMANDS = {
 		func = function(caller, ...)
 			return equipArgumentDecode(nil, caller, true, ...)
 		end,
+		category = "Players",
 		args = {
 			{name = "item_id", type = {"number"}, required = true},
 			{name = "slot", type = {"letter"}},
@@ -3417,6 +3443,7 @@ COMMANDS = {
 		func = function(caller, target_player, ...)
 			return equipArgumentDecode(caller, target_player, true, ...)
 		end,
+		category = "Players",
 		args = {
 			{name = "playerID", type = {"playerID"}, required = true},
 			{name = "item_id", type = {"number"}, required = true},
@@ -3441,6 +3468,7 @@ COMMANDS = {
 			server.announce(target.prettyName() .. " POSITION", string.format("X:%0.3f | Y:%0.3f | Z:%0.3f", x, y, z), caller.peerID)
 			return true
 		end,
+		category = "Players",
 		description = "Get the 3D coordinates of the target player, or yourself.",
 		args = {
 			{name = "playerID", type = {"playerID"}}
@@ -3451,6 +3479,7 @@ COMMANDS = {
 			local target = target_player or caller
 			return true, "STEAM ID", target.prettyName() .. ": " .. target.steamID
 		end,
+		category = "Players",
 		args = {
 			{name = "playerID", type={"playerID"}}
 		},
@@ -3463,6 +3492,7 @@ COMMANDS = {
 			caller.setTpBlocking()
 			return true
 		end,
+		category = "Teleporting",
 		description = "Blocks other players' ability to teleport to you."
 	},
 	tpc = {
@@ -3480,6 +3510,7 @@ COMMANDS = {
 
 			return true, "TELEPORTED", string.format("You have been teleported to:\nX:%0.1f | Y:%0.1f | Z:%0.1f", x, y, z)
 		end,
+		category = "Teleporting",
 		args = {
 			{name = "x", type = {"number"}, required = true},
 			{name = "y", type = {"number"}, required = true},
@@ -3521,6 +3552,7 @@ COMMANDS = {
 
 			return true, "TELEPORTED", "You have been teleported to " .. target_name
 		end,
+		category = "Teleporting",
 		args = {
 			{name = "location name", type = {"text"}, required = true}
 		},
@@ -3541,6 +3573,7 @@ COMMANDS = {
 			caller.setPosition(target_matrix)
 			return true, "TELEPORTED", "You have been teleported to " .. target_name
 		end,
+		category = "Teleporting",
 		args = {
 			{name = "playerID", type = {"playerID"}, required = true}
 		},
@@ -3573,6 +3606,7 @@ COMMANDS = {
 
 			return true, "TELEPORTED", "The following players were teleported to your location:\n" .. table.concat(player_names, "\n")
 		end,
+		category = "Teleporting",
 		args = {
 			{name = "playerID", type = {"playerID", "string"}, required = true, repeatable = true}
 		},
@@ -3598,6 +3632,7 @@ COMMANDS = {
 
 			return success, "VEHICLE TELEPORTED", vehicle.pretty_name .. (success and " has been teleported to your location" or " could not be teleported to your location")
 		end,
+		category = "Teleporting",
 		args = {
 			{name = "vehicleID", type = {"vehicleID"}, required = true},
 			{name = "unsafe", type = {"bool"}}
@@ -3643,6 +3678,7 @@ COMMANDS = {
 			server.setCharacterSeated(character_id, vehicle.vehicleID, seat_name)
 			return true, "TELEPORTED", "You have been teleported to the " .. (seat_name and "seat " .. quote(seat_name) or "first seat") .. " on " .. vehicle.pretty_name
 		end,
+		category = "Teleporting",
 		args = {
 			{name = "r/n/vehicleID", type = {"vehicleID", "string"}},
 			{name = "seat name", type = {"text"}}
@@ -3663,6 +3699,7 @@ COMMANDS = {
 			caller.setPosition(vehicle_matrix)
 			return true, "TELEPORTED", "You have been teleported to " .. vehicle.pretty_name
 		end,
+		category = "Teleporting",
 		args = {
 			{name = "vehicleID", type = {"vehicleID"}, required = true}
 		},
@@ -3679,6 +3716,7 @@ COMMANDS = {
 			server.announce("BAILOUT", string.format("The server has been given $%0.2f by %s", clamped_value - money, caller.prettyName()))
 			return true
 		end,
+		category = "General",
 		args = {
 			{name = "$ amount", type = {"number"}, required = true}
 		},
@@ -3693,6 +3731,7 @@ COMMANDS = {
 			server.announce(" ", LINE, caller.peerID)
 			return true
 		end,
+		category = "General",
 		description = "Displays info about Carsa's Commands."
 	},
 	ccHelp = {
@@ -3709,6 +3748,10 @@ COMMANDS = {
 				page = as_num
 			elseif as_num == nil then
 				command_name = table.unpack(args)
+			end
+
+			if not COMMANDS[command_name] then
+				return false, "NOT FOUND", quote(command_name) .. " does not exist"
 			end
 
 			server.announce(" ", "---------------------------------  HELP  -------------------------------", caller.peerID)
@@ -3746,6 +3789,7 @@ COMMANDS = {
 			server.announce(" ", LINE, caller.peerID)
 			return true
 		end,
+		category = "General",
 		args = {
 			{name = "page/command", type = {"number", "string"}}
 		},
@@ -3792,6 +3836,7 @@ COMMANDS = {
 			server.announce(" ", LINE, caller.peerID)
 			return true
 		end,
+		category = "General",
 		args = {
 			{name = "equipment_type", type = {"string"}}
 		},
@@ -3805,6 +3850,7 @@ COMMANDS = {
 			server.announce(" ", LINE, caller.peerID)
 			return true
 		end,
+		category = "General",
 		description = "Lists the named locations that you can teleport to."
 	},
 	whisper = {
@@ -3812,6 +3858,7 @@ COMMANDS = {
 			server.announce(string.format("%s (whisper)", caller.prettyName()), message, target_player.peerID)
 			return true, "You -> " .. target_player.prettyName(), message
 		end,
+		category = "General",
 		args = {
 			{name = "playerID", type = {"playerID"}, required = true},
 			{name = "message", type = {"text"}, required = true}
@@ -3828,6 +3875,7 @@ COMMANDS = {
 				return true, "PREFERENCES RESET", "The server's preferences have been reset"
 			end
 		end,
+		category = "Preferences",
 		args = {
 			{name = "confirm", type = {"bool"}, required = true}
 		},
@@ -3873,6 +3921,7 @@ COMMANDS = {
 				return false, "INVALID ARG", preference_name .. " only accepts a " .. table.concat(preference.types, " or ") .. " as its value"
 			end
 		end,
+		category = "Preferences",
 		args = {
 			{name = "preference_name", type = {"string"}, required = true},
 			{name = "value", type = {"bool", "number", "string", "text"}, required = true}
@@ -3902,8 +3951,11 @@ COMMANDS = {
 			server.announce(" ", LINE, caller.peerID)
 			return true
 		end,
+		category = "Preferences",
 		description = "Lists the preferences and their states for you."
 	},
+
+	-- Aliases --
 	addAlias = {
 		func = function(caller, alias, command)
 			if COMMANDS[alias] then
@@ -3917,6 +3969,7 @@ COMMANDS = {
 			G_aliases[alias] = command
 			return true, "ALIAS ADDED", quote(alias) .. " is now an alias for " .. command
 		end,
+		category = "Aliases",
 		args = {
 			{name = "alias", type = {"string"}, required = true},
 			{name = "command", type = {"string"}, required = true}
@@ -3946,6 +3999,7 @@ COMMANDS = {
 			server.announce(" ", LINE, caller.peerID)
 			return true
 		end,
+		category = "Aliases",
 		args = {
 			{name = "page", type={"number"}}
 		},
@@ -3960,6 +4014,7 @@ COMMANDS = {
 			G_aliases[alias] = nil
 			return true, "ALIAS REMOVED", quote(alias) .. " has been removed"
 		end,
+		category = "Aliases",
 		args = {
 			{name = "alias", type={"string"}, required = true}
 		},
@@ -3980,6 +4035,7 @@ COMMANDS = {
 				return false, setting_name .. " is not a valid game setting. Use ?gameSettings to view all game settings"
 			end
 		end,
+		category = "Game Settings",
 		args = {
 			{name = "setting_name", type = {"string"}, required = true},
 			{name = "value", type = {"bool"}, required = true}
@@ -4000,6 +4056,7 @@ COMMANDS = {
 			server.announce(" ", LINE, caller.peerID)
 			return true
 		end,
+		category = "Game Settings",
 		description = "Lists all of the game settings and their states."
 	},
 }
