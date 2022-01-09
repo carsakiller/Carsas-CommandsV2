@@ -2381,7 +2381,7 @@ function onCreate(is_new)
 	-- in case of `?reload_scripts`, re-populate table
 	local players = server.getPlayers()
 	for _, data in pairs(players) do
-		STEAM_IDS[data.id] = tostring(data.steamID)
+		STEAM_IDS[data.id] = tostring(data.steam_id)
 	end
 
 	-- The cool new way to handle all the cursed edge cases that require certain things to be delayed
