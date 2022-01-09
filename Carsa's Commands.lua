@@ -484,8 +484,18 @@ local SLOT_LETTER_TO_NUMBER = {
 	F = 6,
 }
 
+--- @type table<number, table>
+---# Example:
+---```
+---{
+---	name = String,
+---	size = Number,
+---	dlc = String,
+---	data = Table
+---}
+---```
 local EQUIPMENT_DATA = {
-	{
+	{ -- 1
 		name = "diving suit",
 		size = 3,
 		data = {
@@ -496,11 +506,11 @@ local EQUIPMENT_DATA = {
 			}
 		}
 	},
-	{
+	{ -- 2
 		name = "firefighter",
 		size = 3
 	},
-	{
+	{ -- 3
 		name = "scuba suit",
 		size = 3,
 		data = {
@@ -511,7 +521,7 @@ local EQUIPMENT_DATA = {
 			}
 		}
 	},
-	{
+	{ -- 4
 		name = "parachute",
 		size = 3,
 		data = {
@@ -522,23 +532,23 @@ local EQUIPMENT_DATA = {
 			}
 		}
 	},
-	{
+	{ -- 5
 		name = "parka",
 		size = 3
 	},
-	{
+	{ -- 6
 		name = "binoculars",
 		size = 2
 	},
-	{
+	{ -- 7
 		name = "cable",
 		size = 1
 	},
-	{
+	{ -- 8
 		name = "compass",
 		size = 2
 	},
-	{
+	{ -- 9
 		name = "defibrillator",
 		size = 1,
 		data = {
@@ -549,7 +559,7 @@ local EQUIPMENT_DATA = {
 			}
 		}
 	},
-	{
+	{ -- 10
 		name = "fire extinguisher",
 		size = 1,
 		data = {
@@ -559,8 +569,8 @@ local EQUIPMENT_DATA = {
 				default = 9
 			}
 		}
-	}, -- 10
-	{
+	},
+	{ -- 11
 		name = "first aid",
 		size = 2,
 		data = {
@@ -571,7 +581,7 @@ local EQUIPMENT_DATA = {
 			}
 		}
 	},
-	{
+	{ -- 12
 		name = "flare",
 		size = 2,
 		data = {
@@ -582,7 +592,7 @@ local EQUIPMENT_DATA = {
 			}
 		}
 	},
-	{
+	{ -- 13
 		name = "flaregun",
 		size = 2,
 		data = {
@@ -593,7 +603,7 @@ local EQUIPMENT_DATA = {
 			}
 		}
 	},
-	{
+	{ -- 14
 		name = "flaregun ammo",
 		size = 2,
 		data = {
@@ -604,7 +614,7 @@ local EQUIPMENT_DATA = {
 			}
 		}
 	},
-	{
+	{ -- 15
 		name = "flashlight",
 		size = 2,
 		data = {
@@ -615,7 +625,7 @@ local EQUIPMENT_DATA = {
 			}
 		}
 	},
-	{
+	{ -- 16
 		name = "hose",
 		size = 1,
 		data = {
@@ -626,7 +636,7 @@ local EQUIPMENT_DATA = {
 			}
 		}
 	},
-	{
+	{ -- 17
 		name = "night vision binoculars",
 		size = 2,
 		data = {
@@ -637,7 +647,7 @@ local EQUIPMENT_DATA = {
 			}
 		}
 	},
-	{
+	{ -- 18
 		name = "oxygen mask",
 		size = 2,
 		data = {
@@ -648,7 +658,7 @@ local EQUIPMENT_DATA = {
 			}
 		}
 	},
-	{
+	{ -- 19
 		name = "radio",
 		size = 2,
 		data = {
@@ -664,7 +674,7 @@ local EQUIPMENT_DATA = {
 			}
 		}
 	},
-	{
+	{ -- 20
 		name = "radio signal locator",
 		size = 1,
 		data ={
@@ -674,8 +684,8 @@ local EQUIPMENT_DATA = {
 				default = 100
 			}
 		}
-	}, -- 20
-	{
+	},
+	{ -- 21
 		name = "remote control",
 		size = 2,
 		data = {
@@ -691,11 +701,11 @@ local EQUIPMENT_DATA = {
 			}
 		}
 	},
-	{
+	{ -- 22
 		name = "rope",
 		size = 1
 	},
-	{
+	{ -- 23
 		name = "strobe light",
 		size = 2,
 		data = {
@@ -711,7 +721,7 @@ local EQUIPMENT_DATA = {
 			}
 		}
 	},
-	{
+	{ -- 24
 		name = "strobe light infrared",
 		size = 2,
 		data = {
@@ -727,7 +737,7 @@ local EQUIPMENT_DATA = {
 			}
 		}
 	},
-	{
+	{ -- 25
 		name = "transponder",
 		size = 2,
 		data = {
@@ -743,7 +753,7 @@ local EQUIPMENT_DATA = {
 			}
 		}
 	},
-	{
+	{ -- 26
 		name = "underwater welding torch",
 		size = 1,
 		data = {
@@ -754,7 +764,7 @@ local EQUIPMENT_DATA = {
 			}
 		}
 	},
-	{
+	{ -- 27
 		name = "welding torch",
 		size = 1,
 		data = {
@@ -765,15 +775,15 @@ local EQUIPMENT_DATA = {
 			},
 		}
 	},
-	{
+	{ -- 28
 		name = "coal",
 		size = 2
 	},
-	{
+	{ -- 29
 		name = "hazmat suit",
 		size = 3
 	},
-	{
+	{ -- 30
 		name = "radiation detector",
 		size = 2,
 		data = {
@@ -783,7 +793,254 @@ local EQUIPMENT_DATA = {
 				default = 100
 			}
 		}
-	} --30
+	},
+	{ -- 31
+		name = "C4",
+		size = 2,
+		dlc = 'weapons',
+		data = {
+			int = {
+				name = "count",
+				type = "int",
+				default = 3
+			}
+		}
+	},
+	{ -- 32
+		name = "C4 detonator",
+		size = 2,
+		dlc = 'weapons'
+	},
+	{ -- 33
+		name = "speargun",
+		size = 1,
+		dlc = 'weapons',
+		data = {
+			int = {
+				name = "ammo",
+				type = "int",
+				default = 1
+			}
+		}
+	},
+	{ -- 34
+		name = "speargun ammo",
+		size = 2,
+		dlc = 'weapons'
+	},
+	{ -- 35
+		name = "pistol",
+		size = 2,
+		dlc = 'weapons',
+		data = {
+			int = {
+				name = "ammo",
+				type = "int",
+				default = 1
+			}
+		}
+	},
+	{ -- 36
+		name = "pistol ammo",
+		size = 2,
+		dlc = 'weapons'
+	},
+	{ -- 37
+		name = "smg",
+		size = 2,
+		dlc = 'weapons',
+		data = {
+			int = {
+				name = "ammo",
+				type = "int",
+				default = 1
+			}
+		}
+	},
+	{ -- 38
+		name = "smg ammo",
+		size = 2,
+		dlc = 'weapons'
+	},
+	{ -- 39
+		name = "rifle",
+		size = 1,
+		dlc = 'weapons',
+		data = {
+			int = {
+				name = "ammo",
+				type = "int",
+				default = 1
+			}
+		}
+	},
+	{ -- 40
+		name = "rifle ammo",
+		size = 2,
+		dlc = 'weapons'
+	},
+	{ -- 41
+		name = "grenade",
+		size = 2,
+		dlc = 'weapons',
+		data = {
+			int = {
+				name = "count",
+				type = "int",
+				default = 3
+			}
+		}
+	},
+	{ -- 42
+		name = "MG ammo box",
+		size = 2,
+		dlc = 'weapons'
+	},
+	{ -- 43
+		name = "MG HE ammo box",
+		size = 2,
+		dlc = 'weapons'
+	},
+	{ -- 44
+		name = "MG HE Frag ammo box",
+		size = 2,
+		dlc = 'weapons'
+	},
+	{ -- 45
+		name = "MG AP ammo box",
+		size = 2,
+		dlc = 'weapons'
+	},
+	{ -- 46
+		name = "MG Incendiary ammo box",
+		size = 2,
+		dlc = 'weapons'
+	},
+	{ -- 47
+		name = "Light ammo box",
+		size = 2,
+		dlc = 'weapons'
+	},
+	{ -- 48
+		name = "Light HE ammo box",
+		size = 2,
+		dlc = 'weapons'
+	},
+	{ -- 49
+		name = "Light HE Frag ammo box",
+		size = 2,
+		dlc = 'weapons'
+	},
+	{ -- 50
+		name = "Light AP ammo box",
+		size = 2,
+		dlc = 'weapons'
+	},
+	{ -- 51
+		name = "Light Incendiary ammo box",
+		size = 2,
+		dlc = 'weapons'
+	},
+	{ -- 52
+		name = "Rotary ammo box",
+		size = 2,
+		dlc = 'weapons'
+	},
+	{ -- 53
+		name = "Rotary HE ammo box",
+		size = 2,
+		dlc = 'weapons'
+	},
+	{ -- 54
+		name = "Rotary HE Frag ammo box",
+		size = 2,
+		dlc = 'weapons'
+	},
+	{ -- 55
+		name = "Rotary AP ammo box",
+		size = 2,
+		dlc = 'weapons'
+	},
+	{ -- 56
+		name = "Rotary Incendiary ammo box",
+		size = 2,
+		dlc = 'weapons'
+	},
+	{ -- 57
+		name = "Heavy ammo box",
+		size = 2,
+		dlc = 'weapons'
+	},
+	{ -- 58
+		name = "Heavy HE ammo box",
+		size = 2,
+		dlc = 'weapons'
+	},
+	{ -- 59
+		name = "Heavy HE Frag ammo box",
+		size = 2,
+		dlc = 'weapons'
+	},
+	{ -- 60
+		name = "Heavy AP ammo box",
+		size = 2,
+		dlc = 'weapons'
+	},
+	{ -- 61
+		name = "Heavy Incendiary ammo box",
+		size = 2,
+		dlc = 'weapons'
+	},
+	{ -- 62
+		name = "Battle shell",
+		size = 2,
+		dlc = 'weapons'
+	},
+	{ -- 63
+		name = "Battle HE shell",
+		size = 2,
+		dlc = 'weapons'
+	},
+	{ -- 64
+		name = "Battle HE Frag shell",
+		size = 2,
+		dlc = 'weapons'
+	},
+	{ -- 65
+		name = "Battle AP shell",
+		size = 2,
+		dlc = 'weapons'
+	},
+	{ -- 66
+		name = "Battle Incendiary shell",
+		size = 2,
+		dlc = 'weapons'
+	},
+	{ -- 67
+		name = "Artillery shell",
+		size = 2,
+		dlc = 'weapons'
+	},
+	{ -- 68
+		name = "Artillery HE shell",
+		size = 2,
+		dlc = 'weapons'
+	},
+	{ -- 69
+		name = "Artillery HE Frag shell",
+		size = 2,
+		dlc = 'weapons'
+	},
+	{ -- 70
+		name = "Artillery AP shell",
+		size = 2,
+		dlc = 'weapons'
+	},
+	{ -- 71
+		name = "Artillery Incendiary shell",
+		size = 2,
+		dlc = 'weapons'
+	},
 }
 --#endregion
 
@@ -1822,6 +2079,10 @@ function Player.equip(self, notify, slot, item_id, data1, data2, is_active)
 	if not item_data then
 		return false, "INVALID ARG", "There is no equipment with the id of " .. tostring(item_id)
 	end
+	if item_data.dlc and not DLC[item_data.dlc] then
+		return false, "DLC DISABLED", "The requested item " .. quote(item_data.name) .. " requires the " .. item_data.dlc .. " DLC"
+	end
+
 
 	local item_name = item_data.name
 	local item_size = item_data.size
@@ -2403,6 +2664,8 @@ function onCreate(is_new)
 			end
 		end
 	end
+
+	DLC = {weapons = server.dlcWeapons()}
 
 	autosave()
 end
@@ -3813,7 +4076,9 @@ COMMANDS = {
 			for k, v in ipairs(EQUIPMENT_DATA) do
 				-- if the player requested a specific size, confirm the current item is of the same size
 				-- if the player did not request a specific size, append everything
-				if equipment_type and EQUIPMENT_SIZE_NAMES[v.size] == nearest or (not equipment_type) then
+				-- skip items that require DLC
+				if (equipment_type and EQUIPMENT_SIZE_NAMES[v.size] == nearest
+				or (not equipment_type)) and not v.dlc or DLC[v.dlc] then
 					table.insert(sorted[v.size], {id = k, name = v.name})
 				end
 			end
@@ -3883,12 +4148,23 @@ COMMANDS = {
 	},
 	setPref = {
 		func = function(caller, preference_name, ...)
+			local equipmentPreferences = {startEquipmentA = true, startEquipmentB = true, startEquipmentC = true, startEquipmentD = true, startEquipmentE = true, startEquipmentF = true}
 			local args = {...}
 			local preference = G_preferences[preference_name]
 			local edited = false
 
 			if not preference then
 				return false, "PREFERENCE NOT FOUND", preference_name .. " is not a preference"
+			end
+
+			if equipmentPreferences[preference_name] then
+				local data = EQUIPMENT_DATA[tonumber(args[1])]
+				if not data then
+					return false, "INVALID EQUIPMENT ID", args[1] .. " is not a valid equipment ID"
+				end
+				if data.dlc and not DLC[data.dlc] then
+					return false, "DLC DISABLED", "The requested item " .. quote(data.name) .. " requires the " .. data.dlc .. " DLC"
+				end
 			end
 
 			for _, data_type in ipairs(preference.type) do
