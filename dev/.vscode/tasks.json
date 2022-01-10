@@ -1,0 +1,35 @@
+{
+	// See https://go.microsoft.com/fwlink/?LinkId=733558
+	// for the documentation about the tasks.json format
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Build",
+			"type": "shell",
+			"command": ".//dev/build/build.bat",
+			"group": {"kind": "build", "isDefault": true},
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": true,
+				"panel": "shared",
+				"showReuseMessage": false,
+				"clear": true,
+			},
+		},
+		{
+			"label": "Generate Save",
+			"type": "shell",
+			"command": ".//dev/test/newSave.bat",
+			"group": "test",
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": true,
+				"panel": "shared",
+				"showReuseMessage": false,
+				"clear": true,
+			},
+		},
+	]
+}
