@@ -1,0 +1,24 @@
+@echo off
+TITLE CC Build Tool
+
+SETLOCAL
+SET SRC_DIR=.\src
+SET ADDON_NAME="Carsa's Commands"
+SET TARGET_DIR=%AppData%\Stormworks\data\missions
+
+CALL :NORMALIZEPATH %SRC_DIR%
+SET SOURCE="%ABSPATH%"
+
+SET TARGET="%TARGET_DIR:"=%\%ADDON_NAME:"=%"
+
+XCOPY /s/v/i %SOURCE% %TARGET%
+
+ECHO [7m[92mSUCCESS[0m
+
+ENDLOCAL
+TIMEOUT 3
+
+
+:NORMALIZEPATH
+  SET ABSPATH=%~f1
+  EXIT /B
