@@ -1,0 +1,1462 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<scene version="4" script_ui_id_counter="2" dlc="0">
+    <game_data mission_difficulty="1" minute="56" hour="11" day="10" month="1" year="2021" weather="0" rogue_mode_save="" total_playtime="12001" total_missions_completed="0" total_missions_failed="0" total_loot_found="0" currency="20000" research_points="5" is_create_character="true">
+        <difficulty_settings third_person="true" third_person_vehicle="true" vehicle_damage="true" player_damage="true" npc_damage="true" sharks="true" starting_currency="20000" fast_travel="true" teleport_vehicle="true" rogue_mode="false" auto_refuel="true" megalodon="true" map_show_players="true" map_show_vehicles="true" show_3d_waypoints="true" show_name_plates="true"/>
+        <game_mode_settings day_night_length="60" sunrise="0.25" sunset="0.791" infinite_money="true" creative_menu="true" base_island="data/tiles/island_15.xml" unlock_all_islands="false" infinite_batteries="false" infinite_fuel="false" engine_overheating="true" ceasefire="false" infinite_ammo="false" no_clip="true" dev_goto="true" cleanup_vehicle="true" clear_fow="false" vehicle_spawning="true" photo_mode="true" respawning="true" host_lock="true" despawn_on_leave="false" unlock_all_components="true" override_weather="true" override_time="true" override_wind="false"/>
+        <player_pos x="-16226.637772" y="11.739921" z="4096.421814"/>
+        <active_playlists>
+            <playlist_name value="data/missions/Carsa's Commands"/>
+        </active_playlists>
+        <unlocked_components>
+            <component_name value="01_block"/>
+            <component_name value="01_block_weight"/>
+            <component_name value="02_wedge"/>
+            <component_name value="03_pyramid"/>
+            <component_name value="04_invpyramid"/>
+            <component_name value="05_wedge_2"/>
+            <component_name value="06_pyramid_2"/>
+            <component_name value="07_invpyramid_2"/>
+            <component_name value="08_wedge_4"/>
+            <component_name value="09_pyramid_4"/>
+            <component_name value="10_invpyramid_4"/>
+            <component_name value="11_pyramid_2x2"/>
+            <component_name value="12_pyramid_2x4"/>
+            <component_name value="13_pyramid_4x4"/>
+            <component_name value="14_invpyramid_2x2"/>
+            <component_name value="15_invpyramid_2x4"/>
+            <component_name value="16_invpyramid_4x4"/>
+            <component_name value="battery_small"/>
+            <component_name value="button_push"/>
+            <component_name value="button_throttle_lever"/>
+            <component_name value="button_toggle"/>
+            <component_name value="catalytic_converter"/>
+            <component_name value="connector_electric"/>
+            <component_name value="connector_hardpoint_a"/>
+            <component_name value="connector_hardpoint_b"/>
+            <component_name value="connector_hardpoint_b_round"/>
+            <component_name value="connector_small"/>
+            <component_name value="connector_water"/>
+            <component_name value="dial"/>
+            <component_name value="digital_display"/>
+            <component_name value="electric_curcuit_breaker"/>
+            <component_name value="engine"/>
+            <component_name value="fluid_exhaust"/>
+            <component_name value="fluid_radiator"/>
+            <component_name value="fluid_tank_medium"/>
+            <component_name value="fluid_tank_small"/>
+            <component_name value="friction_block"/>
+            <component_name value="gate_bool_and"/>
+            <component_name value="gate_bool_constant"/>
+            <component_name value="gate_bool_not"/>
+            <component_name value="gate_bool_or"/>
+            <component_name value="gate_float_constant"/>
+            <component_name value="generator_small"/>
+            <component_name value="handle"/>
+            <component_name value="indicator"/>
+            <component_name value="inventory_equipment_binoculars"/>
+            <component_name value="inventory_equipment_cable"/>
+            <component_name value="inventory_equipment_compass"/>
+            <component_name value="inventory_equipment_defibrillator"/>
+            <component_name value="inventory_equipment_fire_extinguisher"/>
+            <component_name value="inventory_equipment_first_aid"/>
+            <component_name value="inventory_equipment_flare"/>
+            <component_name value="inventory_equipment_flaregun"/>
+            <component_name value="inventory_equipment_flaregun_ammo"/>
+            <component_name value="inventory_equipment_flashlight"/>
+            <component_name value="inventory_equipment_hose"/>
+            <component_name value="inventory_equipment_night_vision_binoculars"/>
+            <component_name value="inventory_equipment_oxygen_mask"/>
+            <component_name value="inventory_equipment_radio"/>
+            <component_name value="inventory_equipment_radio_signal_locator"/>
+            <component_name value="inventory_equipment_remote_control"/>
+            <component_name value="inventory_equipment_rope"/>
+            <component_name value="inventory_equipment_strobe_light"/>
+            <component_name value="inventory_equipment_strobe_light_infrared"/>
+            <component_name value="inventory_equipment_transponder"/>
+            <component_name value="inventory_equipment_underwater_welding_torch"/>
+            <component_name value="inventory_equipment_welding_torch"/>
+            <component_name value="inventory_medium"/>
+            <component_name value="inventory_outfit"/>
+            <component_name value="inventory_small"/>
+            <component_name value="ladder_small"/>
+            <component_name value="modular_engine_gearbox_1x1"/>
+            <component_name value="motor_small"/>
+            <component_name value="multibody_turret_small_a"/>
+            <component_name value="physics_flooder"/>
+            <component_name value="propeller"/>
+            <component_name value="rope_hook"/>
+            <component_name value="rope_hook_composite"/>
+            <component_name value="rope_hook_fluid"/>
+            <component_name value="rudder"/>
+            <component_name value="rudder_surface"/>
+            <component_name value="searchlight"/>
+            <component_name value="seat"/>
+            <component_name value="seat_bed"/>
+            <component_name value="seat_compact"/>
+            <component_name value="seat_handle"/>
+            <component_name value="seat_hotas"/>
+            <component_name value="seat_padded"/>
+            <component_name value="seat_passenger"/>
+            <component_name value="seat_racing"/>
+            <component_name value="small_light"/>
+            <component_name value="torque_clutch"/>
+            <component_name value="torque_meter"/>
+            <component_name value="trans_angle"/>
+            <component_name value="trans_block_angle"/>
+            <component_name value="trans_block_corner"/>
+            <component_name value="trans_block_cross"/>
+            <component_name value="trans_block_cross_corner"/>
+            <component_name value="trans_block_omni"/>
+            <component_name value="trans_block_straight"/>
+            <component_name value="trans_block_t"/>
+            <component_name value="trans_block_t_corner"/>
+            <component_name value="trans_corner"/>
+            <component_name value="trans_cross"/>
+            <component_name value="trans_cross_corner"/>
+            <component_name value="trans_omni"/>
+            <component_name value="trans_straight"/>
+            <component_name value="trans_t"/>
+            <component_name value="trans_t_corner"/>
+            <component_name value="water_inlet"/>
+            <component_name value="wheel_coaster"/>
+            <component_name value="window_1x1"/>
+            <component_name value="window_1x1_inv_pyramid"/>
+            <component_name value="window_1x1_pyramid"/>
+            <component_name value="window_1x1_wedge"/>
+            <component_name value="window_2x1"/>
+            <component_name value="window_2x2"/>
+            <component_name value="window_2x2_inv_pyramid"/>
+            <component_name value="window_2x2_pyramid"/>
+            <component_name value="window_3x2"/>
+            <component_name value="window_angle_l_2x3x3"/>
+            <component_name value="window_angle_m_1x2x2"/>
+            <component_name value="window_angle_m_2x2x2"/>
+            <component_name value="window_angle_m_3x2x2"/>
+            <component_name value="window_angle_s_1x2"/>
+            <component_name value="window_angle_xl_1x4x4"/>
+            <component_name value="window_angle_xl_2x4x4"/>
+            <component_name value="window_angle_xl_3x4x4"/>
+            <component_name value="window_corner"/>
+            <component_name value="window_corner_2"/>
+            <component_name value="window_corner_full_1x1"/>
+            <component_name value="window_corner_full_large"/>
+            <component_name value="window_corner_full_medium"/>
+            <component_name value="window_corner_full_small"/>
+            <component_name value="window_corner_small"/>
+            <component_name value="window_diamond_l_1x3x4"/>
+            <component_name value="window_diamond_l_2x3x4"/>
+            <component_name value="window_diamond_l_3x3x4"/>
+            <component_name value="window_diamond_m_1x2x3"/>
+            <component_name value="window_diamond_m_2x2x3"/>
+            <component_name value="window_diamond_m_3x2x3"/>
+            <component_name value="window_diamond_s_1x1"/>
+            <component_name value="window_diamond_xl_1x4x5"/>
+            <component_name value="window_diamond_xl_2x4x5"/>
+            <component_name value="window_diamond_xl_3x4x5"/>
+            <component_name value="window_large"/>
+            <component_name value="window_large_angle"/>
+            <component_name value="window_narrow"/>
+            <component_name value="window_narrow_angle"/>
+            <component_name value="window_small_angle"/>
+        </unlocked_components>
+        <unlocked_research/>
+        <missions/>
+        <character_visual_data is_male="true" hair_mesh="1" upper_mesh="2" mid_mesh="3" lower_mesh="3" hat_mesh="0" glasses_mesh="0" mask_mesh="0" clothing_mesh="7" special_outfit_mesh="0" chest_style="3" leg_style="2" feet_style="0" is_generated="true" hat_mesh_override="0">
+            <color_skin r="243" g="182" b="149" a="255"/>
+            <color_chest r="0" g="89" b="255" a="255"/>
+            <color_shoulders r="0" g="89" b="255" a="255"/>
+            <color_arms r="243" g="182" b="149" a="255"/>
+            <color_belt r="255" g="255" b="255" a="255"/>
+            <color_legs_upper r="255" g="255" b="255" a="255"/>
+            <color_legs_lower r="255" g="255" b="255" a="255"/>
+            <color_feet r="243" g="182" b="149" a="255"/>
+            <color_mesh_hat r="0" g="131" b="49" a="255"/>
+            <color_mesh_hair r="230" g="182" b="80" a="255"/>
+            <color_glasses r="0" g="131" b="49" a="255"/>
+            <color_mesh_mask r="143" g="0" b="0" a="255"/>
+            <color_mesh_clothing r="255" g="231" b="39" a="255"/>
+        </character_visual_data>
+    </game_data>
+    <tiles seed="2147483647">
+        <discovered_tiles>
+            <tile>
+                <value x="-18" y="2"/>
+            </tile>
+            <tile>
+                <value x="-18" y="3"/>
+            </tile>
+            <tile>
+                <value x="-17" y="2"/>
+            </tile>
+            <tile>
+                <value x="-17" y="3"/>
+            </tile>
+            <tile>
+                <value x="-18" y="4"/>
+            </tile>
+            <tile>
+                <value x="-18" y="5"/>
+            </tile>
+            <tile>
+                <value x="-17" y="4"/>
+            </tile>
+            <tile>
+                <value x="-17" y="5"/>
+            </tile>
+            <tile>
+                <value x="-18" y="6"/>
+            </tile>
+            <tile>
+                <value x="-17" y="6"/>
+            </tile>
+            <tile>
+                <value x="-16" y="2"/>
+            </tile>
+            <tile>
+                <value x="-16" y="3"/>
+            </tile>
+            <tile>
+                <value x="-15" y="2"/>
+            </tile>
+            <tile>
+                <value x="-15" y="3"/>
+            </tile>
+            <tile>
+                <value x="-14" y="2"/>
+            </tile>
+            <tile>
+                <value x="-14" y="3"/>
+            </tile>
+            <tile>
+                <value x="-16" y="4"/>
+            </tile>
+            <tile>
+                <value x="-16" y="5"/>
+            </tile>
+            <tile>
+                <value x="-15" y="4"/>
+            </tile>
+            <tile>
+                <value x="-15" y="5"/>
+            </tile>
+            <tile>
+                <value x="-16" y="6"/>
+            </tile>
+            <tile>
+                <value x="-15" y="6"/>
+            </tile>
+            <tile>
+                <value x="-14" y="4"/>
+            </tile>
+            <tile>
+                <value x="-14" y="5"/>
+            </tile>
+            <tile>
+                <value x="-14" y="6"/>
+            </tile>
+        </discovered_tiles>
+        <purchased_tiles>
+            <tile>
+                <value x="-16" y="4"/>
+            </tile>
+        </purchased_tiles>
+        <addon_nodes/>
+    </tiles>
+    <vehicles vehicle_counter="0">
+        <vehicle_data>
+        </vehicle_data>
+    </vehicles>
+    <dynamics object_counter="1">
+        <pseudo_data>
+            <object type="1" id="1" char_network_peer_id="0" active_mission_id="0" char_steam_id="76561198048154493" parent_mission_path="" parent_mission_component_id="4294967295" is_discard="false" char_outfit="2" char_color_seed="0" char_type="0" char_health="100" char_oxygen="100" char_dryness="100" char_radiation="0" char_temp="5" char_incapacitated_ticks="36000" char_debuffs="0" char_render_mode="1" is_parachute_open="false" is_parachute_active="false" parachute_factor="0" is_flashlight="false" network_name="carsakiller" is_ai="false" on_map="false" fire_size="1" fire_magnitude="0" flare_smoke="true" flare_parachute="false" flare_infrared="false" flare_state="2" is_fire_lit="true" is_explosion="false" fire_vehicle_parent_id="0" explosion_ignition_point="1" is_explosion_detonated="false" explosion_magnitude="1" time_alive="162" lifespan="0">
+                <bounds>
+                    <min x="-0.22" y="-0.8" z="-0.22"/>
+                    <max x="0.22" y="0.8" z="0.22"/>
+                </bounds>
+                <char_tail_offset x="-0.373147" y="0" z="-0.332808"/>
+                <visual_data is_male="true" hair_mesh="1" upper_mesh="2" mid_mesh="3" lower_mesh="3" hat_mesh="0" glasses_mesh="0" mask_mesh="0" clothing_mesh="7" special_outfit_mesh="0" chest_style="3" leg_style="2" feet_style="0" is_generated="true" hat_mesh_override="0">
+                    <color_skin r="243" g="182" b="149" a="255"/>
+                    <color_chest r="0" g="89" b="255" a="255"/>
+                    <color_shoulders r="0" g="89" b="255" a="255"/>
+                    <color_arms r="243" g="182" b="149" a="255"/>
+                    <color_belt r="255" g="255" b="255" a="255"/>
+                    <color_legs_upper r="255" g="255" b="255" a="255"/>
+                    <color_legs_lower r="255" g="255" b="255" a="255"/>
+                    <color_feet r="243" g="182" b="149" a="255"/>
+                    <color_mesh_hat r="0" g="131" b="49" a="255"/>
+                    <color_mesh_hair r="230" g="182" b="80" a="255"/>
+                    <color_glasses r="0" g="131" b="49" a="255"/>
+                    <color_mesh_mask r="143" g="0" b="0" a="255"/>
+                    <color_mesh_clothing r="255" g="231" b="39" a="255"/>
+                </visual_data>
+                <char_orientation x="0.826889" y="0.047619"/>
+                <inventory_data character_active_item_index="0">
+                    <character_item_1 item="0" oxygen="0" uses="0" is_active="false" vehicle_inventory_id="0" is_surpressed="false">
+                        <color r="255" g="255" b="255" a="255"/>
+                    </character_item_1>
+                    <character_item_2 item="15" oxygen="100" uses="0" is_active="false" vehicle_inventory_id="0" is_surpressed="false">
+                        <color r="255" g="255" b="255" a="255"/>
+                    </character_item_2>
+                    <character_item_3 item="6" oxygen="0" uses="0" is_active="false" vehicle_inventory_id="0" is_surpressed="false">
+                        <color r="255" g="255" b="255" a="255"/>
+                    </character_item_3>
+                    <character_item_4 item="11" oxygen="0" uses="4" is_active="false" vehicle_inventory_id="0" is_surpressed="false">
+                        <color r="255" g="255" b="255" a="255"/>
+                    </character_item_4>
+                    <character_item_5 item="0" oxygen="0" uses="0" is_active="false" vehicle_inventory_id="0" is_surpressed="false">
+                        <color r="255" g="255" b="255" a="255"/>
+                    </character_item_5>
+                    <character_item_6 item="0" oxygen="0" uses="0" is_active="false" vehicle_inventory_id="0" is_surpressed="false">
+                        <color r="255" g="255" b="255" a="255"/>
+                    </character_item_6>
+                </inventory_data>
+                <attach_state>
+                    <attachment_carrying_object scene_object_id="0" is_attached="false"/>
+                    <attachment_scene_ladder scene_object_id="0" is_attached="false"/>
+                    <attachment_vehicle_seat vehicle_id="0" body_index="0" is_attached="false">
+                        <voxel_position x="0" y="0" z="0"/>
+                    </attachment_vehicle_seat>
+                    <attachment_vehicle_ladder vehicle_id="0" body_index="0" is_attached="false">
+                        <voxel_position x="0" y="0" z="0"/>
+                    </attachment_vehicle_ladder>
+                    <attachment_vehicle_handle_left vehicle_id="0" body_index="0" is_attached="false">
+                        <voxel_position x="0" y="0" z="0"/>
+                    </attachment_vehicle_handle_left>
+                    <attachment_vehicle_handle_right vehicle_id="0" body_index="0" is_attached="false">
+                        <voxel_position x="0" y="0" z="0"/>
+                    </attachment_vehicle_handle_right>
+                    <attachment_animal scene_object_id="0" is_attached="false"/>
+                </attach_state>
+                <transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="-16226.637772" 31="11.739921" 32="4096.421814" 33="1"/>
+                <flare_color r="255" g="0" b="0" a="255"/>
+                <parent_relative_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0" 31="0" 32="0" 33="1"/>
+            </object>
+        </pseudo_data>
+    </dynamics>
+    <weather change_delay="600" change_timer="162" minor_change_delay="480" minor_change_timer="162" change_amount="0.1" wind_direction_change_amount="0.392699" intensity_fog="0.091573" intensity_rain="0" intensity_wind="0.041862" wave_height_scale="0.00005" wind_gust_offset="0" intensity_fog_from="0" intensity_fog_to="0.339159" intensity_rain_from="0" intensity_rain_to="0" intensity_wind_from="0.049171" intensity_wind_to="0.0221" wind_gust_offset_from="0" wind_gust_offset_to="0">
+        <wind_velocity x="0.011799" y="0.004644"/>
+        <wind_velocity_from x="0.019764" y="0"/>
+        <wind_velocity_to x="-0.009736" y="0.017199"/>
+    </weather>
+    <missions_global>
+        <tracked_fires/>
+        <playlists>
+            <p path_id="app_data/data/missions/Carsa's Commands" folder_path="data/missions/Carsa's Commands" file_store="4" name="Carsa's Commands">
+                <locations location_id_counter="37" component_id_counter="41">
+                    <locations>
+                        <l id="1" tile="data/tiles/island12.xml" name="STARTER BASE" is_env_mod="true" env_mod_spawn_num="1">
+                            <components>
+                                <c component_type="10" id="1" vehicle_parent_id="0" cargo_zone_import_cargo_type="cc_teleport_zone" display_name="Beginner" is_sea_floor_object="false" show_zone_on_map="false" zone_type="0" zone_radius="2.5" dynamic_object_type="2" loot_type="0" character_outfit_category="11" character_type="1" character_special_outfit="0" vehicle_file_name="" vehicle_file_store="1" vehicle_is_static="false" vehicle_is_no_sleep="false" vehicle_is_editable="false" vehicle_is_invulnerable="false" vehicle_is_show_on_map="false" vehicle_is_transponder_active="false" is_fire_lit="true" is_explosion="false" explosion_magnitude="1" flare_hue="0" is_flare_lit="true" vehicle_button_name="" ice_type="0" ice_scale="1" animal_type="0">
+                                    <spawn_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="-31.726444" 31="7.098042" 32="16.837233" 33="1"/>
+                                    <spawn_bounds>
+                                        <min x="-0.633505" y="-1.501794" z="-0.724616"/>
+                                        <max x="0.633505" y="1.501794" z="0.724616"/>
+                                    </spawn_bounds>
+                                    <vehicle_parent_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0" 31="0" 32="0" 33="1"/>
+                                    <spawn_local_offset x="-0" y="-0" z="-0"/>
+                                    <graph_links/>
+                                </c>
+                            </components>
+                        </l>
+                        <l id="2" tile="data/tiles/island_15.xml" name="CREATIVE BASE" is_env_mod="true" env_mod_spawn_num="1">
+                            <components>
+                                <c component_type="10" id="2" vehicle_parent_id="0" cargo_zone_import_cargo_type="cc_teleport_zone" display_name="Creative" is_sea_floor_object="false" show_zone_on_map="false" zone_type="0" zone_radius="2.5" dynamic_object_type="2" loot_type="0" character_outfit_category="11" character_type="1" character_special_outfit="0" vehicle_file_name="" vehicle_file_store="1" vehicle_is_static="false" vehicle_is_no_sleep="false" vehicle_is_editable="false" vehicle_is_invulnerable="false" vehicle_is_show_on_map="false" vehicle_is_transponder_active="false" is_fire_lit="true" is_explosion="false" explosion_magnitude="1" flare_hue="0" is_flare_lit="true" vehicle_button_name="" ice_type="0" ice_scale="1" animal_type="0">
+                                    <spawn_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="-246.767151" 31="8.761193" 32="76.994507" 33="1"/>
+                                    <spawn_bounds>
+                                        <min x="-0.889366" y="-1.587359" z="-0.902755"/>
+                                        <max x="0.889366" y="1.587359" z="0.902755"/>
+                                    </spawn_bounds>
+                                    <vehicle_parent_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0" 31="0" 32="0" 33="1"/>
+                                    <spawn_local_offset x="-0" y="-0" z="-0"/>
+                                    <graph_links/>
+                                </c>
+                                <c component_type="10" id="3" vehicle_parent_id="0" cargo_zone_import_cargo_type="cc_teleport_zone" display_name="Creative Dock" is_sea_floor_object="false" show_zone_on_map="false" zone_type="0" zone_radius="2.5" dynamic_object_type="2" loot_type="0" character_outfit_category="11" character_type="1" character_special_outfit="0" vehicle_file_name="" vehicle_file_store="1" vehicle_is_static="false" vehicle_is_no_sleep="false" vehicle_is_editable="false" vehicle_is_invulnerable="false" vehicle_is_show_on_map="false" vehicle_is_transponder_active="false" is_fire_lit="true" is_explosion="false" explosion_magnitude="1" flare_hue="0" is_flare_lit="true" vehicle_button_name="" ice_type="0" ice_scale="1" animal_type="0">
+                                    <spawn_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="-209.050247" 31="6.431345" 32="-43.174362" 33="1"/>
+                                    <spawn_bounds>
+                                        <min x="-0.688686" y="-1.668713" z="-0.794511"/>
+                                        <max x="0.688686" y="1.668713" z="0.794511"/>
+                                    </spawn_bounds>
+                                    <vehicle_parent_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0" 31="0" 32="0" 33="1"/>
+                                    <spawn_local_offset x="-0" y="-0" z="-0"/>
+                                    <graph_links/>
+                                </c>
+                            </components>
+                        </l>
+                        <l id="3" tile="data/tiles/test_tile.xml" name="HELICOPTER BASE" is_env_mod="true" env_mod_spawn_num="1">
+                            <components>
+                                <c component_type="10" id="4" vehicle_parent_id="0" cargo_zone_import_cargo_type="cc_teleport_zone" display_name="Helicopter" is_sea_floor_object="false" show_zone_on_map="false" zone_type="0" zone_radius="2.5" dynamic_object_type="2" loot_type="0" character_outfit_category="11" character_type="1" character_special_outfit="0" vehicle_file_name="" vehicle_file_store="1" vehicle_is_static="false" vehicle_is_no_sleep="false" vehicle_is_editable="false" vehicle_is_invulnerable="false" vehicle_is_show_on_map="false" vehicle_is_transponder_active="false" is_fire_lit="true" is_explosion="false" explosion_magnitude="1" flare_hue="0" is_flare_lit="true" vehicle_button_name="" ice_type="0" ice_scale="1" animal_type="0">
+                                    <spawn_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="-2.788791" 31="10.604795" 32="-9.604153" 33="1"/>
+                                    <spawn_bounds>
+                                        <min x="-0.623078" y="-1.487205" z="-0.768032"/>
+                                        <max x="0.623078" y="1.487205" z="0.768032"/>
+                                    </spawn_bounds>
+                                    <vehicle_parent_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0" 31="0" 32="0" 33="1"/>
+                                    <spawn_local_offset x="-0" y="-0" z="-0"/>
+                                    <graph_links/>
+                                </c>
+                            </components>
+                        </l>
+                        <l id="4" tile="data/tiles/island_25.xml" name="HARBOUR BASE" is_env_mod="true" env_mod_spawn_num="1">
+                            <components>
+                                <c component_type="10" id="5" vehicle_parent_id="0" cargo_zone_import_cargo_type="cc_teleport_zone" display_name="Harbour Base" is_sea_floor_object="false" show_zone_on_map="false" zone_type="0" zone_radius="2.5" dynamic_object_type="2" loot_type="0" character_outfit_category="11" character_type="1" character_special_outfit="0" vehicle_file_name="" vehicle_file_store="1" vehicle_is_static="false" vehicle_is_no_sleep="false" vehicle_is_editable="false" vehicle_is_invulnerable="false" vehicle_is_show_on_map="false" vehicle_is_transponder_active="false" is_fire_lit="true" is_explosion="false" explosion_magnitude="1" flare_hue="0" is_flare_lit="true" vehicle_button_name="" ice_type="0" ice_scale="1" animal_type="0">
+                                    <spawn_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="83.537941" 31="8.354757" 32="-80.471848" 33="1"/>
+                                    <spawn_bounds>
+                                        <min x="-0.615645" y="-1.393824" z="-0.625001"/>
+                                        <max x="0.615645" y="1.393824" z="0.625001"/>
+                                    </spawn_bounds>
+                                    <vehicle_parent_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0" 31="0" 32="0" 33="1"/>
+                                    <spawn_local_offset x="-0" y="-0" z="-0"/>
+                                    <graph_links/>
+                                </c>
+                            </components>
+                        </l>
+                        <l id="5" tile="data/tiles/island_24.xml" name="AIRSTRIP BASE" is_env_mod="true" env_mod_spawn_num="1">
+                            <components>
+                                <c component_type="10" id="6" vehicle_parent_id="0" cargo_zone_import_cargo_type="cc_teleport_zone" display_name="Airstrip Base" is_sea_floor_object="false" show_zone_on_map="false" zone_type="0" zone_radius="2.5" dynamic_object_type="2" loot_type="0" character_outfit_category="11" character_type="1" character_special_outfit="0" vehicle_file_name="" vehicle_file_store="1" vehicle_is_static="false" vehicle_is_no_sleep="false" vehicle_is_editable="false" vehicle_is_invulnerable="false" vehicle_is_show_on_map="false" vehicle_is_transponder_active="false" is_fire_lit="true" is_explosion="false" explosion_magnitude="1" flare_hue="0" is_flare_lit="true" vehicle_button_name="" ice_type="0" ice_scale="1" animal_type="0">
+                                    <spawn_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="-1.640413" 31="8.16149" 32="8.051137" 33="1"/>
+                                    <spawn_bounds>
+                                        <min x="-0.659043" y="-1.333791" z="-0.638451"/>
+                                        <max x="0.659043" y="1.333791" z="0.638451"/>
+                                    </spawn_bounds>
+                                    <vehicle_parent_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0" 31="0" 32="0" 33="1"/>
+                                    <spawn_local_offset x="-0" y="-0" z="-0"/>
+                                    <graph_links/>
+                                </c>
+                            </components>
+                        </l>
+                        <l id="6" tile="data/tiles/island11.xml" name="HOSPITAL" is_env_mod="true" env_mod_spawn_num="1">
+                            <components>
+                                <c component_type="10" id="7" vehicle_parent_id="0" cargo_zone_import_cargo_type="cc_teleport_zone" display_name="Hospital" is_sea_floor_object="false" show_zone_on_map="false" zone_type="0" zone_radius="2.5" dynamic_object_type="2" loot_type="0" character_outfit_category="11" character_type="1" character_special_outfit="0" vehicle_file_name="" vehicle_file_store="1" vehicle_is_static="false" vehicle_is_no_sleep="false" vehicle_is_editable="false" vehicle_is_invulnerable="false" vehicle_is_show_on_map="false" vehicle_is_transponder_active="false" is_fire_lit="true" is_explosion="false" explosion_magnitude="1" flare_hue="0" is_flare_lit="true" vehicle_button_name="" ice_type="0" ice_scale="1" animal_type="0">
+                                    <spawn_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="100.203148" 31="16.67297" 32="61.114914" 33="1"/>
+                                    <spawn_bounds>
+                                        <min x="-0.671065" y="-1.261908" z="-0.652745"/>
+                                        <max x="0.671065" y="1.261908" z="0.652745"/>
+                                    </spawn_bounds>
+                                    <vehicle_parent_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0" 31="0" 32="0" 33="1"/>
+                                    <spawn_local_offset x="-0" y="-0" z="-0"/>
+                                    <graph_links/>
+                                </c>
+                            </components>
+                        </l>
+                        <l id="7" tile="data/tiles/island_17.xml" name="SCIENCE" is_env_mod="true" env_mod_spawn_num="1">
+                            <components>
+                                <c component_type="10" id="8" vehicle_parent_id="0" cargo_zone_import_cargo_type="cc_teleport_zone" display_name="Science" is_sea_floor_object="false" show_zone_on_map="false" zone_type="0" zone_radius="2.5" dynamic_object_type="2" loot_type="0" character_outfit_category="11" character_type="1" character_special_outfit="0" vehicle_file_name="" vehicle_file_store="1" vehicle_is_static="false" vehicle_is_no_sleep="false" vehicle_is_editable="false" vehicle_is_invulnerable="false" vehicle_is_show_on_map="false" vehicle_is_transponder_active="false" is_fire_lit="true" is_explosion="false" explosion_magnitude="1" flare_hue="0" is_flare_lit="true" vehicle_button_name="" ice_type="0" ice_scale="1" animal_type="0">
+                                    <spawn_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="59.110329" 31="21.672232" 32="4.53503" 33="1"/>
+                                    <spawn_bounds>
+                                        <min x="-0.664408" y="-1.382656" z="-0.701137"/>
+                                        <max x="0.664408" y="1.382656" z="0.701137"/>
+                                    </spawn_bounds>
+                                    <vehicle_parent_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0" 31="0" 32="0" 33="1"/>
+                                    <spawn_local_offset x="-0" y="-0" z="-0"/>
+                                    <graph_links/>
+                                </c>
+                            </components>
+                        </l>
+                        <l id="8" tile="data/tiles/island_13.xml" name="POLICE" is_env_mod="true" env_mod_spawn_num="1">
+                            <components>
+                                <c component_type="10" id="9" vehicle_parent_id="0" cargo_zone_import_cargo_type="cc_teleport_zone" display_name="Police" is_sea_floor_object="false" show_zone_on_map="false" zone_type="0" zone_radius="2.5" dynamic_object_type="2" loot_type="0" character_outfit_category="11" character_type="1" character_special_outfit="0" vehicle_file_name="" vehicle_file_store="1" vehicle_is_static="false" vehicle_is_no_sleep="false" vehicle_is_editable="false" vehicle_is_invulnerable="false" vehicle_is_show_on_map="false" vehicle_is_transponder_active="false" is_fire_lit="true" is_explosion="false" explosion_magnitude="1" flare_hue="0" is_flare_lit="true" vehicle_button_name="" ice_type="0" ice_scale="1" animal_type="0">
+                                    <spawn_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="39.200718" 31="19.49601" 32="-23.903584" 33="1"/>
+                                    <spawn_bounds>
+                                        <min x="-0.716493" y="-1.144993" z="-0.620657"/>
+                                        <max x="0.716493" y="1.144993" z="0.620657"/>
+                                    </spawn_bounds>
+                                    <vehicle_parent_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0" 31="0" 32="0" 33="1"/>
+                                    <spawn_local_offset x="-0" y="-0" z="-0"/>
+                                    <graph_links/>
+                                </c>
+                            </components>
+                        </l>
+                        <l id="9" tile="data/tiles/island_27_airbase.xml" name="AIRPORT" is_env_mod="true" env_mod_spawn_num="1">
+                            <components>
+                                <c component_type="10" id="10" vehicle_parent_id="0" cargo_zone_import_cargo_type="cc_teleport_zone" display_name="Airport" is_sea_floor_object="false" show_zone_on_map="false" zone_type="0" zone_radius="2.5" dynamic_object_type="2" loot_type="0" character_outfit_category="11" character_type="1" character_special_outfit="0" vehicle_file_name="" vehicle_file_store="1" vehicle_is_static="false" vehicle_is_no_sleep="false" vehicle_is_editable="false" vehicle_is_invulnerable="false" vehicle_is_show_on_map="false" vehicle_is_transponder_active="false" is_fire_lit="true" is_explosion="false" explosion_magnitude="1" flare_hue="0" is_flare_lit="true" vehicle_button_name="" ice_type="0" ice_scale="1" animal_type="0">
+                                    <spawn_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="-21.95293" 31="30.203009" 32="108.017433" 33="1"/>
+                                    <spawn_bounds>
+                                        <min x="-0.679105" y="-1.286941" z="-0.650292"/>
+                                        <max x="0.679105" y="1.286941" z="0.650292"/>
+                                    </spawn_bounds>
+                                    <vehicle_parent_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0" 31="0" 32="0" 33="1"/>
+                                    <spawn_local_offset x="-0" y="-0" z="-0"/>
+                                    <graph_links/>
+                                </c>
+                            </components>
+                        </l>
+                        <l id="10" tile="data/tiles/island_18.xml" name="BRINKFIELD" is_env_mod="true" env_mod_spawn_num="1">
+                            <components>
+                                <c component_type="10" id="11" vehicle_parent_id="0" cargo_zone_import_cargo_type="cc_teleport_zone" display_name="Nuclear" is_sea_floor_object="false" show_zone_on_map="false" zone_type="0" zone_radius="2.5" dynamic_object_type="2" loot_type="0" character_outfit_category="11" character_type="1" character_special_outfit="0" vehicle_file_name="" vehicle_file_store="1" vehicle_is_static="false" vehicle_is_no_sleep="false" vehicle_is_editable="false" vehicle_is_invulnerable="false" vehicle_is_show_on_map="false" vehicle_is_transponder_active="false" is_fire_lit="true" is_explosion="false" explosion_magnitude="1" flare_hue="0" is_flare_lit="true" vehicle_button_name="" ice_type="0" ice_scale="1" animal_type="0">
+                                    <spawn_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="27.932579" 31="9.481975" 32="84.741089" 33="1"/>
+                                    <spawn_bounds>
+                                        <min x="-0.704577" y="-1.24947" z="-0.702677"/>
+                                        <max x="0.704577" y="1.24947" z="0.702677"/>
+                                    </spawn_bounds>
+                                    <vehicle_parent_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0" 31="0" 32="0" 33="1"/>
+                                    <spawn_local_offset x="-0" y="-0" z="-0"/>
+                                    <graph_links/>
+                                </c>
+                            </components>
+                        </l>
+                        <l id="11" tile="data/tiles/island_26_fishing.xml" name="FISHING VILLAGE" is_env_mod="true" env_mod_spawn_num="1">
+                            <components>
+                                <c component_type="10" id="12" vehicle_parent_id="0" cargo_zone_import_cargo_type="cc_teleport_zone" display_name="Fishing Village" is_sea_floor_object="false" show_zone_on_map="false" zone_type="0" zone_radius="2.5" dynamic_object_type="2" loot_type="0" character_outfit_category="11" character_type="1" character_special_outfit="0" vehicle_file_name="" vehicle_file_store="1" vehicle_is_static="false" vehicle_is_no_sleep="false" vehicle_is_editable="false" vehicle_is_invulnerable="false" vehicle_is_show_on_map="false" vehicle_is_transponder_active="false" is_fire_lit="true" is_explosion="false" explosion_magnitude="1" flare_hue="0" is_flare_lit="true" vehicle_button_name="" ice_type="0" ice_scale="1" animal_type="0">
+                                    <spawn_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="21.912289" 31="7.525854" 32="-43.10886" 33="1"/>
+                                    <spawn_bounds>
+                                        <min x="-0.646252" y="-1.154862" z="-0.621098"/>
+                                        <max x="0.646252" y="1.154862" z="0.621098"/>
+                                    </spawn_bounds>
+                                    <vehicle_parent_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0" 31="0" 32="0" 33="1"/>
+                                    <spawn_local_offset x="-0" y="-0" z="-0"/>
+                                    <graph_links/>
+                                </c>
+                            </components>
+                        </l>
+                        <l id="12" tile="data/tiles/island_39_observatory.xml" name="OBSERVATORY" is_env_mod="true" env_mod_spawn_num="1">
+                            <components>
+                                <c component_type="10" id="13" vehicle_parent_id="0" cargo_zone_import_cargo_type="cc_teleport_zone" display_name="Observatory" is_sea_floor_object="false" show_zone_on_map="false" zone_type="0" zone_radius="2.5" dynamic_object_type="2" loot_type="0" character_outfit_category="11" character_type="1" character_special_outfit="0" vehicle_file_name="" vehicle_file_store="1" vehicle_is_static="false" vehicle_is_no_sleep="false" vehicle_is_editable="false" vehicle_is_invulnerable="false" vehicle_is_show_on_map="false" vehicle_is_transponder_active="false" is_fire_lit="true" is_explosion="false" explosion_magnitude="1" flare_hue="0" is_flare_lit="true" vehicle_button_name="" ice_type="0" ice_scale="1" animal_type="0">
+                                    <spawn_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="34.280003" 31="9.574191" 32="43.324558" 33="1"/>
+                                    <spawn_bounds>
+                                        <min x="-0.622706" y="-1.246131" z="-0.670642"/>
+                                        <max x="0.622706" y="1.246131" z="0.670642"/>
+                                    </spawn_bounds>
+                                    <vehicle_parent_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0" 31="0" 32="0" 33="1"/>
+                                    <spawn_local_offset x="-0" y="-0" z="-0"/>
+                                    <graph_links/>
+                                </c>
+                            </components>
+                        </l>
+                        <l id="13" tile="data/tiles/island_35_seafort.xml" name="SEA FORT" is_env_mod="true" env_mod_spawn_num="1">
+                            <components>
+                                <c component_type="10" id="14" vehicle_parent_id="0" cargo_zone_import_cargo_type="cc_teleport_zone" display_name="Sea Fort" is_sea_floor_object="false" show_zone_on_map="false" zone_type="0" zone_radius="2.5" dynamic_object_type="2" loot_type="0" character_outfit_category="11" character_type="1" character_special_outfit="0" vehicle_file_name="" vehicle_file_store="1" vehicle_is_static="false" vehicle_is_no_sleep="false" vehicle_is_editable="false" vehicle_is_invulnerable="false" vehicle_is_show_on_map="false" vehicle_is_transponder_active="false" is_fire_lit="true" is_explosion="false" explosion_magnitude="1" flare_hue="0" is_flare_lit="true" vehicle_button_name="" ice_type="0" ice_scale="1" animal_type="0">
+                                    <spawn_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="-43.917664" 31="15.75914" 32="-16.36656" 33="1"/>
+                                    <spawn_bounds>
+                                        <min x="-0.679506" y="-1.280515" z="-0.640389"/>
+                                        <max x="0.679506" y="1.280515" z="0.640389"/>
+                                    </spawn_bounds>
+                                    <vehicle_parent_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0" 31="0" 32="0" 33="1"/>
+                                    <spawn_local_offset x="-0" y="-0" z="-0"/>
+                                    <graph_links/>
+                                </c>
+                            </components>
+                        </l>
+                        <l id="14" tile="data/tiles/island_34_military.xml" name="MILITARY BASE" is_env_mod="true" env_mod_spawn_num="1">
+                            <components>
+                                <c component_type="10" id="15" vehicle_parent_id="0" cargo_zone_import_cargo_type="cc_teleport_zone" display_name="Military" is_sea_floor_object="false" show_zone_on_map="false" zone_type="0" zone_radius="2.5" dynamic_object_type="2" loot_type="0" character_outfit_category="11" character_type="1" character_special_outfit="0" vehicle_file_name="" vehicle_file_store="1" vehicle_is_static="false" vehicle_is_no_sleep="false" vehicle_is_editable="false" vehicle_is_invulnerable="false" vehicle_is_show_on_map="false" vehicle_is_transponder_active="false" is_fire_lit="true" is_explosion="false" explosion_magnitude="1" flare_hue="0" is_flare_lit="true" vehicle_button_name="" ice_type="0" ice_scale="1" animal_type="0">
+                                    <spawn_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="84.116859" 31="24.994837" 32="-13.415521" 33="1"/>
+                                    <spawn_bounds>
+                                        <min x="-0.758356" y="-1.382493" z="-0.832741"/>
+                                        <max x="0.758356" y="1.382493" z="0.832741"/>
+                                    </spawn_bounds>
+                                    <vehicle_parent_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0" 31="0" 32="0" 33="1"/>
+                                    <spawn_local_offset x="-0" y="-0" z="-0"/>
+                                    <graph_links/>
+                                </c>
+                            </components>
+                        </l>
+                        <l id="15" tile="data/tiles/island_33_tile_32.xml" name="TERMINAL SPYCAKES" is_env_mod="true" env_mod_spawn_num="1">
+                            <components>
+                                <c component_type="10" id="16" vehicle_parent_id="0" cargo_zone_import_cargo_type="cc_teleport_zone" display_name="Spycakes" is_sea_floor_object="false" show_zone_on_map="false" zone_type="0" zone_radius="2.5" dynamic_object_type="2" loot_type="0" character_outfit_category="11" character_type="1" character_special_outfit="0" vehicle_file_name="" vehicle_file_store="1" vehicle_is_static="false" vehicle_is_no_sleep="false" vehicle_is_editable="false" vehicle_is_invulnerable="false" vehicle_is_show_on_map="false" vehicle_is_transponder_active="false" is_fire_lit="true" is_explosion="false" explosion_magnitude="1" flare_hue="0" is_flare_lit="true" vehicle_button_name="" ice_type="0" ice_scale="1" animal_type="0">
+                                    <spawn_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="-42.367699" 31="19.707535" 32="269.897919" 33="1"/>
+                                    <spawn_bounds>
+                                        <min x="-0.533755" y="-1.155907" z="-0.610506"/>
+                                        <max x="0.533755" y="1.155907" z="0.610506"/>
+                                    </spawn_bounds>
+                                    <vehicle_parent_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0" 31="0" 32="0" 33="1"/>
+                                    <spawn_local_offset x="-0" y="-0" z="-0"/>
+                                    <graph_links/>
+                                </c>
+                                <c component_type="10" id="17" vehicle_parent_id="0" cargo_zone_import_cargo_type="cc_teleport_zone" display_name="Spycakes Dock" is_sea_floor_object="false" show_zone_on_map="false" zone_type="0" zone_radius="2.5" dynamic_object_type="2" loot_type="0" character_outfit_category="11" character_type="1" character_special_outfit="0" vehicle_file_name="" vehicle_file_store="1" vehicle_is_static="false" vehicle_is_no_sleep="false" vehicle_is_editable="false" vehicle_is_invulnerable="false" vehicle_is_show_on_map="false" vehicle_is_transponder_active="false" is_fire_lit="true" is_explosion="false" explosion_magnitude="1" flare_hue="0" is_flare_lit="true" vehicle_button_name="" ice_type="0" ice_scale="1" animal_type="0">
+                                    <spawn_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="122.042786" 31="9.315493" 32="195.282639" 33="1"/>
+                                    <spawn_bounds>
+                                        <min x="-0.617528" y="-1.249889" z="-0.540652"/>
+                                        <max x="0.617528" y="1.249889" z="0.540652"/>
+                                    </spawn_bounds>
+                                    <vehicle_parent_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0" 31="0" 32="0" 33="1"/>
+                                    <spawn_local_offset x="-0" y="-0" z="-0"/>
+                                    <graph_links/>
+                                </c>
+                            </components>
+                        </l>
+                        <l id="16" tile="data/tiles/island_33_tile_33.xml" name="MAINLAND AIRSTRIP" is_env_mod="true" env_mod_spawn_num="1">
+                            <components>
+                                <c component_type="10" id="18" vehicle_parent_id="0" cargo_zone_import_cargo_type="cc_teleport_zone" display_name="Donkk Strip" is_sea_floor_object="false" show_zone_on_map="false" zone_type="0" zone_radius="2.5" dynamic_object_type="2" loot_type="0" character_outfit_category="11" character_type="1" character_special_outfit="0" vehicle_file_name="" vehicle_file_store="1" vehicle_is_static="false" vehicle_is_no_sleep="false" vehicle_is_editable="false" vehicle_is_invulnerable="false" vehicle_is_show_on_map="false" vehicle_is_transponder_active="false" is_fire_lit="true" is_explosion="false" explosion_magnitude="1" flare_hue="0" is_flare_lit="true" vehicle_button_name="" ice_type="0" ice_scale="1" animal_type="0">
+                                    <spawn_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="-164.977783" 31="10.820162" 32="316.495575" 33="1"/>
+                                    <spawn_bounds>
+                                        <min x="-0.594615" y="-1.207282" z="-0.570539"/>
+                                        <max x="0.594615" y="1.207282" z="0.570539"/>
+                                    </spawn_bounds>
+                                    <vehicle_parent_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0" 31="0" 32="0" 33="1"/>
+                                    <spawn_local_offset x="-0" y="-0" z="-0"/>
+                                    <graph_links/>
+                                </c>
+                            </components>
+                        </l>
+                        <l id="17" tile="data/tiles/island_33_tile_end.xml" name="TERMINAL CAMODO" is_env_mod="true" env_mod_spawn_num="1">
+                            <components>
+                                <c component_type="10" id="19" vehicle_parent_id="0" cargo_zone_import_cargo_type="cc_teleport_zone" display_name="Camodo" is_sea_floor_object="false" show_zone_on_map="false" zone_type="0" zone_radius="2.5" dynamic_object_type="2" loot_type="0" character_outfit_category="11" character_type="1" character_special_outfit="0" vehicle_file_name="" vehicle_file_store="1" vehicle_is_static="false" vehicle_is_no_sleep="false" vehicle_is_editable="false" vehicle_is_invulnerable="false" vehicle_is_show_on_map="false" vehicle_is_transponder_active="false" is_fire_lit="true" is_explosion="false" explosion_magnitude="1" flare_hue="0" is_flare_lit="true" vehicle_button_name="" ice_type="0" ice_scale="1" animal_type="0">
+                                    <spawn_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="-5.802949" 31="19.29661" 32="166.447418" 33="1"/>
+                                    <spawn_bounds>
+                                        <min x="-0.61937" y="-1.171474" z="-0.627058"/>
+                                        <max x="0.61937" y="1.171474" z="0.627058"/>
+                                    </spawn_bounds>
+                                    <vehicle_parent_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0" 31="0" 32="0" 33="1"/>
+                                    <spawn_local_offset x="-0" y="-0" z="-0"/>
+                                    <graph_links/>
+                                </c>
+                                <c component_type="10" id="20" vehicle_parent_id="0" cargo_zone_import_cargo_type="cc_teleport_zone" display_name="Camodo Dock" is_sea_floor_object="false" show_zone_on_map="false" zone_type="0" zone_radius="2.5" dynamic_object_type="2" loot_type="0" character_outfit_category="11" character_type="1" character_special_outfit="0" vehicle_file_name="" vehicle_file_store="1" vehicle_is_static="false" vehicle_is_no_sleep="false" vehicle_is_editable="false" vehicle_is_invulnerable="false" vehicle_is_show_on_map="false" vehicle_is_transponder_active="false" is_fire_lit="true" is_explosion="false" explosion_magnitude="1" flare_hue="0" is_flare_lit="true" vehicle_button_name="" ice_type="0" ice_scale="1" animal_type="0">
+                                    <spawn_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="-136.109543" 31="9.033527" 32="33.184044" 33="1"/>
+                                    <spawn_bounds>
+                                        <min x="-0.569892" y="-1.264337" z="-0.605489"/>
+                                        <max x="0.569892" y="1.264337" z="0.605489"/>
+                                    </spawn_bounds>
+                                    <vehicle_parent_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0" 31="0" 32="0" 33="1"/>
+                                    <spawn_local_offset x="-0" y="-0" z="-0"/>
+                                    <graph_links/>
+                                </c>
+                            </components>
+                        </l>
+                        <l id="18" tile="data/tiles/island_29_playerbase_submarine.xml" name="Leopards Base" is_env_mod="true" env_mod_spawn_num="1">
+                            <components>
+                                <c component_type="10" id="21" vehicle_parent_id="0" cargo_zone_import_cargo_type="cc_teleport_zone, map_label=10" display_name="Leopards Base" is_sea_floor_object="false" show_zone_on_map="false" zone_type="0" zone_radius="2.5" dynamic_object_type="2" loot_type="0" character_outfit_category="11" character_type="1" character_special_outfit="0" vehicle_file_name="" vehicle_file_store="1" vehicle_is_static="false" vehicle_is_no_sleep="false" vehicle_is_editable="false" vehicle_is_invulnerable="false" vehicle_is_show_on_map="false" vehicle_is_transponder_active="false" is_fire_lit="true" is_explosion="false" explosion_magnitude="1" flare_hue="0" is_flare_lit="true" vehicle_button_name="" ice_type="0" ice_scale="1" animal_type="0">
+                                    <spawn_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="-7.603638" 31="8.557174" 32="-15.411725" 33="1"/>
+                                    <spawn_bounds>
+                                        <min x="-0.811858" y="-1.407617" z="-0.800895"/>
+                                        <max x="0.811858" y="1.407617" z="0.800895"/>
+                                    </spawn_bounds>
+                                    <vehicle_parent_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0" 31="0" 32="0" 33="1"/>
+                                    <spawn_local_offset x="-0" y="-0" z="-0"/>
+                                    <graph_links/>
+                                </c>
+                            </components>
+                        </l>
+                        <l id="19" tile="data/tiles/island_32_playerbase_heli.xml" name="Helicopter 2" is_env_mod="true" env_mod_spawn_num="1">
+                            <components>
+                                <c component_type="10" id="22" vehicle_parent_id="0" cargo_zone_import_cargo_type="cc_teleport_zone" display_name="Helicopter2" is_sea_floor_object="false" show_zone_on_map="false" zone_type="0" zone_radius="2.5" dynamic_object_type="2" loot_type="0" character_outfit_category="11" character_type="1" character_special_outfit="0" vehicle_file_name="" vehicle_file_store="1" vehicle_is_static="false" vehicle_is_no_sleep="false" vehicle_is_editable="false" vehicle_is_invulnerable="false" vehicle_is_show_on_map="false" vehicle_is_transponder_active="false" is_fire_lit="true" is_explosion="false" explosion_magnitude="1" flare_hue="0" is_flare_lit="true" vehicle_button_name="" ice_type="0" ice_scale="1" animal_type="0">
+                                    <spawn_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0.669011" 31="19.380442" 32="8.358913" 33="1"/>
+                                    <spawn_bounds>
+                                        <min x="-0.646844" y="-1.298594" z="-0.618323"/>
+                                        <max x="0.646844" y="1.298594" z="0.618323"/>
+                                    </spawn_bounds>
+                                    <vehicle_parent_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0" 31="0" 32="0" 33="1"/>
+                                    <spawn_local_offset x="-0" y="-0" z="-0"/>
+                                    <graph_links/>
+                                </c>
+                            </components>
+                        </l>
+                        <l id="20" tile="data/tiles/island_30_playerbase_boat.xml" name="Custom Boat" is_env_mod="true" env_mod_spawn_num="1">
+                            <components>
+                                <c component_type="10" id="23" vehicle_parent_id="0" cargo_zone_import_cargo_type="cc_teleport_zone" display_name="Custom Boat" is_sea_floor_object="false" show_zone_on_map="false" zone_type="0" zone_radius="2.5" dynamic_object_type="2" loot_type="0" character_outfit_category="11" character_type="1" character_special_outfit="0" vehicle_file_name="" vehicle_file_store="1" vehicle_is_static="false" vehicle_is_no_sleep="false" vehicle_is_editable="false" vehicle_is_invulnerable="false" vehicle_is_show_on_map="false" vehicle_is_transponder_active="false" is_fire_lit="true" is_explosion="false" explosion_magnitude="1" flare_hue="0" is_flare_lit="true" vehicle_button_name="" ice_type="0" ice_scale="1" animal_type="0">
+                                    <spawn_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="-0.194184" 31="7.195685" 32="-19.101391" 33="1"/>
+                                    <spawn_bounds>
+                                        <min x="-0.686637" y="-1.52505" z="-0.797168"/>
+                                        <max x="0.686637" y="1.52505" z="0.797168"/>
+                                    </spawn_bounds>
+                                    <vehicle_parent_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0" 31="0" 32="0" 33="1"/>
+                                    <spawn_local_offset x="-0" y="-0" z="-0"/>
+                                    <graph_links/>
+                                </c>
+                            </components>
+                        </l>
+                        <l id="21" tile="data/tiles/oil_rig_playerbase.xml" name="Custom Oil Base" is_env_mod="true" env_mod_spawn_num="1">
+                            <components>
+                                <c component_type="10" id="24" vehicle_parent_id="0" cargo_zone_import_cargo_type="cc_teleport_zone" display_name="Custom Oil Rig" is_sea_floor_object="false" show_zone_on_map="false" zone_type="0" zone_radius="2.5" dynamic_object_type="2" loot_type="0" character_outfit_category="11" character_type="1" character_special_outfit="0" vehicle_file_name="" vehicle_file_store="1" vehicle_is_static="false" vehicle_is_no_sleep="false" vehicle_is_editable="false" vehicle_is_invulnerable="false" vehicle_is_show_on_map="false" vehicle_is_transponder_active="false" is_fire_lit="true" is_explosion="false" explosion_magnitude="1" flare_hue="0" is_flare_lit="true" vehicle_button_name="" ice_type="0" ice_scale="1" animal_type="0">
+                                    <spawn_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="17.106518" 31="15.606965" 32="30.732466" 33="1"/>
+                                    <spawn_bounds>
+                                        <min x="-0.541345" y="-1.296341" z="-0.567234"/>
+                                        <max x="0.541345" y="1.296341" z="0.567234"/>
+                                    </spawn_bounds>
+                                    <vehicle_parent_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0" 31="0" 32="0" 33="1"/>
+                                    <spawn_local_offset x="-0" y="-0" z="-0"/>
+                                    <graph_links/>
+                                </c>
+                            </components>
+                        </l>
+                        <l id="22" tile="data/tiles/seabed_cave_system.xml" name="SEABED CAVES" is_env_mod="true" env_mod_spawn_num="1">
+                            <components>
+                                <c component_type="10" id="25" vehicle_parent_id="0" cargo_zone_import_cargo_type="cc_teleport_zone" display_name="Underwater Caves" is_sea_floor_object="false" show_zone_on_map="false" zone_type="0" zone_radius="2.5" dynamic_object_type="2" loot_type="0" character_outfit_category="11" character_type="1" character_special_outfit="0" vehicle_file_name="" vehicle_file_store="1" vehicle_is_static="false" vehicle_is_no_sleep="false" vehicle_is_editable="false" vehicle_is_invulnerable="false" vehicle_is_show_on_map="false" vehicle_is_transponder_active="false" is_fire_lit="true" is_explosion="false" explosion_magnitude="1" flare_hue="0" is_flare_lit="true" vehicle_button_name="" ice_type="0" ice_scale="1" animal_type="0">
+                                    <spawn_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="-144.109451" 31="-70.356071" 32="-114.770317" 33="1"/>
+                                    <spawn_bounds>
+                                        <min x="-0.933686" y="-1.366456" z="-0.912159"/>
+                                        <max x="0.933686" y="1.366456" z="0.912159"/>
+                                    </spawn_bounds>
+                                    <vehicle_parent_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0" 31="0" 32="0" 33="1"/>
+                                    <spawn_local_offset x="-0" y="-0" z="-0"/>
+                                    <graph_links/>
+                                </c>
+                            </components>
+                        </l>
+                        <l id="23" tile="data/tiles/arctic_tile_22.xml" name="ARCTIC MAINLAND OUTPOST" is_env_mod="true" env_mod_spawn_num="1">
+                            <components>
+                                <c component_type="10" id="26" vehicle_parent_id="0" cargo_zone_import_cargo_type="cc_teleport_zone" display_name="Endo" is_sea_floor_object="false" show_zone_on_map="false" zone_type="0" zone_radius="2.5" dynamic_object_type="2" loot_type="0" character_outfit_category="11" character_type="1" character_special_outfit="0" vehicle_file_name="" vehicle_file_store="1" vehicle_is_static="false" vehicle_is_no_sleep="false" vehicle_is_editable="false" vehicle_is_invulnerable="false" vehicle_is_show_on_map="false" vehicle_is_transponder_active="false" is_fire_lit="true" is_explosion="false" explosion_magnitude="1" flare_hue="0" is_flare_lit="true" vehicle_button_name="" ice_type="0" ice_scale="1" animal_type="0">
+                                    <spawn_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="2.729884" 31="18.981401" 32="-391.130249" 33="1"/>
+                                    <spawn_bounds>
+                                        <min x="-0.587871" y="-1.174948" z="-0.556914"/>
+                                        <max x="0.587871" y="1.174948" z="0.556914"/>
+                                    </spawn_bounds>
+                                    <vehicle_parent_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0" 31="0" 32="0" 33="1"/>
+                                    <spawn_local_offset x="-0" y="-0" z="-0"/>
+                                    <graph_links/>
+                                </c>
+                            </components>
+                        </l>
+                        <l id="24" tile="data/tiles/arctic_island_playerbase.xml" name="Tajin" is_env_mod="true" env_mod_spawn_num="1">
+                            <components>
+                                <c component_type="10" id="27" vehicle_parent_id="0" cargo_zone_import_cargo_type="cc_teleport_zone" display_name="Tajin" is_sea_floor_object="false" show_zone_on_map="false" zone_type="0" zone_radius="2.5" dynamic_object_type="2" loot_type="0" character_outfit_category="11" character_type="1" character_special_outfit="0" vehicle_file_name="" vehicle_file_store="1" vehicle_is_static="false" vehicle_is_no_sleep="false" vehicle_is_editable="false" vehicle_is_invulnerable="false" vehicle_is_show_on_map="false" vehicle_is_transponder_active="false" is_fire_lit="true" is_explosion="false" explosion_magnitude="1" flare_hue="0" is_flare_lit="true" vehicle_button_name="" ice_type="0" ice_scale="1" animal_type="0">
+                                    <spawn_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="-137.900055" 31="26.827305" 32="256.465881" 33="1"/>
+                                    <spawn_bounds>
+                                        <min x="-0.780802" y="-1.564561" z="-0.671705"/>
+                                        <max x="0.780802" y="1.564561" z="0.671705"/>
+                                    </spawn_bounds>
+                                    <vehicle_parent_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0" 31="0" 32="0" 33="1"/>
+                                    <spawn_local_offset x="-0" y="-0" z="-0"/>
+                                    <graph_links/>
+                                </c>
+                                <c component_type="10" id="28" vehicle_parent_id="0" cargo_zone_import_cargo_type="cc_teleport_zone" display_name="Tajin Dock" is_sea_floor_object="false" show_zone_on_map="false" zone_type="0" zone_radius="2.5" dynamic_object_type="2" loot_type="0" character_outfit_category="11" character_type="1" character_special_outfit="0" vehicle_file_name="" vehicle_file_store="1" vehicle_is_static="false" vehicle_is_no_sleep="false" vehicle_is_editable="false" vehicle_is_invulnerable="false" vehicle_is_show_on_map="false" vehicle_is_transponder_active="false" is_fire_lit="true" is_explosion="false" explosion_magnitude="1" flare_hue="0" is_flare_lit="true" vehicle_button_name="" ice_type="0" ice_scale="1" animal_type="0">
+                                    <spawn_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="223.944321" 31="8.411365" 32="260.408051" 33="1"/>
+                                    <spawn_bounds>
+                                        <min x="-0.442582" y="-1.294971" z="-0.490915"/>
+                                        <max x="0.442582" y="1.294971" z="0.490915"/>
+                                    </spawn_bounds>
+                                    <vehicle_parent_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0" 31="0" 32="0" 33="1"/>
+                                    <spawn_local_offset x="-0" y="-0" z="-0"/>
+                                    <graph_links/>
+                                </c>
+                            </components>
+                        </l>
+                        <l id="25" tile="data/tiles/island_42_volcano_tile_22.xml" name="VOLCANO CENTER" is_env_mod="true" env_mod_spawn_num="1">
+                            <components>
+                                <c component_type="10" id="29" vehicle_parent_id="0" cargo_zone_import_cargo_type="cc_teleport_zone" display_name="Volcano" is_sea_floor_object="false" show_zone_on_map="false" zone_type="0" zone_radius="2.5" dynamic_object_type="2" loot_type="0" character_outfit_category="11" character_type="1" character_special_outfit="0" vehicle_file_name="" vehicle_file_store="1" vehicle_is_static="false" vehicle_is_no_sleep="false" vehicle_is_editable="false" vehicle_is_invulnerable="false" vehicle_is_show_on_map="false" vehicle_is_transponder_active="false" is_fire_lit="true" is_explosion="false" explosion_magnitude="1" flare_hue="0" is_flare_lit="true" vehicle_button_name="" ice_type="0" ice_scale="1" animal_type="0">
+                                    <spawn_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="-231.851807" 31="219.174545" 32="-372.09613" 33="1"/>
+                                    <spawn_bounds>
+                                        <min x="-0.779204" y="-1.299588" z="-0.783977"/>
+                                        <max x="0.779204" y="1.299588" z="0.783977"/>
+                                    </spawn_bounds>
+                                    <vehicle_parent_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0" 31="0" 32="0" 33="1"/>
+                                    <spawn_local_offset x="-0" y="-0" z="-0"/>
+                                    <graph_links/>
+                                </c>
+                            </components>
+                        </l>
+                        <l id="26" tile="data/tiles/island_43_multiplayer_base.xml" name="MULTIPLAYER ISLAND BASE" is_env_mod="true" env_mod_spawn_num="1">
+                            <components>
+                                <c component_type="10" id="30" vehicle_parent_id="0" cargo_zone_import_cargo_type="cc_teleport_zone" display_name="Multiplayer" is_sea_floor_object="false" show_zone_on_map="false" zone_type="0" zone_radius="2.5" dynamic_object_type="2" loot_type="0" character_outfit_category="11" character_type="1" character_special_outfit="0" vehicle_file_name="" vehicle_file_store="1" vehicle_is_static="false" vehicle_is_no_sleep="false" vehicle_is_editable="false" vehicle_is_invulnerable="false" vehicle_is_show_on_map="false" vehicle_is_transponder_active="false" is_fire_lit="true" is_explosion="false" explosion_magnitude="1" flare_hue="0" is_flare_lit="true" vehicle_button_name="" ice_type="0" ice_scale="1" animal_type="0">
+                                    <spawn_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="-104.38517" 31="16.869673" 32="107.410248" 33="1"/>
+                                    <spawn_bounds>
+                                        <min x="-0.599521" y="-1.184614" z="-0.660629"/>
+                                        <max x="0.599521" y="1.184614" z="0.660629"/>
+                                    </spawn_bounds>
+                                    <vehicle_parent_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0" 31="0" 32="0" 33="1"/>
+                                    <spawn_local_offset x="-0" y="-0" z="-0"/>
+                                    <graph_links/>
+                                </c>
+                                <c component_type="10" id="31" vehicle_parent_id="0" cargo_zone_import_cargo_type="cc_teleport_zone" display_name="Multiplayer Dock" is_sea_floor_object="false" show_zone_on_map="false" zone_type="0" zone_radius="2.5" dynamic_object_type="2" loot_type="0" character_outfit_category="11" character_type="1" character_special_outfit="0" vehicle_file_name="" vehicle_file_store="1" vehicle_is_static="false" vehicle_is_no_sleep="false" vehicle_is_editable="false" vehicle_is_invulnerable="false" vehicle_is_show_on_map="false" vehicle_is_transponder_active="false" is_fire_lit="true" is_explosion="false" explosion_magnitude="1" flare_hue="0" is_flare_lit="true" vehicle_button_name="" ice_type="0" ice_scale="1" animal_type="0">
+                                    <spawn_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="387.833252" 31="10.913135" 32="-151.698914" 33="1"/>
+                                    <spawn_bounds>
+                                        <min x="-0.561638" y="-1.081752" z="-0.61623"/>
+                                        <max x="0.561638" y="1.081752" z="0.61623"/>
+                                    </spawn_bounds>
+                                    <vehicle_parent_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0" 31="0" 32="0" 33="1"/>
+                                    <spawn_local_offset x="-0" y="-0" z="-0"/>
+                                    <graph_links/>
+                                </c>
+                            </components>
+                        </l>
+                        <l id="27" tile="data/tiles/mega_island_12_6.xml" name="O'NEILL AIRBASE" is_env_mod="true" env_mod_spawn_num="1">
+                            <components>
+                                <c component_type="10" id="32" vehicle_parent_id="0" cargo_zone_import_cargo_type="cc_teleport_zone" display_name="Oneill" is_sea_floor_object="false" show_zone_on_map="false" zone_type="0" zone_radius="2.5" dynamic_object_type="2" loot_type="0" character_outfit_category="11" character_type="1" character_special_outfit="0" vehicle_file_name="" vehicle_file_store="1" vehicle_is_static="false" vehicle_is_no_sleep="false" vehicle_is_editable="false" vehicle_is_invulnerable="false" vehicle_is_show_on_map="false" vehicle_is_transponder_active="false" is_fire_lit="true" is_explosion="false" explosion_magnitude="1" flare_hue="0" is_flare_lit="true" vehicle_button_name="" ice_type="0" ice_scale="1" animal_type="0">
+                                    <spawn_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="113.507324" 31="11.763499" 32="73.724373" 33="1"/>
+                                    <spawn_bounds>
+                                        <min x="-0.622645" y="-1.335843" z="-0.736307"/>
+                                        <max x="0.622645" y="1.335843" z="0.736307"/>
+                                    </spawn_bounds>
+                                    <vehicle_parent_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0" 31="0" 32="0" 33="1"/>
+                                    <spawn_local_offset x="-0" y="-0" z="-0"/>
+                                    <graph_links/>
+                                </c>
+                            </components>
+                        </l>
+                        <l id="28" tile="data/tiles/mega_island_15_2.xml" name="SAWYER ISLANDS' SOUTH-EAST FISHING VILLAGE" is_env_mod="true" env_mod_spawn_num="1">
+                            <components>
+                                <c component_type="10" id="33" vehicle_parent_id="0" cargo_zone_import_cargo_type="cc_teleport_zone" display_name="Sawyer Fishing Village" is_sea_floor_object="false" show_zone_on_map="false" zone_type="0" zone_radius="2.5" dynamic_object_type="2" loot_type="0" character_outfit_category="11" character_type="1" character_special_outfit="0" vehicle_file_name="" vehicle_file_store="1" vehicle_is_static="false" vehicle_is_no_sleep="false" vehicle_is_editable="false" vehicle_is_invulnerable="false" vehicle_is_show_on_map="false" vehicle_is_transponder_active="false" is_fire_lit="true" is_explosion="false" explosion_magnitude="1" flare_hue="0" is_flare_lit="true" vehicle_button_name="" ice_type="0" ice_scale="1" animal_type="0">
+                                    <spawn_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="170.705292" 31="11.858775" 32="-399.213379" 33="1"/>
+                                    <spawn_bounds>
+                                        <min x="-0.649816" y="-1.569336" z="-0.69488"/>
+                                        <max x="0.649816" y="1.569336" z="0.69488"/>
+                                    </spawn_bounds>
+                                    <vehicle_parent_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0" 31="0" 32="0" 33="1"/>
+                                    <spawn_local_offset x="-0" y="-0" z="-0"/>
+                                    <graph_links/>
+                                </c>
+                            </components>
+                        </l>
+                        <l id="29" tile="data/tiles/mega_island_2_6.xml" name="HARRISON AIRBASE" is_env_mod="true" env_mod_spawn_num="1">
+                            <components>
+                                <c component_type="10" id="34" vehicle_parent_id="0" cargo_zone_import_cargo_type="cc_teleport_zone" display_name="Harrison" is_sea_floor_object="false" show_zone_on_map="false" zone_type="0" zone_radius="2.5" dynamic_object_type="2" loot_type="0" character_outfit_category="11" character_type="1" character_special_outfit="0" vehicle_file_name="" vehicle_file_store="1" vehicle_is_static="false" vehicle_is_no_sleep="false" vehicle_is_editable="false" vehicle_is_invulnerable="false" vehicle_is_show_on_map="false" vehicle_is_transponder_active="false" is_fire_lit="true" is_explosion="false" explosion_magnitude="1" flare_hue="0" is_flare_lit="true" vehicle_button_name="" ice_type="0" ice_scale="1" animal_type="0">
+                                    <spawn_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="79.088341" 31="15.861111" 32="-106.711212" 33="1"/>
+                                    <spawn_bounds>
+                                        <min x="-0.74401" y="-1.421295" z="-0.689734"/>
+                                        <max x="0.74401" y="1.421295" z="0.689734"/>
+                                    </spawn_bounds>
+                                    <vehicle_parent_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0" 31="0" 32="0" 33="1"/>
+                                    <spawn_local_offset x="-0" y="-0" z="-0"/>
+                                    <graph_links/>
+                                </c>
+                            </components>
+                        </l>
+                        <l id="30" tile="data/tiles/mega_island_9_8.xml" name="SAWYER ISLANDS' NORTH HARBOUR" is_env_mod="true" env_mod_spawn_num="1">
+                            <components>
+                                <c component_type="10" id="35" vehicle_parent_id="0" cargo_zone_import_cargo_type="cc_teleport_zone" display_name="North Harbour" is_sea_floor_object="false" show_zone_on_map="false" zone_type="0" zone_radius="2.5" dynamic_object_type="2" loot_type="0" character_outfit_category="11" character_type="1" character_special_outfit="0" vehicle_file_name="" vehicle_file_store="1" vehicle_is_static="false" vehicle_is_no_sleep="false" vehicle_is_editable="false" vehicle_is_invulnerable="false" vehicle_is_show_on_map="false" vehicle_is_transponder_active="false" is_fire_lit="true" is_explosion="false" explosion_magnitude="1" flare_hue="0" is_flare_lit="true" vehicle_button_name="" ice_type="0" ice_scale="1" animal_type="0">
+                                    <spawn_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="323.262054" 31="9.855494" 32="234.16925" 33="1"/>
+                                    <spawn_bounds>
+                                        <min x="-0.560869" y="-1.190927" z="-0.665079"/>
+                                        <max x="0.560869" y="1.190927" z="0.665079"/>
+                                    </spawn_bounds>
+                                    <vehicle_parent_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0" 31="0" 32="0" 33="1"/>
+                                    <spawn_local_offset x="-0" y="-0" z="-0"/>
+                                    <graph_links/>
+                                </c>
+                                <c component_type="10" id="36" vehicle_parent_id="0" cargo_zone_import_cargo_type="cc_teleport_zone" display_name="North Harbour Dock" is_sea_floor_object="false" show_zone_on_map="false" zone_type="0" zone_radius="2.5" dynamic_object_type="2" loot_type="0" character_outfit_category="11" character_type="1" character_special_outfit="0" vehicle_file_name="" vehicle_file_store="1" vehicle_is_static="false" vehicle_is_no_sleep="false" vehicle_is_editable="false" vehicle_is_invulnerable="false" vehicle_is_show_on_map="false" vehicle_is_transponder_active="false" is_fire_lit="true" is_explosion="false" explosion_magnitude="1" flare_hue="0" is_flare_lit="true" vehicle_button_name="" ice_type="0" ice_scale="1" animal_type="0">
+                                    <spawn_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="295.867645" 31="7.079295" 32="409.788666" 33="1"/>
+                                    <spawn_bounds>
+                                        <min x="-0.557192" y="-1.258572" z="-0.561593"/>
+                                        <max x="0.557192" y="1.258572" z="0.561593"/>
+                                    </spawn_bounds>
+                                    <vehicle_parent_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0" 31="0" 32="0" 33="1"/>
+                                    <spawn_local_offset x="-0" y="-0" z="-0"/>
+                                    <graph_links/>
+                                </c>
+                            </components>
+                        </l>
+                        <l id="31" tile="data/tiles/mega_island_2_9.xml" name="OLSEN BAY" is_env_mod="true" env_mod_spawn_num="1">
+                            <components>
+                                <c component_type="10" id="37" vehicle_parent_id="0" cargo_zone_import_cargo_type="cc_teleport_zone" display_name="Olsen" is_sea_floor_object="false" show_zone_on_map="false" zone_type="0" zone_radius="2.5" dynamic_object_type="2" loot_type="0" character_outfit_category="11" character_type="1" character_special_outfit="0" vehicle_file_name="" vehicle_file_store="1" vehicle_is_static="false" vehicle_is_no_sleep="false" vehicle_is_editable="false" vehicle_is_invulnerable="false" vehicle_is_show_on_map="false" vehicle_is_transponder_active="false" is_fire_lit="true" is_explosion="false" explosion_magnitude="1" flare_hue="0" is_flare_lit="true" vehicle_button_name="" ice_type="0" ice_scale="1" animal_type="0">
+                                    <spawn_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="355.95282" 31="9.691998" 32="-354.086151" 33="1"/>
+                                    <spawn_bounds>
+                                        <min x="-0.695017" y="-1.31743" z="-0.660885"/>
+                                        <max x="0.695017" y="1.31743" z="0.660885"/>
+                                    </spawn_bounds>
+                                    <vehicle_parent_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0" 31="0" 32="0" 33="1"/>
+                                    <spawn_local_offset x="-0" y="-0" z="-0"/>
+                                    <graph_links/>
+                                </c>
+                            </components>
+                        </l>
+                        <l id="32" tile="data/tiles/mega_island_7_6.xml" name="DEAN HALL MINING COMPANY" is_env_mod="true" env_mod_spawn_num="1">
+                            <components>
+                                <c component_type="10" id="38" vehicle_parent_id="0" cargo_zone_import_cargo_type="cc_teleport_zone" display_name="Sawyer Quarry" is_sea_floor_object="false" show_zone_on_map="false" zone_type="0" zone_radius="2.5" dynamic_object_type="2" loot_type="0" character_outfit_category="11" character_type="1" character_special_outfit="0" vehicle_file_name="" vehicle_file_store="1" vehicle_is_static="false" vehicle_is_no_sleep="false" vehicle_is_editable="false" vehicle_is_invulnerable="false" vehicle_is_show_on_map="false" vehicle_is_transponder_active="false" is_fire_lit="true" is_explosion="false" explosion_magnitude="1" flare_hue="0" is_flare_lit="true" vehicle_button_name="" ice_type="0" ice_scale="1" animal_type="0">
+                                    <spawn_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="146.668777" 31="34.054657" 32="-32.465759" 33="1"/>
+                                    <spawn_bounds>
+                                        <min x="-0.677364" y="-1.57018" z="-0.637761"/>
+                                        <max x="0.677364" y="1.57018" z="0.637761"/>
+                                    </spawn_bounds>
+                                    <vehicle_parent_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0" 31="0" 32="0" 33="1"/>
+                                    <spawn_local_offset x="-0" y="-0" z="-0"/>
+                                    <graph_links/>
+                                </c>
+                            </components>
+                        </l>
+                        <l id="33" tile="data/tiles/mega_island_12_7.xml" name="MEGA_ISLAND_12_7" is_env_mod="true" env_mod_spawn_num="1">
+                            <components>
+                                <c component_type="10" id="40" vehicle_parent_id="0" cargo_zone_import_cargo_type="cc_teleport_zone" display_name="Oneill Train" is_sea_floor_object="false" show_zone_on_map="false" zone_type="0" zone_radius="2.5" dynamic_object_type="2" loot_type="0" character_outfit_category="11" character_type="1" character_special_outfit="0" vehicle_file_name="" vehicle_file_store="1" vehicle_is_static="false" vehicle_is_no_sleep="false" vehicle_is_editable="false" vehicle_is_invulnerable="false" vehicle_is_show_on_map="false" vehicle_is_transponder_active="false" is_fire_lit="true" is_explosion="false" explosion_magnitude="1" flare_hue="0" is_flare_lit="true" vehicle_button_name="" ice_type="0" ice_scale="1" animal_type="0">
+                                    <spawn_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="-248.187637" 31="5.293207" 32="-381.36322" 33="1"/>
+                                    <spawn_bounds>
+                                        <min x="-0.940648" y="-1.591864" z="-0.889943"/>
+                                        <max x="0.940648" y="1.591864" z="0.889943"/>
+                                    </spawn_bounds>
+                                    <vehicle_parent_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0" 31="0" 32="0" 33="1"/>
+                                    <spawn_local_offset x="-0" y="-0" z="-0"/>
+                                    <graph_links/>
+                                </c>
+                            </components>
+                        </l>
+                        <l id="34" tile="data/tiles/mega_island_8_7.xml" name="HOLT TOWN" is_env_mod="true" env_mod_spawn_num="1">
+                            <components>
+                                <c component_type="10" id="39" vehicle_parent_id="0" cargo_zone_import_cargo_type="cc_teleport_zone" display_name="Holt Town" is_sea_floor_object="false" show_zone_on_map="false" zone_type="0" zone_radius="2.5" dynamic_object_type="2" loot_type="0" character_outfit_category="11" character_type="1" character_special_outfit="0" vehicle_file_name="" vehicle_file_store="1" vehicle_is_static="false" vehicle_is_no_sleep="false" vehicle_is_editable="false" vehicle_is_invulnerable="false" vehicle_is_show_on_map="false" vehicle_is_transponder_active="false" is_fire_lit="true" is_explosion="false" explosion_magnitude="1" flare_hue="0" is_flare_lit="true" vehicle_button_name="" ice_type="0" ice_scale="1" animal_type="0">
+                                    <spawn_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="-5.327892" 31="11.983774" 32="219.949432" 33="1"/>
+                                    <spawn_bounds>
+                                        <min x="-0.870118" y="-1.616509" z="-0.821981"/>
+                                        <max x="0.870118" y="1.616509" z="0.821981"/>
+                                    </spawn_bounds>
+                                    <vehicle_parent_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0" 31="0" 32="0" 33="1"/>
+                                    <spawn_local_offset x="-0" y="-0" z="-0"/>
+                                    <graph_links/>
+                                </c>
+                            </components>
+                        </l>
+                        <l id="35" tile="data/tiles/mega_island_14_0.xml" name="LIGHTHOUSE FRANTIC" is_env_mod="true" env_mod_spawn_num="1">
+                            <components>
+                                <c component_type="10" id="41" vehicle_parent_id="0" cargo_zone_import_cargo_type="cc_teleport_zone" display_name="Lighthouse Frantic" is_sea_floor_object="false" show_zone_on_map="false" zone_type="0" zone_radius="2.5" dynamic_object_type="2" loot_type="0" character_outfit_category="11" character_type="1" character_special_outfit="0" vehicle_file_name="" vehicle_file_store="1" vehicle_is_static="false" vehicle_is_no_sleep="false" vehicle_is_editable="false" vehicle_is_invulnerable="false" vehicle_is_show_on_map="false" vehicle_is_transponder_active="false" is_fire_lit="true" is_explosion="false" explosion_magnitude="1" flare_hue="0" is_flare_lit="true" vehicle_button_name="" ice_type="0" ice_scale="1" animal_type="0">
+                                    <spawn_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="185.904938" 31="34.877506" 32="-96.348579" 33="1"/>
+                                    <spawn_bounds>
+                                        <min x="-0.780154" y="-1.243702" z="-0.753807"/>
+                                        <max x="0.780154" y="1.243702" z="0.753807"/>
+                                    </spawn_bounds>
+                                    <vehicle_parent_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0" 31="0" 32="0" 33="1"/>
+                                    <spawn_local_offset x="-0" y="-0" z="-0"/>
+                                    <graph_links/>
+                                </c>
+                            </components>
+                        </l>
+                    </locations>
+                </locations>
+            </p>
+        </playlists>
+    </missions_global>
+    <ocean tsunami_magnitude="0" tsunami_offset="0" tsunami_lifetime="0" tsunami_state="2" tsunami_base_time="0" ocean_time="162">
+        <tsunami_direction x="0" y="1"/>
+    </ocean>
+    <tech_tree>
+        <active_research/>
+    </tech_tree>
+    <cargo>
+        <zone unique_id="1" component_type="10" vehicle_parent_id="0" display_name="Beginner" tags="cc_teleport_zone" zone_type="0" zone_radius="2.5" dynamic_object_id="0" global_vehicle_id="0" vehicle_button_name="" show_zone_on_map="false">
+            <spawn_position_world x="-31.726444" y="7.098042" z="16.837233"/>
+            <parent_relative_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0" 31="0" 32="0" 33="1"/>
+            <transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="-31.726444" 31="7.098042" 32="16.837233" 33="1"/>
+            <zone_box>
+                <min x="-0.633505" y="-1.501794" z="-0.724616"/>
+                <max x="0.633505" y="1.501794" z="0.724616"/>
+            </zone_box>
+            <vehicle_button_position x="0" y="0" z="0"/>
+            <cargo_zone_import_cargo_type_string>
+                <s value="cc_teleport_zone"/>
+            </cargo_zone_import_cargo_type_string>
+        </zone>
+        <zone unique_id="2" component_type="10" vehicle_parent_id="0" display_name="Creative" tags="cc_teleport_zone" zone_type="0" zone_radius="2.5" dynamic_object_id="0" global_vehicle_id="0" vehicle_button_name="" show_zone_on_map="false">
+            <spawn_position_world x="-16246.767151" y="8.761193" z="4076.994507"/>
+            <parent_relative_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0" 31="0" 32="0" 33="1"/>
+            <transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="-16246.767151" 31="8.761193" 32="4076.994507" 33="1"/>
+            <zone_box>
+                <min x="-0.889366" y="-1.587359" z="-0.902755"/>
+                <max x="0.889366" y="1.587359" z="0.902755"/>
+            </zone_box>
+            <vehicle_button_position x="0" y="0" z="0"/>
+            <cargo_zone_import_cargo_type_string>
+                <s value="cc_teleport_zone"/>
+            </cargo_zone_import_cargo_type_string>
+        </zone>
+        <zone unique_id="3" component_type="10" vehicle_parent_id="0" display_name="Creative Dock" tags="cc_teleport_zone" zone_type="0" zone_radius="2.5" dynamic_object_id="0" global_vehicle_id="0" vehicle_button_name="" show_zone_on_map="false">
+            <spawn_position_world x="-16209.050247" y="6.431345" z="3956.825638"/>
+            <parent_relative_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0" 31="0" 32="0" 33="1"/>
+            <transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="-16209.050247" 31="6.431345" 32="3956.825638" 33="1"/>
+            <zone_box>
+                <min x="-0.688686" y="-1.668713" z="-0.794511"/>
+                <max x="0.688686" y="1.668713" z="0.794511"/>
+            </zone_box>
+            <vehicle_button_position x="0" y="0" z="0"/>
+            <cargo_zone_import_cargo_type_string>
+                <s value="cc_teleport_zone"/>
+            </cargo_zone_import_cargo_type_string>
+        </zone>
+        <zone unique_id="4" component_type="10" vehicle_parent_id="0" display_name="Helicopter" tags="cc_teleport_zone" zone_type="0" zone_radius="2.5" dynamic_object_id="0" global_vehicle_id="0" vehicle_button_name="" show_zone_on_map="false">
+            <spawn_position_world x="14997.211209" y="10.604795" z="3990.395847"/>
+            <parent_relative_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0" 31="0" 32="0" 33="1"/>
+            <transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="14997.211209" 31="10.604795" 32="3990.395847" 33="1"/>
+            <zone_box>
+                <min x="-0.623078" y="-1.487205" z="-0.768032"/>
+                <max x="0.623078" y="1.487205" z="0.768032"/>
+            </zone_box>
+            <vehicle_button_position x="0" y="0" z="0"/>
+            <cargo_zone_import_cargo_type_string>
+                <s value="cc_teleport_zone"/>
+            </cargo_zone_import_cargo_type_string>
+        </zone>
+        <zone unique_id="5" component_type="10" vehicle_parent_id="0" display_name="Harbour Base" tags="cc_teleport_zone" zone_type="0" zone_radius="2.5" dynamic_object_id="0" global_vehicle_id="0" vehicle_button_name="" show_zone_on_map="false">
+            <spawn_position_world x="12083.537941" y="8.354757" z="4919.528152"/>
+            <parent_relative_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0" 31="0" 32="0" 33="1"/>
+            <transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="12083.537941" 31="8.354757" 32="4919.528152" 33="1"/>
+            <zone_box>
+                <min x="-0.615645" y="-1.393824" z="-0.625001"/>
+                <max x="0.615645" y="1.393824" z="0.625001"/>
+            </zone_box>
+            <vehicle_button_position x="0" y="0" z="0"/>
+            <cargo_zone_import_cargo_type_string>
+                <s value="cc_teleport_zone"/>
+            </cargo_zone_import_cargo_type_string>
+        </zone>
+        <zone unique_id="6" component_type="10" vehicle_parent_id="0" display_name="Airstrip Base" tags="cc_teleport_zone" zone_type="0" zone_radius="2.5" dynamic_object_id="0" global_vehicle_id="0" vehicle_button_name="" show_zone_on_map="false">
+            <spawn_position_world x="9998.359587" y="8.16149" z="18008.051137"/>
+            <parent_relative_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0" 31="0" 32="0" 33="1"/>
+            <transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="9998.359587" 31="8.16149" 32="18008.051137" 33="1"/>
+            <zone_box>
+                <min x="-0.659043" y="-1.333791" z="-0.638451"/>
+                <max x="0.659043" y="1.333791" z="0.638451"/>
+            </zone_box>
+            <vehicle_button_position x="0" y="0" z="0"/>
+            <cargo_zone_import_cargo_type_string>
+                <s value="cc_teleport_zone"/>
+            </cargo_zone_import_cargo_type_string>
+        </zone>
+        <zone unique_id="7" component_type="10" vehicle_parent_id="0" display_name="Hospital" tags="cc_teleport_zone" zone_type="0" zone_radius="2.5" dynamic_object_id="0" global_vehicle_id="0" vehicle_button_name="" show_zone_on_map="false">
+            <spawn_position_world x="100.203148" y="16.67297" z="-938.885086"/>
+            <parent_relative_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0" 31="0" 32="0" 33="1"/>
+            <transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="100.203148" 31="16.67297" 32="-938.885086" 33="1"/>
+            <zone_box>
+                <min x="-0.671065" y="-1.261908" z="-0.652745"/>
+                <max x="0.671065" y="1.261908" z="0.652745"/>
+            </zone_box>
+            <vehicle_button_position x="0" y="0" z="0"/>
+            <cargo_zone_import_cargo_type_string>
+                <s value="cc_teleport_zone"/>
+            </cargo_zone_import_cargo_type_string>
+        </zone>
+        <zone unique_id="8" component_type="10" vehicle_parent_id="0" display_name="Science" tags="cc_teleport_zone" zone_type="0" zone_radius="2.5" dynamic_object_id="0" global_vehicle_id="0" vehicle_button_name="" show_zone_on_map="false">
+            <spawn_position_world x="-2940.889671" y="21.672232" z="-12995.46497"/>
+            <parent_relative_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0" 31="0" 32="0" 33="1"/>
+            <transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="-2940.889671" 31="21.672232" 32="-12995.46497" 33="1"/>
+            <zone_box>
+                <min x="-0.664408" y="-1.382656" z="-0.701137"/>
+                <max x="0.664408" y="1.382656" z="0.701137"/>
+            </zone_box>
+            <vehicle_button_position x="0" y="0" z="0"/>
+            <cargo_zone_import_cargo_type_string>
+                <s value="cc_teleport_zone"/>
+            </cargo_zone_import_cargo_type_string>
+        </zone>
+        <zone unique_id="9" component_type="10" vehicle_parent_id="0" display_name="Police" tags="cc_teleport_zone" zone_type="0" zone_radius="2.5" dynamic_object_id="0" global_vehicle_id="0" vehicle_button_name="" show_zone_on_map="false">
+            <spawn_position_world x="11039.200718" y="19.49601" z="-2023.903584"/>
+            <parent_relative_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0" 31="0" 32="0" 33="1"/>
+            <transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="11039.200718" 31="19.49601" 32="-2023.903584" 33="1"/>
+            <zone_box>
+                <min x="-0.716493" y="-1.144993" z="-0.620657"/>
+                <max x="0.716493" y="1.144993" z="0.620657"/>
+            </zone_box>
+            <vehicle_button_position x="0" y="0" z="0"/>
+            <cargo_zone_import_cargo_type_string>
+                <s value="cc_teleport_zone"/>
+            </cargo_zone_import_cargo_type_string>
+        </zone>
+        <zone unique_id="10" component_type="10" vehicle_parent_id="0" display_name="Airport" tags="cc_teleport_zone" zone_type="0" zone_radius="2.5" dynamic_object_id="0" global_vehicle_id="0" vehicle_button_name="" show_zone_on_map="false">
+            <spawn_position_world x="-3021.95293" y="30.203009" z="12108.017433"/>
+            <parent_relative_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0" 31="0" 32="0" 33="1"/>
+            <transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="-3021.95293" 31="30.203009" 32="12108.017433" 33="1"/>
+            <zone_box>
+                <min x="-0.679105" y="-1.286941" z="-0.650292"/>
+                <max x="0.679105" y="1.286941" z="0.650292"/>
+            </zone_box>
+            <vehicle_button_position x="0" y="0" z="0"/>
+            <cargo_zone_import_cargo_type_string>
+                <s value="cc_teleport_zone"/>
+            </cargo_zone_import_cargo_type_string>
+        </zone>
+        <zone unique_id="11" component_type="10" vehicle_parent_id="0" display_name="Nuclear" tags="cc_teleport_zone" zone_type="0" zone_radius="2.5" dynamic_object_id="0" global_vehicle_id="0" vehicle_button_name="" show_zone_on_map="false">
+            <spawn_position_world x="-16972.067421" y="9.481975" z="4084.741089"/>
+            <parent_relative_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0" 31="0" 32="0" 33="1"/>
+            <transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="-16972.067421" 31="9.481975" 32="4084.741089" 33="1"/>
+            <zone_box>
+                <min x="-0.704577" y="-1.24947" z="-0.702677"/>
+                <max x="0.704577" y="1.24947" z="0.702677"/>
+            </zone_box>
+            <vehicle_button_position x="0" y="0" z="0"/>
+            <cargo_zone_import_cargo_type_string>
+                <s value="cc_teleport_zone"/>
+            </cargo_zone_import_cargo_type_string>
+        </zone>
+        <zone unique_id="12" component_type="10" vehicle_parent_id="0" display_name="Fishing Village" tags="cc_teleport_zone" zone_type="0" zone_radius="2.5" dynamic_object_id="0" global_vehicle_id="0" vehicle_button_name="" show_zone_on_map="false">
+            <spawn_position_world x="21.912289" y="7.525854" z="-13043.10886"/>
+            <parent_relative_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0" 31="0" 32="0" 33="1"/>
+            <transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="21.912289" 31="7.525854" 32="-13043.10886" 33="1"/>
+            <zone_box>
+                <min x="-0.646252" y="-1.154862" z="-0.621098"/>
+                <max x="0.646252" y="1.154862" z="0.621098"/>
+            </zone_box>
+            <vehicle_button_position x="0" y="0" z="0"/>
+            <cargo_zone_import_cargo_type_string>
+                <s value="cc_teleport_zone"/>
+            </cargo_zone_import_cargo_type_string>
+        </zone>
+        <zone unique_id="13" component_type="10" vehicle_parent_id="0" display_name="Observatory" tags="cc_teleport_zone" zone_type="0" zone_radius="2.5" dynamic_object_id="0" global_vehicle_id="0" vehicle_button_name="" show_zone_on_map="false">
+            <spawn_position_world x="4034.280003" y="9.574191" z="16043.324558"/>
+            <parent_relative_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0" 31="0" 32="0" 33="1"/>
+            <transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="4034.280003" 31="9.574191" 32="16043.324558" 33="1"/>
+            <zone_box>
+                <min x="-0.622706" y="-1.246131" z="-0.670642"/>
+                <max x="0.622706" y="1.246131" z="0.670642"/>
+            </zone_box>
+            <vehicle_button_position x="0" y="0" z="0"/>
+            <cargo_zone_import_cargo_type_string>
+                <s value="cc_teleport_zone"/>
+            </cargo_zone_import_cargo_type_string>
+        </zone>
+        <zone unique_id="14" component_type="10" vehicle_parent_id="0" display_name="Sea Fort" tags="cc_teleport_zone" zone_type="0" zone_radius="2.5" dynamic_object_id="0" global_vehicle_id="0" vehicle_button_name="" show_zone_on_map="false">
+            <spawn_position_world x="-13043.917664" y="15.75914" z="983.63344"/>
+            <parent_relative_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0" 31="0" 32="0" 33="1"/>
+            <transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="-13043.917664" 31="15.75914" 32="983.63344" 33="1"/>
+            <zone_box>
+                <min x="-0.679506" y="-1.280515" z="-0.640389"/>
+                <max x="0.679506" y="1.280515" z="0.640389"/>
+            </zone_box>
+            <vehicle_button_position x="0" y="0" z="0"/>
+            <cargo_zone_import_cargo_type_string>
+                <s value="cc_teleport_zone"/>
+            </cargo_zone_import_cargo_type_string>
+        </zone>
+        <zone unique_id="15" component_type="10" vehicle_parent_id="0" display_name="Military" tags="cc_teleport_zone" zone_type="0" zone_radius="2.5" dynamic_object_id="0" global_vehicle_id="0" vehicle_button_name="" show_zone_on_map="false">
+            <spawn_position_world x="84.116859" y="24.994837" z="-14013.415521"/>
+            <parent_relative_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0" 31="0" 32="0" 33="1"/>
+            <transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="84.116859" 31="24.994837" 32="-14013.415521" 33="1"/>
+            <zone_box>
+                <min x="-0.758356" y="-1.382493" z="-0.832741"/>
+                <max x="0.758356" y="1.382493" z="0.832741"/>
+            </zone_box>
+            <vehicle_button_position x="0" y="0" z="0"/>
+            <cargo_zone_import_cargo_type_string>
+                <s value="cc_teleport_zone"/>
+            </cargo_zone_import_cargo_type_string>
+        </zone>
+        <zone unique_id="16" component_type="10" vehicle_parent_id="0" display_name="Spycakes" tags="cc_teleport_zone" zone_type="0" zone_radius="2.5" dynamic_object_id="0" global_vehicle_id="0" vehicle_button_name="" show_zone_on_map="false">
+            <spawn_position_world x="-20042.367699" y="19.707535" z="-4730.102081"/>
+            <parent_relative_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0" 31="0" 32="0" 33="1"/>
+            <transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="-20042.367699" 31="19.707535" 32="-4730.102081" 33="1"/>
+            <zone_box>
+                <min x="-0.533755" y="-1.155907" z="-0.610506"/>
+                <max x="0.533755" y="1.155907" z="0.610506"/>
+            </zone_box>
+            <vehicle_button_position x="0" y="0" z="0"/>
+            <cargo_zone_import_cargo_type_string>
+                <s value="cc_teleport_zone"/>
+            </cargo_zone_import_cargo_type_string>
+        </zone>
+        <zone unique_id="17" component_type="10" vehicle_parent_id="0" display_name="Spycakes Dock" tags="cc_teleport_zone" zone_type="0" zone_radius="2.5" dynamic_object_id="0" global_vehicle_id="0" vehicle_button_name="" show_zone_on_map="false">
+            <spawn_position_world x="-19877.957214" y="9.315493" z="-4804.717361"/>
+            <parent_relative_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0" 31="0" 32="0" 33="1"/>
+            <transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="-19877.957214" 31="9.315493" 32="-4804.717361" 33="1"/>
+            <zone_box>
+                <min x="-0.617528" y="-1.249889" z="-0.540652"/>
+                <max x="0.617528" y="1.249889" z="0.540652"/>
+            </zone_box>
+            <vehicle_button_position x="0" y="0" z="0"/>
+            <cargo_zone_import_cargo_type_string>
+                <s value="cc_teleport_zone"/>
+            </cargo_zone_import_cargo_type_string>
+        </zone>
+        <zone unique_id="18" component_type="10" vehicle_parent_id="0" display_name="Donkk Strip" tags="cc_teleport_zone" zone_type="0" zone_radius="2.5" dynamic_object_id="0" global_vehicle_id="0" vehicle_button_name="" show_zone_on_map="false">
+            <spawn_position_world x="-19164.977783" y="10.820162" z="-4683.504425"/>
+            <parent_relative_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0" 31="0" 32="0" 33="1"/>
+            <transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="-19164.977783" 31="10.820162" 32="-4683.504425" 33="1"/>
+            <zone_box>
+                <min x="-0.594615" y="-1.207282" z="-0.570539"/>
+                <max x="0.594615" y="1.207282" z="0.570539"/>
+            </zone_box>
+            <vehicle_button_position x="0" y="0" z="0"/>
+            <cargo_zone_import_cargo_type_string>
+                <s value="cc_teleport_zone"/>
+            </cargo_zone_import_cargo_type_string>
+        </zone>
+        <zone unique_id="19" component_type="10" vehicle_parent_id="0" display_name="Camodo" tags="cc_teleport_zone" zone_type="0" zone_radius="2.5" dynamic_object_id="0" global_vehicle_id="0" vehicle_button_name="" show_zone_on_map="false">
+            <spawn_position_world x="-13005.802949" y="19.29661" z="-2833.552582"/>
+            <parent_relative_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0" 31="0" 32="0" 33="1"/>
+            <transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="-13005.802949" 31="19.29661" 32="-2833.552582" 33="1"/>
+            <zone_box>
+                <min x="-0.61937" y="-1.171474" z="-0.627058"/>
+                <max x="0.61937" y="1.171474" z="0.627058"/>
+            </zone_box>
+            <vehicle_button_position x="0" y="0" z="0"/>
+            <cargo_zone_import_cargo_type_string>
+                <s value="cc_teleport_zone"/>
+            </cargo_zone_import_cargo_type_string>
+        </zone>
+        <zone unique_id="20" component_type="10" vehicle_parent_id="0" display_name="Camodo Dock" tags="cc_teleport_zone" zone_type="0" zone_radius="2.5" dynamic_object_id="0" global_vehicle_id="0" vehicle_button_name="" show_zone_on_map="false">
+            <spawn_position_world x="-13136.109543" y="9.033527" z="-2966.815956"/>
+            <parent_relative_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0" 31="0" 32="0" 33="1"/>
+            <transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="-13136.109543" 31="9.033527" 32="-2966.815956" 33="1"/>
+            <zone_box>
+                <min x="-0.569892" y="-1.264337" z="-0.605489"/>
+                <max x="0.569892" y="1.264337" z="0.605489"/>
+            </zone_box>
+            <vehicle_button_position x="0" y="0" z="0"/>
+            <cargo_zone_import_cargo_type_string>
+                <s value="cc_teleport_zone"/>
+            </cargo_zone_import_cargo_type_string>
+        </zone>
+        <zone unique_id="21" component_type="10" vehicle_parent_id="0" display_name="Leopards Base" tags="cc_teleport_zone, map_label=10" zone_type="0" zone_radius="2.5" dynamic_object_id="0" global_vehicle_id="0" vehicle_button_name="" show_zone_on_map="false">
+            <spawn_position_world x="992.396362" y="8.557174" z="10984.588275"/>
+            <parent_relative_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0" 31="0" 32="0" 33="1"/>
+            <transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="992.396362" 31="8.557174" 32="10984.588275" 33="1"/>
+            <zone_box>
+                <min x="-0.811858" y="-1.407617" z="-0.800895"/>
+                <max x="0.811858" y="1.407617" z="0.800895"/>
+            </zone_box>
+            <vehicle_button_position x="0" y="0" z="0"/>
+            <cargo_zone_import_cargo_type_string>
+                <s value="cc_teleport_zone"/>
+                <s value=" map_label=10"/>
+            </cargo_zone_import_cargo_type_string>
+        </zone>
+        <zone unique_id="22" component_type="10" vehicle_parent_id="0" display_name="Helicopter2" tags="cc_teleport_zone" zone_type="0" zone_radius="2.5" dynamic_object_id="0" global_vehicle_id="0" vehicle_button_name="" show_zone_on_map="false">
+            <spawn_position_world x="-6999.330989" y="19.380442" z="-13991.641087"/>
+            <parent_relative_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0" 31="0" 32="0" 33="1"/>
+            <transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="-6999.330989" 31="19.380442" 32="-13991.641087" 33="1"/>
+            <zone_box>
+                <min x="-0.646844" y="-1.298594" z="-0.618323"/>
+                <max x="0.646844" y="1.298594" z="0.618323"/>
+            </zone_box>
+            <vehicle_button_position x="0" y="0" z="0"/>
+            <cargo_zone_import_cargo_type_string>
+                <s value="cc_teleport_zone"/>
+            </cargo_zone_import_cargo_type_string>
+        </zone>
+        <zone unique_id="23" component_type="10" vehicle_parent_id="0" display_name="Custom Boat" tags="cc_teleport_zone" zone_type="0" zone_radius="2.5" dynamic_object_id="0" global_vehicle_id="0" vehicle_button_name="" show_zone_on_map="false">
+            <spawn_position_world x="11999.805816" y="7.195685" z="-12019.101391"/>
+            <parent_relative_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0" 31="0" 32="0" 33="1"/>
+            <transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="11999.805816" 31="7.195685" 32="-12019.101391" 33="1"/>
+            <zone_box>
+                <min x="-0.686637" y="-1.52505" z="-0.797168"/>
+                <max x="0.686637" y="1.52505" z="0.797168"/>
+            </zone_box>
+            <vehicle_button_position x="0" y="0" z="0"/>
+            <cargo_zone_import_cargo_type_string>
+                <s value="cc_teleport_zone"/>
+            </cargo_zone_import_cargo_type_string>
+        </zone>
+        <zone unique_id="24" component_type="10" vehicle_parent_id="0" display_name="Custom Oil Rig" tags="cc_teleport_zone" zone_type="0" zone_radius="2.5" dynamic_object_id="0" global_vehicle_id="0" vehicle_button_name="" show_zone_on_map="false">
+            <spawn_position_world x="5017.106518" y="15.606965" z="-1969.267534"/>
+            <parent_relative_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0" 31="0" 32="0" 33="1"/>
+            <transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="5017.106518" 31="15.606965" 32="-1969.267534" 33="1"/>
+            <zone_box>
+                <min x="-0.541345" y="-1.296341" z="-0.567234"/>
+                <max x="0.541345" y="1.296341" z="0.567234"/>
+            </zone_box>
+            <vehicle_button_position x="0" y="0" z="0"/>
+            <cargo_zone_import_cargo_type_string>
+                <s value="cc_teleport_zone"/>
+            </cargo_zone_import_cargo_type_string>
+        </zone>
+        <zone unique_id="25" component_type="10" vehicle_parent_id="0" display_name="Underwater Caves" tags="cc_teleport_zone" zone_type="0" zone_radius="2.5" dynamic_object_id="0" global_vehicle_id="0" vehicle_button_name="" show_zone_on_map="false">
+            <spawn_position_world x="855.890549" y="-70.356071" z="4885.229683"/>
+            <parent_relative_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0" 31="0" 32="0" 33="1"/>
+            <transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="855.890549" 31="-70.356071" 32="4885.229683" 33="1"/>
+            <zone_box>
+                <min x="-0.933686" y="-1.366456" z="-0.912159"/>
+                <max x="0.933686" y="1.366456" z="0.912159"/>
+            </zone_box>
+            <vehicle_button_position x="0" y="0" z="0"/>
+            <cargo_zone_import_cargo_type_string>
+                <s value="cc_teleport_zone"/>
+            </cargo_zone_import_cargo_type_string>
+        </zone>
+        <zone unique_id="26" component_type="10" vehicle_parent_id="0" display_name="Endo" tags="cc_teleport_zone" zone_type="0" zone_radius="2.5" dynamic_object_id="0" global_vehicle_id="0" vehicle_button_name="" show_zone_on_map="false">
+            <spawn_position_world x="-20997.270116" y="18.981401" z="89608.869751"/>
+            <parent_relative_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0" 31="0" 32="0" 33="1"/>
+            <transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="-20997.270116" 31="18.981401" 32="89608.869751" 33="1"/>
+            <zone_box>
+                <min x="-0.587871" y="-1.174948" z="-0.556914"/>
+                <max x="0.587871" y="1.174948" z="0.556914"/>
+            </zone_box>
+            <vehicle_button_position x="0" y="0" z="0"/>
+            <cargo_zone_import_cargo_type_string>
+                <s value="cc_teleport_zone"/>
+            </cargo_zone_import_cargo_type_string>
+        </zone>
+        <zone unique_id="27" component_type="10" vehicle_parent_id="0" display_name="Tajin" tags="cc_teleport_zone" zone_type="0" zone_radius="2.5" dynamic_object_id="0" global_vehicle_id="0" vehicle_button_name="" show_zone_on_map="false">
+            <spawn_position_world x="-23137.900055" y="26.827305" z="91256.465881"/>
+            <parent_relative_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0" 31="0" 32="0" 33="1"/>
+            <transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="-23137.900055" 31="26.827305" 32="91256.465881" 33="1"/>
+            <zone_box>
+                <min x="-0.780802" y="-1.564561" z="-0.671705"/>
+                <max x="0.780802" y="1.564561" z="0.671705"/>
+            </zone_box>
+            <vehicle_button_position x="0" y="0" z="0"/>
+            <cargo_zone_import_cargo_type_string>
+                <s value="cc_teleport_zone"/>
+            </cargo_zone_import_cargo_type_string>
+        </zone>
+        <zone unique_id="28" component_type="10" vehicle_parent_id="0" display_name="Tajin Dock" tags="cc_teleport_zone" zone_type="0" zone_radius="2.5" dynamic_object_id="0" global_vehicle_id="0" vehicle_button_name="" show_zone_on_map="false">
+            <spawn_position_world x="-22776.055679" y="8.411365" z="91260.408051"/>
+            <parent_relative_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0" 31="0" 32="0" 33="1"/>
+            <transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="-22776.055679" 31="8.411365" 32="91260.408051" 33="1"/>
+            <zone_box>
+                <min x="-0.442582" y="-1.294971" z="-0.490915"/>
+                <max x="0.442582" y="1.294971" z="0.490915"/>
+            </zone_box>
+            <vehicle_button_position x="0" y="0" z="0"/>
+            <cargo_zone_import_cargo_type_string>
+                <s value="cc_teleport_zone"/>
+            </cargo_zone_import_cargo_type_string>
+        </zone>
+        <zone unique_id="29" component_type="10" vehicle_parent_id="0" display_name="Volcano" tags="cc_teleport_zone" zone_type="0" zone_radius="2.5" dynamic_object_id="0" global_vehicle_id="0" vehicle_button_name="" show_zone_on_map="false">
+            <spawn_position_world x="-20231.851807" y="219.174545" z="99627.90387"/>
+            <parent_relative_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0" 31="0" 32="0" 33="1"/>
+            <transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="-20231.851807" 31="219.174545" 32="99627.90387" 33="1"/>
+            <zone_box>
+                <min x="-0.779204" y="-1.299588" z="-0.783977"/>
+                <max x="0.779204" y="1.299588" z="0.783977"/>
+            </zone_box>
+            <vehicle_button_position x="0" y="0" z="0"/>
+            <cargo_zone_import_cargo_type_string>
+                <s value="cc_teleport_zone"/>
+            </cargo_zone_import_cargo_type_string>
+        </zone>
+        <zone unique_id="30" component_type="10" vehicle_parent_id="0" display_name="Multiplayer" tags="cc_teleport_zone" zone_type="0" zone_radius="2.5" dynamic_object_id="0" global_vehicle_id="0" vehicle_button_name="" show_zone_on_map="false">
+            <spawn_position_world x="-16104.38517" y="16.869673" z="-17892.589752"/>
+            <parent_relative_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0" 31="0" 32="0" 33="1"/>
+            <transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="-16104.38517" 31="16.869673" 32="-17892.589752" 33="1"/>
+            <zone_box>
+                <min x="-0.599521" y="-1.184614" z="-0.660629"/>
+                <max x="0.599521" y="1.184614" z="0.660629"/>
+            </zone_box>
+            <vehicle_button_position x="0" y="0" z="0"/>
+            <cargo_zone_import_cargo_type_string>
+                <s value="cc_teleport_zone"/>
+            </cargo_zone_import_cargo_type_string>
+        </zone>
+        <zone unique_id="31" component_type="10" vehicle_parent_id="0" display_name="Multiplayer Dock" tags="cc_teleport_zone" zone_type="0" zone_radius="2.5" dynamic_object_id="0" global_vehicle_id="0" vehicle_button_name="" show_zone_on_map="false">
+            <spawn_position_world x="-15612.166748" y="10.913135" z="-18151.698914"/>
+            <parent_relative_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0" 31="0" 32="0" 33="1"/>
+            <transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="-15612.166748" 31="10.913135" 32="-18151.698914" 33="1"/>
+            <zone_box>
+                <min x="-0.561638" y="-1.081752" z="-0.61623"/>
+                <max x="0.561638" y="1.081752" z="0.61623"/>
+            </zone_box>
+            <vehicle_button_position x="0" y="0" z="0"/>
+            <cargo_zone_import_cargo_type_string>
+                <s value="cc_teleport_zone"/>
+            </cargo_zone_import_cargo_type_string>
+        </zone>
+        <zone unique_id="32" component_type="10" vehicle_parent_id="0" display_name="Oneill" tags="cc_teleport_zone" zone_type="0" zone_radius="2.5" dynamic_object_id="0" global_vehicle_id="0" vehicle_button_name="" show_zone_on_map="false">
+            <spawn_position_world x="4113.507324" y="11.763499" z="-5926.275627"/>
+            <parent_relative_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0" 31="0" 32="0" 33="1"/>
+            <transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="4113.507324" 31="11.763499" 32="-5926.275627" 33="1"/>
+            <zone_box>
+                <min x="-0.622645" y="-1.335843" z="-0.736307"/>
+                <max x="0.622645" y="1.335843" z="0.736307"/>
+            </zone_box>
+            <vehicle_button_position x="0" y="0" z="0"/>
+            <cargo_zone_import_cargo_type_string>
+                <s value="cc_teleport_zone"/>
+            </cargo_zone_import_cargo_type_string>
+        </zone>
+        <zone unique_id="33" component_type="10" vehicle_parent_id="0" display_name="Sawyer Fishing Village" tags="cc_teleport_zone" zone_type="0" zone_radius="2.5" dynamic_object_id="0" global_vehicle_id="0" vehicle_button_name="" show_zone_on_map="false">
+            <spawn_position_world x="7170.705292" y="11.858775" z="-10399.213379"/>
+            <parent_relative_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0" 31="0" 32="0" 33="1"/>
+            <transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="7170.705292" 31="11.858775" 32="-10399.213379" 33="1"/>
+            <zone_box>
+                <min x="-0.649816" y="-1.569336" z="-0.69488"/>
+                <max x="0.649816" y="1.569336" z="0.69488"/>
+            </zone_box>
+            <vehicle_button_position x="0" y="0" z="0"/>
+            <cargo_zone_import_cargo_type_string>
+                <s value="cc_teleport_zone"/>
+            </cargo_zone_import_cargo_type_string>
+        </zone>
+        <zone unique_id="34" component_type="10" vehicle_parent_id="0" display_name="Harrison" tags="cc_teleport_zone" zone_type="0" zone_radius="2.5" dynamic_object_id="0" global_vehicle_id="0" vehicle_button_name="" show_zone_on_map="false">
+            <spawn_position_world x="-5920.911659" y="15.861111" z="-6106.711212"/>
+            <parent_relative_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0" 31="0" 32="0" 33="1"/>
+            <transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="-5920.911659" 31="15.861111" 32="-6106.711212" 33="1"/>
+            <zone_box>
+                <min x="-0.74401" y="-1.421295" z="-0.689734"/>
+                <max x="0.74401" y="1.421295" z="0.689734"/>
+            </zone_box>
+            <vehicle_button_position x="0" y="0" z="0"/>
+            <cargo_zone_import_cargo_type_string>
+                <s value="cc_teleport_zone"/>
+            </cargo_zone_import_cargo_type_string>
+        </zone>
+        <zone unique_id="35" component_type="10" vehicle_parent_id="0" display_name="North Harbour" tags="cc_teleport_zone" zone_type="0" zone_radius="2.5" dynamic_object_id="0" global_vehicle_id="0" vehicle_button_name="" show_zone_on_map="false">
+            <spawn_position_world x="1323.262054" y="9.855494" z="-3765.83075"/>
+            <parent_relative_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0" 31="0" 32="0" 33="1"/>
+            <transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="1323.262054" 31="9.855494" 32="-3765.83075" 33="1"/>
+            <zone_box>
+                <min x="-0.560869" y="-1.190927" z="-0.665079"/>
+                <max x="0.560869" y="1.190927" z="0.665079"/>
+            </zone_box>
+            <vehicle_button_position x="0" y="0" z="0"/>
+            <cargo_zone_import_cargo_type_string>
+                <s value="cc_teleport_zone"/>
+            </cargo_zone_import_cargo_type_string>
+        </zone>
+        <zone unique_id="36" component_type="10" vehicle_parent_id="0" display_name="North Harbour Dock" tags="cc_teleport_zone" zone_type="0" zone_radius="2.5" dynamic_object_id="0" global_vehicle_id="0" vehicle_button_name="" show_zone_on_map="false">
+            <spawn_position_world x="1295.867645" y="7.079295" z="-3590.211334"/>
+            <parent_relative_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0" 31="0" 32="0" 33="1"/>
+            <transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="1295.867645" 31="7.079295" 32="-3590.211334" 33="1"/>
+            <zone_box>
+                <min x="-0.557192" y="-1.258572" z="-0.561593"/>
+                <max x="0.557192" y="1.258572" z="0.561593"/>
+            </zone_box>
+            <vehicle_button_position x="0" y="0" z="0"/>
+            <cargo_zone_import_cargo_type_string>
+                <s value="cc_teleport_zone"/>
+            </cargo_zone_import_cargo_type_string>
+        </zone>
+        <zone unique_id="37" component_type="10" vehicle_parent_id="0" display_name="Olsen" tags="cc_teleport_zone" zone_type="0" zone_radius="2.5" dynamic_object_id="0" global_vehicle_id="0" vehicle_button_name="" show_zone_on_map="false">
+            <spawn_position_world x="-5644.04718" y="9.691998" z="-3354.086151"/>
+            <parent_relative_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0" 31="0" 32="0" 33="1"/>
+            <transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="-5644.04718" 31="9.691998" 32="-3354.086151" 33="1"/>
+            <zone_box>
+                <min x="-0.695017" y="-1.31743" z="-0.660885"/>
+                <max x="0.695017" y="1.31743" z="0.660885"/>
+            </zone_box>
+            <vehicle_button_position x="0" y="0" z="0"/>
+            <cargo_zone_import_cargo_type_string>
+                <s value="cc_teleport_zone"/>
+            </cargo_zone_import_cargo_type_string>
+        </zone>
+        <zone unique_id="38" component_type="10" vehicle_parent_id="0" display_name="Sawyer Quarry" tags="cc_teleport_zone" zone_type="0" zone_radius="2.5" dynamic_object_id="0" global_vehicle_id="0" vehicle_button_name="" show_zone_on_map="false">
+            <spawn_position_world x="-853.331223" y="34.054657" z="-6032.465759"/>
+            <parent_relative_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0" 31="0" 32="0" 33="1"/>
+            <transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="-853.331223" 31="34.054657" 32="-6032.465759" 33="1"/>
+            <zone_box>
+                <min x="-0.677364" y="-1.57018" z="-0.637761"/>
+                <max x="0.677364" y="1.57018" z="0.637761"/>
+            </zone_box>
+            <vehicle_button_position x="0" y="0" z="0"/>
+            <cargo_zone_import_cargo_type_string>
+                <s value="cc_teleport_zone"/>
+            </cargo_zone_import_cargo_type_string>
+        </zone>
+        <zone unique_id="40" component_type="10" vehicle_parent_id="0" display_name="Oneill Train" tags="cc_teleport_zone" zone_type="0" zone_radius="2.5" dynamic_object_id="0" global_vehicle_id="0" vehicle_button_name="" show_zone_on_map="false">
+            <spawn_position_world x="3751.812363" y="5.293207" z="-5381.36322"/>
+            <parent_relative_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0" 31="0" 32="0" 33="1"/>
+            <transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="3751.812363" 31="5.293207" 32="-5381.36322" 33="1"/>
+            <zone_box>
+                <min x="-0.940648" y="-1.591864" z="-0.889943"/>
+                <max x="0.940648" y="1.591864" z="0.889943"/>
+            </zone_box>
+            <vehicle_button_position x="0" y="0" z="0"/>
+            <cargo_zone_import_cargo_type_string>
+                <s value="cc_teleport_zone"/>
+            </cargo_zone_import_cargo_type_string>
+        </zone>
+        <zone unique_id="39" component_type="10" vehicle_parent_id="0" display_name="Holt Town" tags="cc_teleport_zone" zone_type="0" zone_radius="2.5" dynamic_object_id="0" global_vehicle_id="0" vehicle_button_name="" show_zone_on_map="false">
+            <spawn_position_world x="-5.327892" y="11.983774" z="-4780.050568"/>
+            <parent_relative_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0" 31="0" 32="0" 33="1"/>
+            <transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="-5.327892" 31="11.983774" 32="-4780.050568" 33="1"/>
+            <zone_box>
+                <min x="-0.870118" y="-1.616509" z="-0.821981"/>
+                <max x="0.870118" y="1.616509" z="0.821981"/>
+            </zone_box>
+            <vehicle_button_position x="0" y="0" z="0"/>
+            <cargo_zone_import_cargo_type_string>
+                <s value="cc_teleport_zone"/>
+            </cargo_zone_import_cargo_type_string>
+        </zone>
+        <zone unique_id="41" component_type="10" vehicle_parent_id="0" display_name="Lighthouse Frantic" tags="cc_teleport_zone" zone_type="0" zone_radius="2.5" dynamic_object_id="0" global_vehicle_id="0" vehicle_button_name="" show_zone_on_map="false">
+            <spawn_position_world x="6185.904938" y="34.877506" z="-12096.348579"/>
+            <parent_relative_transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="0" 31="0" 32="0" 33="1"/>
+            <transform 00="1" 01="0" 02="0" 03="0" 10="0" 11="1" 12="0" 13="0" 20="0" 21="0" 22="1" 23="0" 30="6185.904938" 31="34.877506" 32="-12096.348579" 33="1"/>
+            <zone_box>
+                <min x="-0.780154" y="-1.243702" z="-0.753807"/>
+                <max x="0.780154" y="1.243702" z="0.753807"/>
+            </zone_box>
+            <vehicle_button_position x="0" y="0" z="0"/>
+            <cargo_zone_import_cargo_type_string>
+                <s value="cc_teleport_zone"/>
+            </cargo_zone_import_cargo_type_string>
+        </zone>
+    </cargo>
+    <ropes>
+        <inactive_ropes/>
+        <active_ropes/>
+    </ropes>
+    <env_data>
+        <fallout_data/>
+    </env_data>
+    <test_location>
+        <test_location/>
+        <test_location/>
+        <test_location/>
+    </test_location>
+    <scripts>
+        <scripts>
+            <s script_id="0" store="4" path="data/missions/Carsa's Commands"/>
+        </scripts>
+    </scripts>
+</scene>
+
