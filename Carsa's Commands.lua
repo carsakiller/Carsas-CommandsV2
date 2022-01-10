@@ -802,7 +802,7 @@ local EQUIPMENT_DATA = {
 			int = {
 				name = "count",
 				type = "int",
-				default = 3
+				default = 1
 			}
 		}
 	},
@@ -826,7 +826,14 @@ local EQUIPMENT_DATA = {
 	{ -- 34
 		name = "speargun ammo",
 		size = 2,
-		dlc = 'weapons'
+		dlc = 'weapons',
+		data = {
+			int = {
+				name = "ammo",
+				type = "int",
+				default = 8
+			}
+		}
 	},
 	{ -- 35
 		name = "pistol",
@@ -836,14 +843,21 @@ local EQUIPMENT_DATA = {
 			int = {
 				name = "ammo",
 				type = "int",
-				default = 1
+				default = 17
 			}
 		}
 	},
 	{ -- 36
 		name = "pistol ammo",
 		size = 2,
-		dlc = 'weapons'
+		dlc = 'weapons',
+		data = {
+			int = {
+				name = "ammo",
+				type = "int",
+				default = 17
+			}
+		}
 	},
 	{ -- 37
 		name = "smg",
@@ -853,14 +867,21 @@ local EQUIPMENT_DATA = {
 			int = {
 				name = "ammo",
 				type = "int",
-				default = 1
+				default = 40
 			}
 		}
 	},
 	{ -- 38
 		name = "smg ammo",
 		size = 2,
-		dlc = 'weapons'
+		dlc = 'weapons',
+		data = {
+			int = {
+				name = "ammo",
+				type = "int",
+				default = 40
+			}
+		}
 	},
 	{ -- 39
 		name = "rifle",
@@ -870,14 +891,21 @@ local EQUIPMENT_DATA = {
 			int = {
 				name = "ammo",
 				type = "int",
-				default = 1
+				default = 30
 			}
 		}
 	},
 	{ -- 40
 		name = "rifle ammo",
 		size = 2,
-		dlc = 'weapons'
+		dlc = 'weapons',
+		data = {
+			int = {
+				name = "ammo",
+				type = "int",
+				default = 30
+			}
+		}
 	},
 	{ -- 41
 		name = "grenade",
@@ -887,159 +915,369 @@ local EQUIPMENT_DATA = {
 			int = {
 				name = "count",
 				type = "int",
-				default = 3
+				default = 1
 			}
 		}
 	},
 	{ -- 42
 		name = "MG ammo box",
 		size = 2,
-		dlc = 'weapons'
+		dlc = 'weapons',
+		data = {
+			int = {
+				name = "ammo",
+				type = "int",
+				default = 50
+			}
+		}
 	},
 	{ -- 43
 		name = "MG HE ammo box",
 		size = 2,
-		dlc = 'weapons'
+		dlc = 'weapons',
+		data = {
+			int = {
+				name = "ammo",
+				type = "int",
+				default = 50
+			}
+		}
 	},
 	{ -- 44
 		name = "MG HE Frag ammo box",
 		size = 2,
-		dlc = 'weapons'
+		dlc = 'weapons',
+		data = {
+			int = {
+				name = "ammo",
+				type = "int",
+				default = 50
+			}
+		}
 	},
 	{ -- 45
 		name = "MG AP ammo box",
 		size = 2,
-		dlc = 'weapons'
+		dlc = 'weapons',
+		data = {
+			int = {
+				name = "ammo",
+				type = "int",
+				default = 50
+			}
+		}
 	},
 	{ -- 46
 		name = "MG Incendiary ammo box",
 		size = 2,
-		dlc = 'weapons'
+		dlc = 'weapons',
+		data = {
+			int = {
+				name = "ammo",
+				type = "int",
+				default = 50
+			}
+		}
 	},
 	{ -- 47
 		name = "Light ammo box",
 		size = 2,
-		dlc = 'weapons'
+		dlc = 'weapons',
+		data = {
+			int = {
+				name = "ammo",
+				type = "int",
+				default = 50
+			}
+		}
 	},
 	{ -- 48
 		name = "Light HE ammo box",
 		size = 2,
-		dlc = 'weapons'
+		dlc = 'weapons',
+		data = {
+			int = {
+				name = "ammo",
+				type = "int",
+				default = 50
+			}
+		}
 	},
 	{ -- 49
 		name = "Light HE Frag ammo box",
 		size = 2,
-		dlc = 'weapons'
+		dlc = 'weapons',
+		data = {
+			int = {
+				name = "ammo",
+				type = "int",
+				default = 50
+			}
+		}
 	},
 	{ -- 50
 		name = "Light AP ammo box",
 		size = 2,
-		dlc = 'weapons'
+		dlc = 'weapons',
+		data = {
+			int = {
+				name = "ammo",
+				type = "int",
+				default = 50
+			}
+		}
 	},
 	{ -- 51
 		name = "Light Incendiary ammo box",
 		size = 2,
-		dlc = 'weapons'
+		dlc = 'weapons',
+		data = {
+			int = {
+				name = "ammo",
+				type = "int",
+				default = 50
+			}
+		}
 	},
 	{ -- 52
 		name = "Rotary ammo box",
 		size = 2,
-		dlc = 'weapons'
+		dlc = 'weapons',
+		data = {
+			int = {
+				name = "ammo",
+				type = "int",
+				default = 25
+			}
+		}
 	},
 	{ -- 53
 		name = "Rotary HE ammo box",
 		size = 2,
-		dlc = 'weapons'
+		dlc = 'weapons',
+		data = {
+			int = {
+				name = "ammo",
+				type = "int",
+				default = 25
+			}
+		}
 	},
 	{ -- 54
 		name = "Rotary HE Frag ammo box",
 		size = 2,
-		dlc = 'weapons'
+		dlc = 'weapons',
+		data = {
+			int = {
+				name = "ammo",
+				type = "int",
+				default = 25
+			}
+		}
 	},
 	{ -- 55
 		name = "Rotary AP ammo box",
 		size = 2,
-		dlc = 'weapons'
+		dlc = 'weapons',
+		data = {
+			int = {
+				name = "ammo",
+				type = "int",
+				default = 25
+			}
+		}
 	},
 	{ -- 56
 		name = "Rotary Incendiary ammo box",
 		size = 2,
-		dlc = 'weapons'
+		dlc = 'weapons',
+		data = {
+			int = {
+				name = "ammo",
+				type = "int",
+				default = 25
+			}
+		}
 	},
 	{ -- 57
 		name = "Heavy ammo box",
 		size = 2,
-		dlc = 'weapons'
+		dlc = 'weapons',
+		data = {
+			int = {
+				name = "ammo",
+				type = "int",
+				default = 10
+			}
+		}
 	},
 	{ -- 58
 		name = "Heavy HE ammo box",
 		size = 2,
-		dlc = 'weapons'
+		dlc = 'weapons',
+		data = {
+			int = {
+				name = "ammo",
+				type = "int",
+				default = 10
+			}
+		}
 	},
 	{ -- 59
 		name = "Heavy HE Frag ammo box",
 		size = 2,
-		dlc = 'weapons'
+		dlc = 'weapons',
+		data = {
+			int = {
+				name = "ammo",
+				type = "int",
+				default = 10
+			}
+		}
 	},
 	{ -- 60
 		name = "Heavy AP ammo box",
 		size = 2,
-		dlc = 'weapons'
+		dlc = 'weapons',
+		data = {
+			int = {
+				name = "ammo",
+				type = "int",
+				default = 10
+			}
+		}
 	},
 	{ -- 61
 		name = "Heavy Incendiary ammo box",
 		size = 2,
-		dlc = 'weapons'
+		dlc = 'weapons',
+		data = {
+			int = {
+				name = "ammo",
+				type = "int",
+				default = 10
+			}
+		}
 	},
 	{ -- 62
 		name = "Battle shell",
 		size = 2,
-		dlc = 'weapons'
+		dlc = 'weapons',
+		data = {
+			int = {
+				name = "ammo",
+				type = "int",
+				default = 1
+			}
+		}
 	},
 	{ -- 63
 		name = "Battle HE shell",
 		size = 2,
-		dlc = 'weapons'
+		dlc = 'weapons',
+		data = {
+			int = {
+				name = "ammo",
+				type = "int",
+				default = 1
+			}
+		}
 	},
 	{ -- 64
 		name = "Battle HE Frag shell",
 		size = 2,
-		dlc = 'weapons'
+		dlc = 'weapons',
+		data = {
+			int = {
+				name = "ammo",
+				type = "int",
+				default = 1
+			}
+		}
 	},
 	{ -- 65
 		name = "Battle AP shell",
 		size = 2,
-		dlc = 'weapons'
+		dlc = 'weapons',
+		data = {
+			int = {
+				name = "ammo",
+				type = "int",
+				default = 1
+			}
+		}
 	},
 	{ -- 66
 		name = "Battle Incendiary shell",
 		size = 2,
-		dlc = 'weapons'
+		dlc = 'weapons',
+		data = {
+			int = {
+				name = "ammo",
+				type = "int",
+				default = 1
+			}
+		}
 	},
 	{ -- 67
 		name = "Artillery shell",
 		size = 2,
-		dlc = 'weapons'
+		dlc = 'weapons',
+		data = {
+			int = {
+				name = "ammo",
+				type = "int",
+				default = 1
+			}
+		}
 	},
 	{ -- 68
 		name = "Artillery HE shell",
 		size = 2,
-		dlc = 'weapons'
+		dlc = 'weapons',
+		data = {
+			int = {
+				name = "ammo",
+				type = "int",
+				default = 1
+			}
+		}
 	},
 	{ -- 69
 		name = "Artillery HE Frag shell",
 		size = 2,
-		dlc = 'weapons'
+		dlc = 'weapons',
+		data = {
+			int = {
+				name = "ammo",
+				type = "int",
+				default = 1
+			}
+		}
 	},
 	{ -- 70
 		name = "Artillery AP shell",
 		size = 2,
-		dlc = 'weapons'
+		dlc = 'weapons',
+		data = {
+			int = {
+				name = "ammo",
+				type = "int",
+				default = 1
+			}
+		}
 	},
 	{ -- 71
 		name = "Artillery Incendiary shell",
 		size = 2,
-		dlc = 'weapons'
+		dlc = 'weapons',
+		data = {
+			int = {
+				name = "ammo",
+				type = "int",
+				default = 1
+			}
+		}
 	},
 }
 --#endregion
@@ -2129,7 +2367,7 @@ function Player.equip(self, notify, slot, item_id, data1, data2, is_active)
 		local available_slots = {}
 		for k, v in ipairs(EQUIPMENT_SLOTS) do
 			if item_size == v.size then
-				table.insert(available_slots, v.name)
+				table.insert(available_slots, v.letter)
 				if inventory[k] == 0 -- give player requested item in open slot
 				or inventory[k] == item_id -- replace an existing item, presumably to recharge it.
 				or item_size ~= 2 -- item is not a small item, there is only one slot, replace the item
@@ -2145,7 +2383,7 @@ function Player.equip(self, notify, slot, item_id, data1, data2, is_active)
 		if not success then
 			local err
 			-- inventory is full of same-size items
-			if self.peerID == notify.peerID then
+			if not notify or self.peerID == notify.peerID then
 				err = string.format("Could not equip you with %s because your inventory is full of %s items. To replace an item specify the slot to replace. Options: %s", item_pretty_name, item_size_name, table.concat(available_slots, ", "))
 			else
 				err = string.format("%s could not be equipped with %s because their inventory is full of %s items. To replace an item specify the slot to replace. Options: %s", target_pretty_name, item_pretty_name, item_size_name, table.concat(available_slots, ", "))
