@@ -2499,8 +2499,9 @@ end
 ---Set the new state for the vehicleID UI for this player
 ---@param self Player This player object's instance
 ---@param state? boolean The new state of the UI, enabled or disabled. Toggles if no bool is provided
+---@param show_server? boolean If server vehicles should be shown. Defaults to false
 ---@return boolean new_state The new state of the UI for this player
-function Player.setVehicleUIState(self, state)
+function Player.setVehicleUIState(self, state, show_server)
 	if state == nil then
 		self.show_vehicleIDs = not self.show_vehicleIDs
 	else
@@ -2509,10 +2510,12 @@ function Player.setVehicleUIState(self, state)
 
 	if not self.show_vehicleIDs then
 		-- remove popups for all vehicles
-		for vehicleID, vehicle in pairs(G_vehicles.get()) do
+		for vehicleID, vehicle in pairs(G_vehicles.get(nil, true)) do
 			server.removePopup(self.peerID, vehicle.ui_id)
 		end
 	end
+
+	self.show_serverVehicles = show_server
 
 	self.save()
 	return self.show_vehicleIDs
@@ -2521,11 +2524,11 @@ end
 ---Updates this player's UI to display vehicle ID info
 ---@param self Player This player's object instance
 function Player.updateVehicleIdUI(self)
-	for vehicleID, vehicle in pairs(G_vehicles.get()) do
+	for vehicleID, vehicle in pairs(G_vehicles.get(nil, self.show_serverVehicles)) do
 		local vehicle_position = vehicle.getPosition()
 		if vehicle_position then
 			local owner = vehicle.owner
-			server.setPopup(self.peerID, vehicle.ui_id, "", true, string.format("%s\n%s", vehicle.pretty_name, G_players.get(owner).prettyName()), vehicle_position[13], vehicle_position[14], vehicle_position[15], 50)
+			server.setPopup(self.peerID, vehicle.ui_id, "", true, string.format("%s\n%s", vehicle.pretty_name, vehicle.server_spawned and "SERVER" or G_players.get(owner).prettyName()), vehicle_position[13], vehicle_position[14], vehicle_position[15], 50)
 		end
 	end
 end
@@ -2618,6 +2621,10 @@ function Vehicle.constructor(self, vehicleID, owner_steamID, cost)
 	self.vehicleID = vehicleID
 	self.owner = owner_steamID or exploreTable(g_savedata.vehicles, {vehicleID, "owner"})
 
+	if self.owner == -1 then
+		self.server_spawned = true
+	end
+
 	local name, success = server.getVehicleName(vehicleID)
 	self.name = success and (name ~= "Error" and name or "Unknown") or "Unknown"
 	self.pretty_name = string.format("%s(%d)", self.name, self.vehicleID)
@@ -2695,9 +2702,14 @@ end
 ---@param vehicleID vehicleID The vehicleID of the vehicle to remove
 function VehicleContainer.remove(self, vehicleID)
 	local vehicle = self.get(vehicleID)
-	local owner = G_players.get(vehicle.owner)
+	if not vehicle then return end
 
-	if owner.latest_spawn and owner.latest_spawn == vehicleID then
+	local owner
+	if not vehicle.server_spawned then
+		owner = G_players.get(vehicle.owner)
+	end
+
+	if owner and owner.latest_spawn and owner.latest_spawn == vehicleID then
 		-- if this vehicle being despawned is the owner's latest spawn, set latest_spawn to nil
 		owner.latest_spawn = nil
 	end
@@ -2711,13 +2723,26 @@ end
 ---Gets a vehicle from this container
 ---@param self VehicleContainer This vehicle container's object instance
 ---@param vehicleID? vehicleID The vehicleID of the vehicle to get
+---@param list_server? boolean If vehicles spawned by the server should be returned
 ---@return Vehicle|table|nil vehicle The vehicle you were looking for or nil if the vehicle could not be found. If the `vehicleID` argument is not provided, a table containing all vehicles in this container will be returned
-function VehicleContainer.get(self, vehicleID)
-	if not vehicleID then
-		return self.vehicles
-	else
+function VehicleContainer.get(self, vehicleID, list_server)
+	if vehicleID then
 		return self.vehicles[vehicleID]
 	end
+
+	local vehicles = self.vehicles
+
+	if not list_server then
+		local playerVehicles = {}
+		for k, v in pairs(vehicles) do
+			if not v.server_spawned then
+				table.insert(playerVehicles, v, k)
+			end
+		end
+		return playerVehicles
+	end
+
+	return vehicles
 end
 --#endregion
 
@@ -2807,7 +2832,6 @@ end
 
 --#endregion
 --#endregion
---#endregion
 
 --[ CALLBACK FUNCTIONS ]--
 --#region
@@ -2845,7 +2869,7 @@ function onCreate(is_new)
 	g_savedata.aliases = g_savedata.aliases or deepCopyTable(DEFAULT_ALIASES)
 
 	-- create references to shorten code
-	G_vehicles = new(VehicleContainer) ---@type VehicleContainer
+	G_vehicles = G_vehicles or new(VehicleContainer) ---@type VehicleContainer
 	G_objects = g_savedata.objects -- Not in use yet
 	G_players = new(PlayerContainer) ---@type PlayerContainer
 	G_roles = new(RoleContainer) ---@type RoleContainer
@@ -3055,12 +3079,13 @@ end
 
 function onVehicleSpawn(vehicleID, peerID, x, y, z, cost)
 	if invalid_version then return end
-	local steamID = STEAM_IDS[peerID]
 
-	local owner = G_players.get(steamID)
-	local vehicle = G_vehicles.create(vehicleID, owner.steamID, cost)
-
+	-- if spawned by player
 	if peerID > -1 then
+		local steamID = STEAM_IDS[peerID]
+
+		local owner = G_players.get(steamID)
+		local vehicle = G_vehicles.create(vehicleID, owner.steamID, cost)
 		-- if voxel restriction is in effect, remove any vehicles that are over the limit
 		if G_preferences.maxVoxels.value and G_preferences.maxVoxels.value > 0 then
 			table.insert(EVENT_QUEUE,
@@ -3075,6 +3100,12 @@ function onVehicleSpawn(vehicleID, peerID, x, y, z, cost)
 		end
 		owner.latest_spawn = vehicleID
 		owner.save()
+	else
+		if not G_vehicles then
+			g_savedata.vehicles = g_savedata.vehicles or {}
+			G_vehicles = new(VehicleContainer) ---@type VehicleContainer
+		end
+		G_vehicles.create(vehicleID, -1, cost)
 	end
 end
 
@@ -3746,10 +3777,15 @@ COMMANDS = {
 		description = "Sets a vehicle to either be editable or non-editable."
 	},
 	vehicleList = {
-		func = function(caller, page)
+		func = function(caller, page, list_server)
 			local vehicles = {}
 
-			local vehicle_list = G_vehicles.get()
+			local vehicle_list = G_vehicles.get(nil, list_server)
+
+			if #vehicle_list == 0 then
+				return false, "NO VEHICLES", "There are no vehicles"
+			end
+
 			local keys = getTableKeys(vehicle_list, true)
 			for k, vehicleID in ipairs(keys) do
 				table.insert(vehicles, vehicle_list[vehicleID])
@@ -3760,11 +3796,7 @@ COMMANDS = {
 
 			for i = start_index, end_index do
 				local vehicle = vehicles[i]
-				server.announce(" ", vehicle.vehicleID .. " | " .. vehicle.pretty_name .. " | " .. G_players.get(vehicle.owner).prettyName(), caller.peerID)
-			end
-
-			if #vehicles == 0 then
-				server.announce("NO VEHICLES", "There are no vehicles", caller.peerID)
+				server.announce(" ", vehicle.vehicleID .. " | " .. vehicle.pretty_name .. " | " .. (vehicle.server_spawned and "SERVER" or G_players.get(vehicle.owner).prettyName()), caller.peerID)
 			end
 
 			server.announce(" ", "Page " .. clamped_page .. " of " .. max_page, caller.peerID)
@@ -3772,17 +3804,21 @@ COMMANDS = {
 		end,
 		category = "Vehicles",
 		args = {
-			{name = "page", type = {"number"}}
+			{name = "page", type = {"number"}},
+			{name = "list_server", type = {"bool"}}
 		},
-		description = "Lists all the player vehicles that are spawned in the game."
+		description = "Lists all the player vehicles that are spawned in the game. When list_server is true, vehicles that were spawned by the server will be listed"
 	},
 	vehicleIDs = {
-		func = function(caller)
-			local state = caller.setVehicleUIState()
+		func = function(caller, show_server)
+			local state = caller.setVehicleUIState(nil, show_server)
 			return true, "VEHICLE IDS", "Vehicle IDs are now " .. (state and "visible" or "hidden")
 		end,
 		category = "Vehicles",
-		description = "Toggles displaying vehicle IDs."
+		args = {
+			{name = "list_server", type = {"bool"}}
+		},
+		description = "Toggles displaying vehicle IDs. If list_server is true, server vehicles will be shown"
 	},
 	vehicleInfo = {
 		func = function(caller, vehicle)
@@ -3815,7 +3851,7 @@ COMMANDS = {
 
 			server.announce("VEHICLE_DATA", "vehicleID : " .. vehicle.vehicleID, caller.peerID)
 			server.announce(" ", "Name : " .. (vehicle.name or "Unknown"), caller.peerID)
-			server.announce(" ", "Owner : " .. (G_players.get(vehicle.owner).prettyName() or "Unknown"), caller.peerID)
+			server.announce(" ", "Owner : " .. (vehicle.server_spawned and "SERVER" or G_players.get(vehicle.owner).prettyName() or "Unknown"), caller.peerID)
 			server.announce(" ", "Voxel Count : " .. (vehicle_data.voxels and string.format("%d", vehicle_data.voxels) or "Unknown"), caller.peerID)
 			server.announce(" ", "Mass : " .. (vehicle_data.mass and string.format("%0.2f", vehicle_data.mass) or "Unknown"), caller.peerID)
 			server.announce(" ", "Cost : " .. cost, caller.peerID)
@@ -4043,7 +4079,7 @@ COMMANDS = {
 		func = function(caller, location)
 			local location_names = getTableKeys(TELEPORT_ZONES)
 			local target_name = fuzzyStringInTable(location, location_names) -- get most similar location name to the text the user entered
-			
+
 			if not target_name then
 				return false, "INVALID LOCATION", quote(location) .. " is not a recognized location"
 			end
@@ -4135,7 +4171,7 @@ COMMANDS = {
 	},
 	tpv = {
 		func = function(caller, vehicle, unsafe)
-			if G_players.get(vehicle.owner).tp_blocking and vehicle.owner ~= caller.steam_id then
+			if not vehicle.server_spawned and G_players.get(vehicle.owner).tp_blocking and vehicle.owner ~= caller.steam_id then
 				return false, "DENIED", "The vehicle you tried teleporting is currently blocking teleports"
 			end
 			local target_matrix, success = caller.getPosition()
@@ -4179,7 +4215,7 @@ COMMANDS = {
 						vehicle = nearest[k]
 						break
 					else
-						if not G_players.get(vehicle.owner).tp_blocking then
+						if vehicle.server_spawned or not G_players.get(vehicle.owner).tp_blocking then
 							vehicle = nearest[k]
 							break
 						end
@@ -4190,7 +4226,7 @@ COMMANDS = {
 				end
 			elseif arg1.name then
 				local owner = G_players.get(arg1.owner)
-				if owner ~= caller and owner.tp_blocking then
+				if not arg1.server_spawned and owner ~= caller and owner.tp_blocking then
 					return false, "DENIED", "The vehicle you tried teleporting to is currently blocking teleports"
 				end
 				vehicle = arg1
@@ -4222,7 +4258,7 @@ COMMANDS = {
 			end
 
 			server.setCharacterSeated(character_id, vehicle.vehicleID, seat_name)
-			return true, "TELEPORTED", "You have been teleported to the " .. (seat_name and "seat " .. quote(seat_name) or "first seat") .. " on " .. vehicle.pretty_name
+			return true, "TELEPORTED", "You have been teleported to the " .. (seat_name and "seat " .. quote(seat_name) or "first seat") .. " on " .. vehicle.pretty_name .. " if it has one"
 		end,
 		category = "Teleporting",
 		args = {
@@ -4233,7 +4269,7 @@ COMMANDS = {
 	},
 	tp2v = {
 		func = function(caller, vehicle)
-			if G_players.get(vehicle.owner).tp_blocking and caller.steam_id ~= vehicle.owner then
+			if not vehicle.server_spawned and G_players.get(vehicle.owner).tp_blocking and caller.steam_id ~= vehicle.owner then
 				return false, "DENIED", "The vehicle you tried teleporting to is currently blocking teleports"
 			end
 
