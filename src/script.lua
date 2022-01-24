@@ -264,10 +264,12 @@ function json.stringify(obj, as_key)
 		if as_key then webSyncError('Can\'t encode table as key.') end
 		s[#s + 1] = '{'
 		for k, v in pairs(obj) do
-			if #s > 1 then s[#s + 1] = ', ' end
-			s[#s + 1] = json.stringify(k, true)
-			s[#s + 1] = ':'
-			s[#s + 1] = json.stringify(v)
+			if not (kind_of(v) == 'function') then-- prevent serialization of functions
+				if #s > 1 then s[#s + 1] = ', ' end
+				s[#s + 1] = json.stringify(k, true)
+				s[#s + 1] = ':'
+				s[#s + 1] = json.stringify(v)
+			end
 		end
 		s[#s + 1] = '}'
 	elseif kind == 'string' then
@@ -1781,7 +1783,7 @@ function dataIsOfType(data, target_type, caller)
 		local is_letter = isLetter(data)
 		return is_letter, is_letter and data or nil, not is_letter and ((data or "nil") .. " is not a letter") or nil
 	elseif target_type == "string" or target_type == "text" then
-		return data ~= nil, data or nil, (data or "nil") .. " is not a string"
+		return data ~= nil, data or nil, data == nil and "nil is not a string"
 	end
 
 	return false, nil, ((data or "nil") .. " is not of a recognized data type")
@@ -3154,6 +3156,34 @@ function onTick()
 		syncTick()
 		if initialize then
 			initialize = false
+
+			registerWebServerCommandCallback("command-run-custom-command", function (token, _, content)
+				local delim = ";DELIM;"
+				
+				if content == nil then
+					return false, "command is nil"
+				end
+
+				if  string.find(content, delim) == nil then
+					return false, "missing delimiter (please contact dev)"
+				end
+
+				local command = string.sub(content, 1, string.find(content, delim) - 1)
+				local argstring = string.sub(content, string.find(content, delim) + string.len(delim))
+			
+				webSyncDebug("run custom command: ?" .. command .. " " .. argstring);
+
+				local success, title, text = handleCompanion(token, command, argstring)
+			
+				return success, title .. ": " .. text
+			end)
+
+			registerWebServerCommandCallback("command-sync-all", function(token, com, content)
+				syncData("players", G_players.players)
+
+				return true
+			end)
+
 			for commandName, command in pairs(COMMANDS) do
 				registerWebServerCommandCallback("command-" .. commandName, function(token, com, content)
 					local success, title, text = handleCompanion(token, commandName, content)
@@ -3164,7 +3194,7 @@ function onTick()
 						end
 					end
 
-					return success, title, text
+					return success, title .. ": " .. text
 				end)
 			end
 
@@ -4670,11 +4700,27 @@ COMMANDS = {
 function handleCompanion(token, command, argstring)
 	local caller = G_players.get(STEAM_IDS[0]) -- TODO: get caller_id from token
 
-	local success, statusTitle, statusText = switch(caller, command, argstring)
+	webSyncDebug("grrr " .. type(argstring))
+
+	local success, statusTitle, statusText = switch(caller, command, convertArgStringToTable(argstring))
 	local title = statusText and statusTitle or (success and "SUCCESS" or "FAILED")
 	local text = statusText or statusTitle
 
 	return success, title, text
+end
+
+
+---Convert a string with space separated values into a table
+---@param str string
+---@return table args
+function convertArgStringToTable(str)
+	local delimiter = " "
+	local result = {}
+	for match in (str..delimiter):gmatch("(.-)"..delimiter) do
+		table.insert(result, match)
+		server.announce("match", match)
+	end
+	return result
 end
 
 ---Looks through all of the commands to find the one requested. Also prepares arguments to be forwarded to requested command function
@@ -4759,7 +4805,7 @@ function switch(caller, command, args)
 					is_correct_type, converted_value, err = dataIsOfType(pArgValue, accepted_type, caller)
 					-- DEBUG: announce what value this is looking for and what it is attempting to match
 					server.announce((is_correct_type and "Correct" or "Incorrect") .. (arg.data.required and " Required" or " Optional"),
-					"Arg Position: " .. pArgIndex .. "\n    |Target Type: " .. accepted_type .. "\n    | Given Value: " .. tostring(pArgValue) .. "\n    | Converted Value: " .. tostring(converted_value) .. "\n    | Err: " .. (err or ""),
+					"Arg Position: " .. pArgIndex .. "\n    |Target Type: " .. accepted_type .. "\n    | Given Value: " .. tostring(pArgValue) .. "\n    | Converted Value: " .. tostring(converted_value) .. "\n    | Err: " .. ((not is_correct_type and err) or ""),
 					caller.peerID
 					)
 
@@ -4782,7 +4828,7 @@ function switch(caller, command, args)
 				end
 
 				if not is_correct_type and arg.data.required then
-					return false, "INVALID ARG", err
+					return false, "INVALID ARG", err or "nil"
 				end
 			end
 
@@ -4996,19 +5042,24 @@ function sendToServer(datatype, data, meta --[[optional]], callback--[[optional]
 		local after = string.sub(packetString, to + 1)
 		packetString = before .. myPartOfTheData .. after
 
-		webSyncDebugDetail("queuing packet, type: " .. datatype .. ", size: " .. string.len(packetString) .. ", part: " .. myPacketPart)
+		-- skip debugging of heartbeats
+		if not (datatype == "heartbeat") then
+			webSyncDebugDetail("queuing packet, type: " .. datatype .. ", size: " .. string.len(packetString) .. ", part: " .. myPacketPart)
+		end
 
 		table.insert(packetSendingQueue, {
 			packetId = myPacketId,
 			packetPart = myPacketPart,
-			data = packetString
+			data = packetString,
+			_datatype = datatype
 		})
 
 		table.insert(pendingPacketParts, {
 			packetId = myPacketId,
 			packetPart = myPacketPart,
 			morePackets = packet.morePackets,
-			callback = callback
+			callback = callback,
+			_datatype = datatype
 		})
 
 	until (string.len(encodedData) == 0)
@@ -5017,8 +5068,7 @@ function sendToServer(datatype, data, meta --[[optional]], callback--[[optional]
 end
 
 webServerCommandCallbacks = {}
--- @callback: this function must return either the boolean true (if execution of command was successful)
---            or a string containing an error message (e.g. bad user input, server threw error, etc.)
+-- @callback: this function must return success (boolean), message
 --            callback(playertoken, commandname, commandcontent) will be called with the params commandname and commandcontent
 function registerWebServerCommandCallback(commandname, callback)
 	if not (type(callback) == "function") then
@@ -5051,7 +5101,9 @@ function checkPacketSendingQueue()
 
 		local packetToSend = table.remove(packetSendingQueue, 1)
 
-		webSyncDebugDetail("sending packet to server: " .. urldecode(packetToSend.data))
+		if not(packetToSend._datatype == "heartbeat") then
+			webSyncDebugDetail("sending packet to server: " .. urldecode(packetToSend.data))
+		end
 
 		server.httpGet(HTTP_GET_API_PORT, HTTP_GET_API_URL .. packetToSend.data)
 
@@ -5104,7 +5156,7 @@ function syncTick()
 		webSyncDebugDetail("trigger heartbeat, reason: moreCommands")
 		triggerHeartbeat()
 	elseif (tickCallCounter - lastPacketSentTickCallCount) > HTTP_GET_HEARTBEAT_TIMEOUT and (tickCallCounter - lastHeartbeatTriggered) > HTTP_GET_HEARTBEAT_TIMEOUT then
-		webSyncDebugDetail("trigger heartbeat, reason: time")
+		--webSyncDebugDetail("trigger heartbeat, reason: time")
 		triggerHeartbeat()
 	end
 end
@@ -5166,9 +5218,7 @@ function httpReply(port, url, response_body)
 		if parsed == nil then
 			return webSyncError("@httpReply parsing failed for: '" .. response_body .. "'")
 		end
-
-		webSyncDebugDetail("@httpReply parsed: " .. json.stringify(parsed))
-
+		
 		if calcPacketIdent(parsed) and lastSentPacketIdent == calcPacketIdent(parsed) then
 			lastSentPacketPartHasBeenRespondedTo = true
 		end
@@ -5177,6 +5227,10 @@ function httpReply(port, url, response_body)
 		for k,v in pairs(pendingPacketParts) do
 			if samePacketIdent(v, parsed) then
 				foundPendingPacketPart = true
+
+				if not (v._datatype == "heartbeat") then
+					webSyncDebugDetail("@httpReply parsed: " .. json.stringify(parsed))
+				end
 
 				if v.morePackets == 0 and v.callback then
 					v.callback(parsed.success, parsed.result)
@@ -5188,6 +5242,7 @@ function httpReply(port, url, response_body)
 		end
 
 		if not foundPendingPacketPart then
+			webSyncDebugDetail("@httpReply parsed: " .. json.stringify(parsed))
 			webSyncDebug("received response from server but no pending packetPart found! " .. calcPacketIdent(parsed))
 		end
 
@@ -5201,9 +5256,9 @@ function httpReply(port, url, response_body)
 			webSyncDebugDetail(json.stringify(parsed.commandContent))
 
 			if type(webServerCommandCallbacks[parsed.command]) == "function" then
-				local success, title, errorMessage = webServerCommandCallbacks[parsed.command](parsed.token, parsed.command, parsed.commandContent)
+				local success, message = webServerCommandCallbacks[parsed.command](parsed.token, parsed.command, parsed.commandContent)
 
-				local sent, err = sendToServer("command-response", success and "ok" or errorMessage, {commandId = parsed.commandId})
+				local sent, err = sendToServer("command-response", success and "ok" or message, {commandId = parsed.commandId, statusMessage = message})
 				if not sent then
 					webSyncError("error when sending command response: " .. (err or "nil"))
 				end
