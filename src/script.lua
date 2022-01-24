@@ -1290,55 +1290,55 @@ local EQUIPMENT_DATA = {
 local PREFERENCE_DEFAULTS = {
 	equipOnRespawn = {
 		value = true,
-		type = {"bool"}
+		type = "bool"
 	},
 	keepInventory = {
 		value = false,
-		type = {"bool"}
+		type = "bool"
 	},
 	removeVehicleOnLeave = {
 		value = true,
-		type = {"bool"}
+		type = "bool"
 	},
 	maxVoxels = {
 		value = 0,
-		type = {"number"}
+		type = "number"
 	},
 	startEquipmentA = {
 		value = 0,
-		type = {"number"}
+		type = "number"
 	},
 	startEquipmentB = {
 		value = 15,
-		type = {"number"}
+		type = "number"
 	},
 	startEquipmentC = {
 		value = 6,
-		type = {"number"}
+		type = "number"
 	},
 	startEquipmentD = {
 		value = 11,
-		type = {"number"}
+		type = "number"
 	},
 	startEquipmentE = {
 		value = 0,
-		type = {"number"}
+		type = "number"
 	},
 	startEquipmentF = {
 		value = 0,
-		type = {"number"}
+		type = "number"
 	},
 	welcomeNew = {
 		value = false,
-		type = {"bool", "text"}
+		type = "text"
 	},
 	welcomeReturning = {
 		value = false,
-		type = {"bool", "text"}
+		type = "text"
 	},
 	companion = {
 		value = false,
-		type = {"bool"}
+		type = "bool"
 	}
 }
 
@@ -2739,7 +2739,7 @@ function VehicleContainer.get(self, vehicleID, list_server)
 		local playerVehicles = {}
 		for k, v in pairs(vehicles) do
 			if not v.server_spawned then
-				table.insert(playerVehicles, v, k)
+				playerVehicles[k] = v
 			end
 		end
 		return playerVehicles
@@ -3019,6 +3019,8 @@ function onPlayerJoin(steamID, name, peerID, admin, auth)
 	player.save()
 
 	autosave()
+
+	syncData('players')
 end
 
 function onPlayerLeave(steamID, name, peerID, is_admin, is_auth)
@@ -3034,6 +3036,8 @@ function onPlayerLeave(steamID, name, peerID, is_admin, is_auth)
 	end
 	G_players.get(steamID).peerID = nil
 	STEAM_IDS[peerID] = nil
+
+	syncData('players')
 end
 
 function onPlayerDie(steamID, name, peerID, is_admin, is_auth)
@@ -3110,12 +3114,16 @@ function onVehicleSpawn(vehicleID, peerID, x, y, z, cost)
 		end
 		G_vehicles.create(vehicleID, -1, cost)
 	end
+
+	syncData('vehicles')
 end
 
 function onVehicleDespawn(vehicleID, peerID)
 	if invalid_version then return end
 
 	G_vehicles.remove(vehicleID)
+
+	syncData('vehicles')
 end
 
 --- This triggers for both press and release events, but not while holding.
@@ -3250,7 +3258,7 @@ function onTick()
 
 				if moved then
 					if is_new then
-						if G_preferences.welcomeNew.value then
+						if G_preferences.welcomeNew.value ~= "" then
 							server.announce("WELCOME", G_preferences.welcomeNew.value, peerID)
 						end
 						if #G_rules.rules > 0 then
@@ -3260,7 +3268,7 @@ function onTick()
 							player.giveStartingEquipment()
 						end
 					else
-						if G_preferences.welcomeReturning.value then
+						if G_preferences.welcomeReturning.value ~= "" then
 							server.announce("WELCOME", G_preferences.welcomeReturning.value, peerID)
 						end
 						if G_preferences.equipOnRespawn.value then
@@ -4529,26 +4537,29 @@ COMMANDS = {
 				end
 			end
 
-			for _, data_type in ipairs(preference.type) do
-				if data_type == "bool" then
-					local val = toBool(args[1])
-					if val ~= nil then
-						preference.value = val
-						edited = true
-					end
-				elseif data_type == "number" then
-					local val = tonumber(args[1])
-					if val then
-						preference.value = val
-						edited = true
-					end
-				elseif data_type == "string" then
-					preference.value = args[1]
-					edited = true
-				elseif data_type == "text" then
-					preference.value = table.concat(args, " ")
+			local target_type = preference.type
+			if target_type == "bool" then
+				local val = toBool(args[1])
+				if val ~= nil then
+					preference.value = val
 					edited = true
 				end
+			elseif target_type == "number" then
+				local val = tonumber(args[1])
+				if val then
+					preference.value = val
+					edited = true
+				end
+			elseif target_type == "string" then
+				preference.value = args[1]
+				edited = true
+			elseif target_type == "text" then
+				if string.lower(args[1]) == "false" then
+					preference.value = ""
+				else
+					preference.value = table.concat(args, " ")
+				end
+				edited = true
 			end
 
 			if edited then
@@ -4556,7 +4567,7 @@ COMMANDS = {
 				return true, "PREFERENCE EDITED", preference_name .. " has been set to " .. tostring(preference.value)
 			else
 				-- there was an incorrect type
-				return false, "INVALID ARG", preference_name .. " only accepts a " .. table.concat(preference.types, " or ") .. " as its value"
+				return false, "INVALID ARG", preference_name .. " only accepts a " .. preference.type .. " as its value"
 			end
 		end,
 		category = "Preferences",
@@ -4925,7 +4936,7 @@ function webSyncDebug(msg)
 end
 
 function webSyncDebugDetail(msg)
-	--webSyncDebug(msg)
+	webSyncDebug(msg)
 end
 
 -- Inside these functions, filter out sensitive data
@@ -4947,11 +4958,19 @@ SYNCABLE_DATA = {
 	gamesettings = function() return server.getGameSettings() end,
 
 	preferences = function() return G_preferences end,
+
+	commands = function()
+		return getTableKeys(COMMANDS)
+	end,
 }
 
 --[[ Data Sync with web server ]]--
 -- 
 function syncData(name)
+	if not G_preferences.companion.value then
+		return
+	end
+
 	if SYNCABLE_DATA[name] then
 		local sent, err = sendToServer("sync-" .. name, SYNCABLE_DATA[name](), nil, function (success, result)
 			if success then
@@ -5065,7 +5084,7 @@ function sendToServer(datatype, data, meta --[[optional]], callback--[[optional]
 
 		local maxLength = HTTP_GET_URL_CHAR_LIMIT - encodedPacketLength
 		local myPartOfTheData = string.sub(encodedData, 1, maxLength)
-		encodedData = string.sub(encodedData, maxLength + 1)
+		encodedData = string.sub(encodedData, maxLength)
 
 		if string.len(encodedData) == 0 then
 			packet.morePackets = 0
@@ -5278,7 +5297,7 @@ function httpReply(port, url, response_body)
 
 		if not foundPendingPacketPart then
 			webSyncDebugDetail("@httpReply parsed: " .. json.stringify(parsed))
-			webSyncDebug("received response from server but no pending packetPart found! " .. calcPacketIdent(parsed))
+			webSyncDebug("received response from server but no pending packetPart found! " .. (calcPacketIdent(parsed) or "nil"))
 		end
 
 		c2HasMoreCommands = parsed.hasMoreCommands == true
