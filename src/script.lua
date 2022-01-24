@@ -394,7 +394,8 @@ local ABOUT = {
 	{title = "SaveDataVersion:", text = SaveDataVersion},
 	{title = "Created By:", text = "Carsa, CrazyFluffyPony, Dargino, Leopard"},
 	{title = "Github:", text = "https://github.com/carsakiller/Carsas-Commands"},
-	{title = "More Info:", text = "For more info, I recommend checking out the github page"}
+	{title = "More Info:", text = "For more info, I recommend checking out the github page"},
+	{title = "For Help:", text = "Use '?ccHelp' to get more information on commands"},
 }
 
 local DEV_STEAM_IDS = {
@@ -3179,7 +3180,10 @@ function onTick()
 			end)
 
 			registerWebServerCommandCallback("command-sync-all", function(token, com, content)
-				syncData("players", G_players.players)
+				--syncData("players")
+				for k, v in pairs(SYNCABLE_DATA) do
+					syncData(k)
+				end
 
 				return true
 			end)
@@ -3189,8 +3193,8 @@ function onTick()
 					local success, title, text = handleCompanion(token, commandName, content)
 
 					if command.syncableData then
-						for dataname, datacallback in pairs(command.syncableData) do
-							syncData(dataname, datacallback())
+						for i, dataname in pairs(command.syncableData) do
+							syncData(dataname)
 						end
 					end
 
@@ -3346,6 +3350,7 @@ function onTick()
 				for setting, value in pairs(settings) do
 					if type(value) == "boolean" and previous_game_settings[setting] ~= value then
 						server.notify(-1, "GAME SETTING CHANGED", setting .. " has been " .. (value and "ENABLED" or "DISABLED"), 9)
+						syncData("gamesettings")
 					end
 				end
 			end
@@ -3389,9 +3394,7 @@ COMMANDS = {
 			{name = "playerID", type = {"playerID"}, required = true}
 		},
 		description = "Bans a player so that when they join they are immediately kicked. Replacement for vanilla perma-ban (?ban).",
-		syncableData = {
-			players = function() return G_players.players end
-		}
+		syncableData = {"players"}
 	},
 	unban = {
 		func = function(caller, ...)
@@ -3416,9 +3419,7 @@ COMMANDS = {
 			{name = "steamID", type = {"steamID"}, required = true}
 		},
 		description = "Unbans a player from the server.",
-		syncableData = {
-			players = function() return G_players.players end
-		}
+		syncableData = {"players"}
 	},
 	banned = {
 		func = function(caller, page)
@@ -3491,9 +3492,7 @@ COMMANDS = {
 			{name = "position", type = {"number"}}
 		},
 		description = "Adds a rule to the rulebook.",
-		syncableData = {
-			rules = function() return G_rules.rules end
-		}
+		syncableData = {"rules"}
 	},
 	removeRule = {
 		func = function(caller, position)
@@ -3509,9 +3508,7 @@ COMMANDS = {
 			{name = "rule #", type = {"number"}, required = true}
 		},
 		description = "Removes a rule from the rulebook.",
-		syncableData = {
-			rules = function() return G_rules.rules end
-		}
+		syncableData = {"rules"}
 	},
 	rules = {
 		func = function(caller, page)
@@ -3543,7 +3540,8 @@ COMMANDS = {
 		args = {
 			{name = "role_name", type = {"string"}, required = true}
 		},
-		description = "Adds a role to the server that can be assigned to players."
+		description = "Adds a role to the server that can be assigned to players.",
+		syncableData = {"roles"}
 	},
 	removeRole = {
 		func = function(caller, name)
@@ -3557,7 +3555,8 @@ COMMANDS = {
 		args = {
 			{name = "role_name", type = {"string"}, required = true}
 		},
-		description = "Removes a role from all players and deletes it."
+		description = "Removes a role from all players and deletes it.",
+		syncableData = {"roles"}
 	},
 	rolePerms = {
 		func = function(caller, role_name, is_admin, is_auth)
@@ -3587,7 +3586,8 @@ COMMANDS = {
 			{name = "is_admin", type = {"bool"}, required = true},
 			{name = "is_auth", type = {"bool"}, required = true}
 		},
-		description = "Sets the permissions of a role."
+		description = "Sets the permissions of a role.",
+		syncableData = {"roles"}
 	},
 	roleAccess = {
 		func = function(caller, role_name, command, value)
@@ -3620,6 +3620,7 @@ COMMANDS = {
 			{name = "value", type = {"bool"}, required = true}
 		},
 		description = "Sets whether a role has access to a command or not.",
+		syncableData = {"roles"}
 	},
 	giveRole = {
 		func = function(caller, role_text, target_player)
@@ -3639,7 +3640,8 @@ COMMANDS = {
 			{name = "role", type = {"string"}, required = true},
 			{name = "playerID", type = {"playerID"}}
 		},
-		description = "Assigns a role to a player."
+		description = "Assigns a role to a player.",
+		syncableData = {"roles"}
 	},
 	revokeRole = {
 		func = function(caller, role_name, target_player)
@@ -3659,7 +3661,8 @@ COMMANDS = {
 			{name = "role", type = {"string"}, required = true},
 			{name = "playerID", type = {"playerID"}}
 		},
-		description = "Revokes a role from a player."
+		description = "Revokes a role from a player.",
+		syncableData = {"roles"}
 	},
 	roles = {
 		func = function(caller, ...)
@@ -3750,7 +3753,8 @@ COMMANDS = {
 			{name = "role", type = {"string"}, required = true},
 			{name = "status", type = {"bool"}}
 		},
-		description = "Gets or sets whether a role is active or not. An inactive role won't apply it's permissions to it's members"
+		description = "Gets or sets whether a role is active or not. An inactive role won't apply it's permissions to it's members",
+		syncableData = {"roles"}
 	},
 
 	-- Vehicles --
@@ -3790,7 +3794,8 @@ COMMANDS = {
 		args = {
 			{name = "vehicleID", type = {"vehicleID"}, repeatable = true}
 		},
-		description = "Removes vehicles by their id. If no ids are given, it will remove your nearest vehicle."
+		description = "Removes vehicles by their id. If no ids are given, it will remove your nearest vehicle.",
+		syncableData = {"vehicles"}
 	},
 	setEditable = {
 		func = function(caller, vehicle, state)
@@ -3804,7 +3809,8 @@ COMMANDS = {
 			{name = "vehicleID", type = {"vehicleID"}, required = true},
 			{name = "true/false", type = {"bool"}, required = true}
 		},
-		description = "Sets a vehicle to either be editable or non-editable."
+		description = "Sets a vehicle to either be editable or non-editable.",
+		syncableData = {"vehicles"}
 	},
 	vehicleList = {
 		func = function(caller, page, list_server)
@@ -3907,7 +3913,8 @@ COMMANDS = {
 			{name = "vehicleID", type = {"vehicle"}, required = true},
 			{name = "playerID", type = {"playerID"}, required = true}
 		},
-		description = "Transfers ownership of a vehicle to another player."
+		description = "Transfers ownership of a vehicle to another player.",
+		syncableData = {"vehicles"}
 	},
 
 	-- Player --
@@ -4080,7 +4087,8 @@ COMMANDS = {
 			return true
 		end,
 		category = "Teleporting",
-		description = "Blocks other players' ability to teleport to you."
+		description = "Blocks other players' ability to teleport to you.",
+		syncableData = {"players"}
 	},
 	tpc = {
 		func = function(caller, x, y, z)
@@ -4344,7 +4352,6 @@ COMMANDS = {
 			for k, v in ipairs(ABOUT) do
 				server.announce(v.title, v.text, caller.peerID)
 			end
-			server.announce(" ", "write '?ccHelp' in the chat to get more information on commands", caller.peerID)
 			server.announce(" ", LINE, caller.peerID)
 			return true
 		end,
@@ -4498,7 +4505,8 @@ COMMANDS = {
 		args = {
 			{name = "confirm", type = {"bool"}, required = true}
 		},
-		description = "Resets all server preferences back to their default states. Be very careful with this command as it can drastically change how the server behaves."
+		description = "Resets all server preferences back to their default states. Be very careful with this command as it can drastically change how the server behaves.",
+		syncableData = {"preferences"}
 	},
 	setPref = {
 		func = function(caller, preference_name, ...)
@@ -4556,7 +4564,8 @@ COMMANDS = {
 			{name = "preference_name", type = {"string"}, required = true},
 			{name = "value", type = {"bool", "number", "string", "text"}, required = true}
 		},
-		description = "Sets the specified preference to the requested value. Use ?preferences to see all of the preferences."
+		description = "Sets the specified preference to the requested value. Use ?preferences to see all of the preferences.",
+		syncableData = {"preferences"}
 	},
 	preferences = {
 		func = function(caller)
@@ -4670,7 +4679,8 @@ COMMANDS = {
 			{name = "setting_name", type = {"string"}, required = true},
 			{name = "value", type = {"bool"}, required = true}
 		},
-		description = "Sets the specified game setting to the requested value."
+		description = "Sets the specified game setting to the requested value.",
+		syncableData = {"gamesettings"}
 	},
 	gameSettings = {
 		func = function(caller)
@@ -4687,7 +4697,7 @@ COMMANDS = {
 			return true
 		end,
 		category = "Game Settings",
-		description = "Lists all of the game settings and their states."
+		description = "Lists all of the game settings and their states.",
 	},
 }
 
@@ -4903,6 +4913,7 @@ end
 --[ CARSA'S COMPANION ]--
 --#region
 
+
 --[[ Helpers ]]--
 
 function webSyncError(msg)
@@ -4917,19 +4928,43 @@ function webSyncDebugDetail(msg)
 	--webSyncDebug(msg)
 end
 
+-- Inside these functions, filter out sensitive data
+SYNCABLE_DATA = {
 
+	players = function() return G_players.get() end,
+
+	vehicles = function () return G_vehicles.get() end,
+
+	rules = function() return G_rules.rules end,
+
+	roles = function()
+		local roles = deepCopyTable(G_roles.get())
+		roles.Prank = nil
+
+		return roles
+	end,
+
+	gamesettings = function() return server.getGameSettings() end,
+
+	preferences = function() return G_preferences end,
+}
 
 --[[ Data Sync with web server ]]--
-function syncData(name, data)
-	local sent, err = sendToServer("sync-" .. name, data, nil, function (success, result)
-		if sent then
-			webSyncDebug("sync-" .. name .. " -> success")
-		else
-			webSyncError("sync-" .. name .. " -> failed : " .. result)
+-- 
+function syncData(name)
+	if SYNCABLE_DATA[name] then
+		local sent, err = sendToServer("sync-" .. name, SYNCABLE_DATA[name](), nil, function (success, result)
+			if success then
+				webSyncDebug("sync-" .. name .. " -> success")
+			else
+				webSyncError("sync-" .. name .. " -> failed : " .. (result ~= nil and result or "nil") )
+			end
+		end)
+		if not sent then
+			webSyncError("error when sending sync-" .. name .. ": " .. (err or "nil"))
 		end
-	end)
-	if not sent then
-		webSyncError("error when sending sync-" .. name .. ": " .. (err or "nil"))
+	else
+		webSyncError("error unknown syncable: " .. name)
 	end
 end
 
