@@ -2,7 +2,8 @@
 TITLE CC Save Generation Tool
 
 SETLOCAL
-SET SRC_DIR=.\dev\test\freshSave
+SET MY_DIR=%~dp0
+SET SRC_DIR=%MY_DIR%..\..\dev\test\freshSave
 
 SET SAVE_NAME="autosave"
 SET TARGET_DIR=%AppData%\Stormworks\saves
