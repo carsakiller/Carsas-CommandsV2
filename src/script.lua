@@ -4314,6 +4314,7 @@ COMMANDS = {
 			for k, v in ipairs(ABOUT) do
 				server.announce(v.title, v.text, caller.peerID)
 			end
+			server.announce(" ", "write '?ccHelp' in the chat to get more information on commands", caller.peerID)
 			server.announce(" ", LINE, caller.peerID)
 			return true
 		end,
@@ -4333,17 +4334,17 @@ COMMANDS = {
 			elseif as_num then
 				page = as_num
 			elseif as_num == nil then
-				command_name = table.unpack(args)
-			end
-
-			if not COMMANDS[command_name] then
-				return false, "NOT FOUND", quote(command_name) .. " does not exist"
+				command_name = args[1]
 			end
 
 			server.announce(" ", "---------------------------------  HELP  -------------------------------", caller.peerID)
 			server.announce(" ", "[ ] = optional                                        ... = repeatable", caller.peerID)
 
 			if command_name then
+				if not COMMANDS[command_name] then
+					return false, "NOT FOUND", quote(command_name) .. " does not exist"
+				end
+
 				local title, message = prettyFormatCommand(command_name, true, true, true)
 				-- 🥚
 				if command_name == "ccHelp" and math.random(10) == 2 then
