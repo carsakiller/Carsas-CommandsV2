@@ -5055,13 +5055,11 @@ function sendToServer(datatype, data, meta --[[optional]], callback--[[optional]
 	c2HasMoreCommands = false
 
 	local stringifiedData = json.stringify(data)
-	local encodedData = urlencode(string.gsub(stringifiedData, '"', '\\"'))
+	local dataToEncode = string.gsub(stringifiedData, '"', '\\"')
 
 	local url = HTTP_GET_API_URL
 
 	local packetPartCounter = 1
-
-	--webSyncDebug("encodedData: " .. encodedData)
 
 	repeat
 		local myPacketPart = packetPartCounter
@@ -5083,10 +5081,20 @@ function sendToServer(datatype, data, meta --[[optional]], callback--[[optional]
 		local encodedPacketLength = string.len(encodedPacket) - string.len(urlencode(DATA_PLACEHOLDER))
 
 		local maxLength = HTTP_GET_URL_CHAR_LIMIT - encodedPacketLength
-		local myPartOfTheData = string.sub(encodedData, 1, maxLength)
-		encodedData = string.sub(encodedData, maxLength)
 
-		if string.len(encodedData) == 0 then
+		local myPartOfTheData = ""
+
+		local nextCharEncoded = urlencode( string.sub(dataToEncode, 1, 1) );
+		while string.len(myPartOfTheData) + string.len(nextCharEncoded) < maxLength do
+			myPartOfTheData = myPartOfTheData .. nextCharEncoded
+			dataToEncode = string.sub(dataToEncode, 2)
+			if string.len(dataToEncode) == 0 then
+				break
+			end
+			nextCharEncoded = urlencode( string.sub(dataToEncode, 1, 1) );
+		end
+
+		if string.len(dataToEncode) == 0 then
 			packet.morePackets = 0
 		end
 
@@ -5116,7 +5124,7 @@ function sendToServer(datatype, data, meta --[[optional]], callback--[[optional]
 			_datatype = datatype
 		})
 
-	until (string.len(encodedData) == 0)
+	until (string.len(dataToEncode) == 0)
 
 	return true
 end
@@ -5296,6 +5304,7 @@ function httpReply(port, url, response_body)
 		end
 
 		if not foundPendingPacketPart then
+			-- TODO: if error is json syntax error, then fail the latest sent packet
 			webSyncDebugDetail("@httpReply parsed: " .. json.stringify(parsed))
 			webSyncDebug("received response from server but no pending packetPart found! " .. (calcPacketIdent(parsed) or "nil"))
 		end
