@@ -216,7 +216,7 @@ function skip_delim(str, pos, delim, err_if_missing)
 	pos = pos + #str:match('^%s*', pos)
 	if str:sub(pos, pos) ~= delim then
 		if err_if_missing then
-			webSyncError('Expected ' .. delim .. ' near position ' .. pos)
+			companionError('Expected ' .. delim .. ' near position ' .. pos)
 		end
 		return pos, false
 	end
@@ -228,14 +228,14 @@ end
 function parse_str_val(str, pos, val)
 	val = val or ''
 	local early_end_error = 'End of input found while parsing string.'
-	if pos > #str then webSyncError(early_end_error) end
+	if pos > #str then companionError(early_end_error) end
 	local c = str:sub(pos, pos)
 	if c == '"'  then return val, pos + 1 end
 	if c ~= '\\' then return parse_str_val(str, pos + 1, val .. c) end
 	-- We must have a \ character.
 	local esc_map = {b = '\b', f = '\f', n = '\n', r = '\r', t = '\t'}
 	local nextc = str:sub(pos + 1, pos + 1)
-	if not nextc then webSyncError(early_end_error) end
+	if not nextc then companionError(early_end_error) end
 	return parse_str_val(str, pos + 2, val .. (esc_map[nextc] or nextc))
 end
 
@@ -243,7 +243,7 @@ end
 function parse_num_val(str, pos)
 	local num_str = str:match('^-?%d+%.?%d*[eE]?[+-]?%d*', pos)
 	local val = tonumber(num_str)
-	if not val then webSyncError('Error parsing number at position ' .. pos .. '.') end
+	if not val then companionError('Error parsing number at position ' .. pos .. '.') end
 	return val, pos + #num_str
 end
 
@@ -253,7 +253,7 @@ function json.stringify(obj, as_key)
 	local s = {}  -- We'll build the string as an array of strings to be concatenated.
 	local kind = kind_of(obj)  -- This is 'array' if it's an array or type(obj) otherwise.
 	if kind == 'array' then
-		if as_key then webSyncError('Can\'t encode array as key.') end
+		if as_key then companionError('Can\'t encode array as key.') end
 		s[#s + 1] = '['
 		for i, val in ipairs(obj) do
 			if i > 1 then s[#s + 1] = ', ' end
@@ -261,7 +261,7 @@ function json.stringify(obj, as_key)
 		end
 		s[#s + 1] = ']'
 	elseif kind == 'table' then
-		if as_key then webSyncError('Can\'t encode table as key.') end
+		if as_key then companionError('Can\'t encode table as key.') end
 		s[#s + 1] = '{'
 		for k, v in pairs(obj) do
 			if not (kind_of(v) == 'function') then-- prevent serialization of functions
@@ -282,7 +282,7 @@ function json.stringify(obj, as_key)
 	elseif kind == 'nil' then
 		return 'null'
 	else
-		webSyncError('Unjsonifiable type: ' .. kind .. '.')
+		companionError('Unjsonifiable type: ' .. kind .. '.')
 	end
 	return table.concat(s)
 end
@@ -291,7 +291,7 @@ json.null = {}  -- This is a one-off table to represent the null value.
 
 function json.parse(str, pos, end_delim)
 	pos = pos or 1
-	if pos > #str then webSyncError('Reached unexpected end of input.') end
+	if pos > #str then companionError('Reached unexpected end of input.') end
 	local pos = pos + #str:match('^%s*', pos)  -- Skip whitespace.
 	local first = str:sub(pos, pos)
 	if first == '{' then  -- Parse an object.
@@ -300,7 +300,7 @@ function json.parse(str, pos, end_delim)
 		while true do
 			key, pos = json.parse(str, pos, '}')
 			if key == nil then return obj, pos end
-			if not delim_found then webSyncError('Comma missing between object items.') end
+			if not delim_found then companionError('Comma missing between object items.') end
 			pos = skip_delim(str, pos, ':', true)  -- true -> error if missing.
 			obj[key], pos = json.parse(str, pos)
 			pos, delim_found = skip_delim(str, pos, ',')
@@ -311,7 +311,7 @@ function json.parse(str, pos, end_delim)
 		while true do
 			val, pos = json.parse(str, pos, ']')
 			if val == nil then return arr, pos end
-			if not delim_found then webSyncError('Comma missing between array items.') end
+			if not delim_found then companionError('Comma missing between array items.') end
 			arr[#arr + 1] = val
 			pos, delim_found = skip_delim(str, pos, ',')
 		end
@@ -328,7 +328,7 @@ function json.parse(str, pos, end_delim)
 			if str:sub(pos, lit_end) == lit_str then return lit_val, lit_end + 1 end
 		end
 		local pos_info_str = 'position ' .. pos .. ': ' .. str:sub(pos, pos + 10)
-		webSyncError('Invalid json syntax starting at ' .. pos_info_str)
+		companionError('Invalid json syntax starting at ' .. pos_info_str)
 	end
 end
 
@@ -3166,7 +3166,7 @@ function onTick()
 		if initialize then
 			initialize = false
 
-			registerWebServerCommandCallback("command-run-custom-command", function (token, _, content)
+			registerCompanionCommandCallback("command-run-custom-command", function (token, _, content)
 				local delim = ";DELIM;"
 				
 				if content == nil then
@@ -3180,15 +3180,14 @@ function onTick()
 				local command = string.sub(content, 1, string.find(content, delim) - 1)
 				local argstring = string.sub(content, string.find(content, delim) + string.len(delim))
 			
-				webSyncDebug("run custom command: ?" .. command .. " " .. argstring);
+				companionDebug("run custom command: ?" .. command .. " " .. argstring);
 
 				local success, title, text = handleCompanion(token, command, argstring)
 			
 				return success, title .. ": " .. text
 			end)
 
-			registerWebServerCommandCallback("command-sync-all", function(token, com, content)
-				--syncData("players")
+			registerCompanionCommandCallback("command-sync-all", function(token, com, content)
 				for k, v in pairs(SYNCABLE_DATA) do
 					syncData(k)
 				end
@@ -3197,7 +3196,7 @@ function onTick()
 			end)
 
 			for commandName, command in pairs(COMMANDS) do
-				registerWebServerCommandCallback("command-" .. commandName, function(token, com, content)
+				registerCompanionCommandCallback("command-" .. commandName, function(token, com, content)
 					local success, title, text = handleCompanion(token, commandName, content)
 
 					if command.syncableData then
@@ -4721,8 +4720,6 @@ COMMANDS = {
 function handleCompanion(token, command, argstring)
 	local caller = G_players.get(STEAM_IDS[0]) -- TODO: get caller_id from token
 
-	webSyncDebug("grrr " .. type(argstring))
-
 	local success, statusTitle, statusText = switch(caller, command, convertArgStringToTable(argstring))
 	local title = statusText and statusTitle or (success and "SUCCESS" or "FAILED")
 	local text = statusText or statusTitle
@@ -4927,16 +4924,25 @@ end
 
 --[[ Helpers ]]--
 
-function webSyncError(msg)
-	tellSupervisors("Web-Sync Error", msg)
+local COMPANION_DEBUGGING_ENABLED = false
+local COMPANION_DEBUGGING_DETAILED_ENABLED = false
+function companionError(msg)
+	tellSupervisors("Companion Error", msg)
+	if COMPANION_DEBUGGING_ENABLED then
+		server.announce("Companion Error: ", msg)
+	end
 end
 
-function webSyncDebug(msg)
-	server.announce("Web-Sync", msg)
+function companionDebug(msg)
+	if COMPANION_DEBUGGING_ENABLED then
+		server.announce("Companion Debug", msg)
+	end
 end
 
-function webSyncDebugDetail(msg)
-	webSyncDebug(msg)
+function companionDebugDetail(msg)
+	if COMPANION_DEBUGGING_DETAILED_ENABLED then
+		server.announce("Companion DebugD", msg)
+	end
 end
 
 -- Inside these functions, filter out sensitive data
@@ -4965,7 +4971,8 @@ SYNCABLE_DATA = {
 }
 
 --[[ Data Sync with web server ]]--
--- 
+
+-- call to trigger a sync with the companion. Only works with data defined in SYNCABLE_DATA
 function syncData(name)
 	if not G_preferences.companion.value then
 		return
@@ -4974,16 +4981,16 @@ function syncData(name)
 	if SYNCABLE_DATA[name] then
 		local sent, err = sendToServer("sync-" .. name, SYNCABLE_DATA[name](), nil, function (success, result)
 			if success then
-				webSyncDebug("sync-" .. name .. " -> success")
+				companionDebug("@syncData sync-" .. name .. " -> success")
 			else
-				webSyncError("sync-" .. name .. " -> failed : " .. (result ~= nil and result or "nil") )
+				companionError("@syncData sync-" .. name .. " -> failed: " .. (result or "nil"))
 			end
 		end)
 		if not sent then
-			webSyncError("error when sending sync-" .. name .. ": " .. (err or "nil"))
+			companionError("@syncData sync-" .. name .. ": " .. (err or "nil"))
 		end
 	else
-		webSyncError("error unknown syncable: " .. name)
+		companionError("@syncData unknown syncable: " .. name)
 	end
 end
 
@@ -4995,7 +5002,7 @@ end
 -- You can listen to commands sent from the webserver too
 --
 --
--- IMPORTANT: call the syncTick() function at the end of onTick() !!!
+-- IMPORTANT: call the syncTick() function inside onTick() !!!
 --
 
 serverIsAvailable = false
@@ -5030,7 +5037,7 @@ function sendToServer(datatype, data, meta --[[optional]], callback--[[optional]
 	]]--
 
 	if not( type(datatype) == "string") then
-		webSyncError("@sendToServer: dataname must be a string")
+		companionError("@sendToServer: dataname must be a string")
 
 		return false, "dataname must be a string"
 	end
@@ -5046,12 +5053,6 @@ function sendToServer(datatype, data, meta --[[optional]], callback--[[optional]
 		return false, "Server not available"
 	end
 
-	--[[
-	if #packetSendingQueue > 100 then
-		return false, "Too many packets!"--TODO remove in production? this just stops infinite filling of packets which prevents from debugging chat
-	end
-	]]--
-
 	c2HasMoreCommands = false
 
 	local dataToEncode = json.stringify(data)
@@ -5060,16 +5061,18 @@ function sendToServer(datatype, data, meta --[[optional]], callback--[[optional]
 
 	local packetPartCounter = 1
 
+	-- split data into several parts (if necessary) to stay below max char limit
 	repeat
 		local myPacketPart = packetPartCounter
 		packetPartCounter = packetPartCounter + 1
 
-		local packet = json.parse(json.stringify(meta))
+		local packet = json.parse(json.stringify(meta or {}))
 		packet.type = datatype
 		packet.packetId = myPacketId
 		packet.packetPart = myPacketPart
 		packet.morePackets = 1--1 = true, 0 = false
 
+		-- we need to encode the whole packet (with dummy data), then measure its size, after that we know how much chars are left for the actual data.
 		local DATA_PLACEHOLDER = 'DATA_PLACEHOLDERINO'
 
 		packet.data = DATA_PLACEHOLDER
@@ -5083,6 +5086,9 @@ function sendToServer(datatype, data, meta --[[optional]], callback--[[optional]
 
 		local myPartOfTheData = ""
 
+		-- while we are below the char limit, keep adding chars of the data to this part
+		-- because it is json inside json, we need to replace " with \"
+		-- because http urls need to be urlencoded, do this here (instead of letting the game do it), so we can calculate the size correctly
 		local nextCharEncoded = urlencode( string.gsub(string.sub(dataToEncode, 1, 1), '"', '\\"') );
 		while string.len(myPartOfTheData) + string.len(nextCharEncoded) < maxLength do
 			myPartOfTheData = myPartOfTheData .. nextCharEncoded
@@ -5097,6 +5103,7 @@ function sendToServer(datatype, data, meta --[[optional]], callback--[[optional]
 			packet.morePackets = 0
 		end
 
+		-- replace the dummy data with the part of the real data
 		local packetString = urlencode(json.stringify(packet))
 		local from, to = string.find(packetString, urlencode(DATA_PLACEHOLDER), 1, true)
 		local before = string.sub(packetString, 1, from - 1)
@@ -5105,9 +5112,10 @@ function sendToServer(datatype, data, meta --[[optional]], callback--[[optional]
 
 		-- skip debugging of heartbeats
 		if not (datatype == "heartbeat") then
-			webSyncDebugDetail("queuing packet, type: " .. datatype .. ", size: " .. string.len(packetString) .. ", part: " .. myPacketPart)
+			companionDebugDetail("queuing packet, type: " .. datatype .. ", size: " .. string.len(packetString) .. ", part: " .. myPacketPart)
 		end
 
+		-- push into queue for sending
 		table.insert(packetSendingQueue, {
 			packetId = myPacketId,
 			packetPart = myPacketPart,
@@ -5115,6 +5123,7 @@ function sendToServer(datatype, data, meta --[[optional]], callback--[[optional]
 			_datatype = datatype
 		})
 
+		-- add to pending packets (needed later when waiting for the response)
 		table.insert(pendingPacketParts, {
 			packetId = myPacketId,
 			packetPart = myPacketPart,
@@ -5128,17 +5137,18 @@ function sendToServer(datatype, data, meta --[[optional]], callback--[[optional]
 	return true
 end
 
-webServerCommandCallbacks = {}
--- @callback: this function must return success (boolean), message
---            callback(playertoken, commandname, commandcontent) will be called with the params commandname and commandcontent
-function registerWebServerCommandCallback(commandname, callback)
+companionCommandCallbacks = {}
+-- @callback: this function must return: success (boolean), message (string, optional)
+--            callback() is called like this: function (playertoken, commandname, commandcontent)
+function registerCompanionCommandCallback(commandname, callback)
 	if not (type(callback) == "function") then
-		return webSyncError("@registerWebServerCommandCallback: callback must be a function")
+		return companionError("@registerCompanionCommandCallback: callback must be a function")
 	end
-	webServerCommandCallbacks[commandname] = callback
-	webSyncDebugDetail("registered command callback '" .. commandname .. "'")
+	companionCommandCallbacks[commandname] = callback
+	companionDebugDetail("registered command callback '" .. commandname .. "'")
 end
 
+-- calculates the identifier of a packet
 function calcPacketIdent(packet)
 	if packet.packetId == nil or packet.packetPart == nil then
 		return nil
@@ -5146,12 +5156,14 @@ function calcPacketIdent(packet)
 	return packet.packetId .. ":" .. packet.packetPart
 end
 
+-- compares two packet identifiers
 function samePacketIdent(a, b)
 	local ia = calcPacketIdent(a)
 	local ib = calcPacketIdent(b)
 	return ia and ib and (ia == ib)
 end
 
+-- check queue for waiting packets, if is allowed to send, then send out the next packet.
 local lastPacketSentTickCallCount = 0
 local tickCallCounter = 0
 local HTTP_MAX_TIME_NECESSARY_BETWEEN_REQUESTS = 60 --in case we have a problem inside httpReply, and don't detect that the last sent message was replied to, then allow another request after this time
@@ -5163,7 +5175,7 @@ function checkPacketSendingQueue()
 		local packetToSend = table.remove(packetSendingQueue, 1)
 
 		if not(packetToSend._datatype == "heartbeat") then
-			webSyncDebugDetail("sending packet to server: " .. urldecode(packetToSend.data))
+			companionDebugDetail("sending packet to server: " .. urldecode(packetToSend.data))
 		end
 
 		server.httpGet(HTTP_GET_API_PORT, HTTP_GET_API_URL .. packetToSend.data)
@@ -5172,17 +5184,18 @@ function checkPacketSendingQueue()
 		lastSentPacketIdent = calcPacketIdent(packetToSend)
 	elseif #packetSendingQueue > 0  and tickCallCounter % 60 == 0 then
 		if not lastSentPacketPartHasBeenRespondedTo then
-			webSyncDebug("skipping packetQueue, reason: not responded")
+			companionDebug("skipping packetQueue, reason: not responded")
 		elseif not (lastPacketSentTickCallCount == 0) then
-			webSyncDebug("skipping packetQueue, reason: not first")
+			companionDebug("skipping packetQueue, reason: not first")
 		end
 	end
 
 	if tickCallCounter % 60 * 5 == 0 and #packetSendingQueue > 5 then
-		webSyncDebug("#packetSendingQueue " .. #packetSendingQueue)
+		companionDebug("#packetSendingQueue " .. #packetSendingQueue)
 	end
 end
 
+-- sends a heartbeat to the webserver and checks if it responds
 local lastHeartbeatTriggered = 0
 function triggerHeartbeat()
 	lastHeartbeatTriggered = tickCallCounter
@@ -5190,38 +5203,40 @@ function triggerHeartbeat()
 		if success then
 			lastSucessfulHeartbeat = tickCallCounter
 			if not serverIsAvailable then
-				webSyncDebug("C2 WebServer is now available")
+				companionDebug("Companion Server is now available")
 			end
 			serverIsAvailable = true
 		else
 			if serverIsAvailable then
-				webSyncDebug("C2 WebServer is not available anymore")
+				companionDebug("Companion Server is not available anymore")
 			end
 			serverIsAvailable = false
 
-			webSyncDebug("heartbeat failed: " .. result)
+			companionDebug("heartbeat failed: " .. result)
 		end
 	end, true)
 
 	if not sent then
-		webSyncError("error when sending heartbeat: " .. (err or "nil"))
+		companionError("when sending heartbeat: " .. (err or "nil"))
 	end
 end
 
+-- must be called every onTick()
 local c2HasMoreCommands = false
 local HTTP_GET_HEARTBEAT_TIMEOUT = 60 * 5 -- at least one heartbeat every 5 seconds
 function syncTick()
 	checkPacketSendingQueue()
 
 	if lastSentPacketPartHasBeenRespondedTo and c2HasMoreCommands then
-		webSyncDebugDetail("trigger heartbeat, reason: moreCommands")
+		companionDebugDetail("trigger heartbeat, reason: moreCommands")
 		triggerHeartbeat()
 	elseif (tickCallCounter - lastPacketSentTickCallCount) > HTTP_GET_HEARTBEAT_TIMEOUT and (tickCallCounter - lastHeartbeatTriggered) > HTTP_GET_HEARTBEAT_TIMEOUT then
-		--webSyncDebugDetail("trigger heartbeat, reason: time")
+		--companionDebugDetail("trigger heartbeat, reason: time")
 		triggerHeartbeat()
 	end
 end
 
+-- used when connection to server closes (instead of waiting for a timeout, we can instantly fail pending requests)
 function failAllPendingHTTPRequests(reason)
 	if #pendingPacketParts > 0 then
 		for k,v in pairs(pendingPacketParts) do
@@ -5232,27 +5247,30 @@ function failAllPendingHTTPRequests(reason)
 
 		pendingPacketParts = {}
 
-		webSyncDebug("Failed all pending packets. Reason: " .. reason)
-		lastSentPacketPartHasBeenRespondedTo = true -- TODO: is this the correct behaviour?
+		companionDebug("Failed all pending packets. Reason: " .. reason)
+		lastSentPacketPartHasBeenRespondedTo = true
 	end
 end
 
 -- don't call this, the game will call it (after getting a response for a HTTP request)
 function httpReply(port, url, response_body)
+	-- make sure we only react to responses sent from our script
 	if port == HTTP_GET_API_PORT and string.sub(url, 1, string.len(HTTP_GET_API_URL)) == HTTP_GET_API_URL then
+		-- if no application is listening that port
 		if string.sub(response_body, 1, string.len("connect():")) == "connect():" then
-			failAllPendingHTTPRequests("C2 WebServer is not running!")
+			failAllPendingHTTPRequests("Companion Server is not running!")
 			return
 		end
 
+		-- if application is not responding to our http request
 		if string.sub(response_body, 1, string.len("timeout")) == "timeout" then
 			local urlDataPart = urldecode( string.sub(url, string.len(HTTP_GET_API_URL) + 1) )
 			local parsedOriginalPacket = json.parse(urlDataPart)
 
 			if parsedOriginalPacket == nil then
-				webSyncDebug("@httpReply parsingOriginal failed for: '" .. urlDataPart .. "'")
+				companionDebug("@httpReply parsingOriginal failed for: '" .. urlDataPart .. "'")
 				-- since we cannot say which pending message failed, fail all of them (better then not failing one of them which leaves behind a callback that will never be called, sad story)
-				failAllPendingHTTPRequests("C2 WebServer Request timed out")
+				failAllPendingHTTPRequests("Companion Server Request timed out")
 			else
 				if lastSentPacketIdent == calcPacketIdent(parsedOriginalPacket) then
 					lastSentPacketPartHasBeenRespondedTo = true
@@ -5274,12 +5292,15 @@ function httpReply(port, url, response_body)
 			return
 		end
 
+		-- if we have a valid http response
+
 		local parsed = json.parse(response_body)
 
 		if parsed == nil then
-			return webSyncError("@httpReply parsing failed for: '" .. response_body .. "'")
+			return companionError("@httpReply parsing failed for: '" .. response_body .. "'")
 		end
 		
+		-- so we can continue asap in the sending queue
 		if calcPacketIdent(parsed) and lastSentPacketIdent == calcPacketIdent(parsed) then
 			lastSentPacketPartHasBeenRespondedTo = true
 		end
@@ -5290,7 +5311,7 @@ function httpReply(port, url, response_body)
 				foundPendingPacketPart = true
 
 				if not (v._datatype == "heartbeat") then
-					webSyncDebugDetail("@httpReply parsed: " .. json.stringify(parsed))
+					companionDebugDetail("@httpReply parsed: " .. json.stringify(parsed))
 				end
 
 				if v.morePackets == 0 and v.callback then
@@ -5303,33 +5324,39 @@ function httpReply(port, url, response_body)
 		end
 
 		if not foundPendingPacketPart then
-			-- TODO: if error is json syntax error, then fail the latest sent packet
-			webSyncDebugDetail("@httpReply parsed: " .. json.stringify(parsed))
-			webSyncDebug("received response from server but no pending packetPart found! " .. (calcPacketIdent(parsed) or "nil"))
+			companionDebugDetail("@httpReply parsed2: " .. json.stringify(parsed))
+			companionDebug("received response from server but no pending packetPart found! " .. (calcPacketIdent(parsed) or "nil"))
+
+			-- if json parsing failed (server side), we dont know which pending packet failed (missing packet identifier), so we fail all of them
+			if parsed ~= nil and parsed.success == false then
+				failAllPendingHTTPRequests("unknown packet id failed, maybe json syntax error, check companion server logs")
+			end
 		end
 
+		-- check if the server has more stuff for us to pick up (in this case, do not wait until next heartbeat to contact server, but instead directly contact)
 		c2HasMoreCommands = parsed.hasMoreCommands == true
 		if c2HasMoreCommands then
-			webSyncDebugDetail("c2 has more commands for us!")
+			companionDebugDetail("companion server has more commands for us!")
 		end
 
+		-- check for commands from the server
 		if parsed.command then
-			webSyncDebug("received command from server: '" .. parsed.command .. "'")
-			webSyncDebugDetail(json.stringify(parsed.commandContent))
+			companionDebug("received command from server: '" .. parsed.command .. "'")
+			companionDebugDetail(json.stringify(parsed.commandContent))
 
-			if type(webServerCommandCallbacks[parsed.command]) == "function" then
-				local success, message = webServerCommandCallbacks[parsed.command](parsed.token, parsed.command, parsed.commandContent)
+			if type(companionCommandCallbacks[parsed.command]) == "function" then
+				local success, message = companionCommandCallbacks[parsed.command](parsed.token, parsed.command, parsed.commandContent)
 
 				local sent, err = sendToServer("command-response", success and "ok" or message, {commandId = parsed.commandId, statusMessage = message})
 				if not sent then
-					webSyncError("error when sending command response: " .. (err or "nil"))
+					companionError("when sending command response: " .. (err or "nil"))
 				end
 			else
-				webSyncError("no callback was registered for the command: '" .. parsed.command .. "'")
+				companionError("no callback was registered for the command: '" .. parsed.command .. "'")
 
 				local sent, err = sendToServer("command-response", "no callback was registered for the command: '" .. parsed.command .. "'", {commandId = parsed.commandId})
 				if not sent then
-					webSyncError("error when sending command response: " .. (err or "nil"))
+					companionError("when sending command response: " .. (err or "nil"))
 				end
 			end
 		end
