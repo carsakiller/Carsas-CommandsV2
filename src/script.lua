@@ -1333,11 +1333,11 @@ local PREFERENCE_DEFAULTS = {
 		type = "text"
 	},
 	welcomeReturning = {
-		value = false,
+		value = "",
 		type = "text"
 	},
 	companion = {
-		value = false,
+		value = "",
 		type = "bool"
 	}
 }
@@ -4573,7 +4573,7 @@ COMMANDS = {
 		category = "Preferences",
 		args = {
 			{name = "preference_name", type = {"string"}, required = true},
-			{name = "value", type = {"bool", "number", "string", "text"}, required = true}
+			{name = "value", type = {"bool", "number", "text"}, required = true}
 		},
 		description = "Sets the specified preference to the requested value. Use ?preferences to see all of the preferences.",
 		syncableData = {"preferences"}
