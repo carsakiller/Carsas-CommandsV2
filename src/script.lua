@@ -5054,8 +5054,7 @@ function sendToServer(datatype, data, meta --[[optional]], callback--[[optional]
 
 	c2HasMoreCommands = false
 
-	local stringifiedData = json.stringify(data)
-	local dataToEncode = string.gsub(stringifiedData, '"', '\\"')
+	local dataToEncode = json.stringify(data)
 
 	local url = HTTP_GET_API_URL
 
@@ -5084,14 +5083,14 @@ function sendToServer(datatype, data, meta --[[optional]], callback--[[optional]
 
 		local myPartOfTheData = ""
 
-		local nextCharEncoded = urlencode( string.sub(dataToEncode, 1, 1) );
+		local nextCharEncoded = urlencode( string.gsub(string.sub(dataToEncode, 1, 1), '"', '\\"') );
 		while string.len(myPartOfTheData) + string.len(nextCharEncoded) < maxLength do
 			myPartOfTheData = myPartOfTheData .. nextCharEncoded
 			dataToEncode = string.sub(dataToEncode, 2)
 			if string.len(dataToEncode) == 0 then
 				break
 			end
-			nextCharEncoded = urlencode( string.sub(dataToEncode, 1, 1) );
+			nextCharEncoded = urlencode( string.gsub(string.sub(dataToEncode, 1, 1), '"', '\\"') );
 		end
 
 		if string.len(dataToEncode) == 0 then
