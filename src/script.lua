@@ -1347,11 +1347,13 @@ local DEFAULT_ROLES = {
 		active = true,
 		admin = true,
 		auth = true,
+		no_delete = true,
 		members = {}
 	},
 	-- users with this role will receive notices when something important is changed
 	Supervisor = {
 		active = true,
+		no_delete = true,
 		members = {}
 	},
 	Admin = {
@@ -1495,12 +1497,14 @@ local DEFAULT_ROLES = {
 		active = true,
 		admin = false,
 		auth = true,
+		no_delete = true,
 		members = {}
 	},
 	Prank = {
 		active = true,
 		admin = false,
 		auth = false,
+		no_delete = true,
 		members = {}
 	}
 }
@@ -1707,10 +1711,16 @@ end
 ---@param playerID string This could be a peerID, name, or "me" but it comes here as a string
 ---@param caller Player The player that called this function. Used for translating "me"
 ---@return boolean is_valid If the provided playerID is valid
----@return number|nil peerID The peerID of the target playerID
+---@return number|nil Player The instance of the player
 ---@return string|nil err Why the provided playerID is invalid
 function validatePlayerID(playerID, caller)
+	playerID = tostring(playerID)
 	local as_num = tonumber(playerID)
+
+	local player = G_players.get(playerID or false)
+	if player then
+		return true, player
+	end
 
 	if as_num then
 		if STEAM_IDS[as_num] then
@@ -1756,7 +1766,8 @@ function dataIsOfType(data, target_type, caller)
 	local as_num = tonumber(data)
 
 	if target_type == "playerID" then
-		return validatePlayerID(data, caller)
+		local success, player = validatePlayerID(data, caller)
+		return success, player, not success and " invalid playerID " .. tostring(data)
 	elseif target_type == "vehicleID" then
 		if not as_num then
 			return false, nil, (tostring(data) .. " is not a number and therefor not a valid vehicleID")
@@ -1872,8 +1883,10 @@ function tellSupervisors(title, message, ...)
 		end
 	end
 
-	for peerID, _ in pairs(peers) do
-		server.announce(title, message, peerID)
+	for _, peerID in pairs(peers) do
+		if G_players.get(STEAM_IDS[peerID]).hasRole('Supervisor') then
+			server.announce(title, message, peerID)
+		end
 	end
 end
 
@@ -1944,13 +1957,15 @@ local Role = {}
 ---@param auth? boolean If this role should give it's members auth privileges
 ---@param commands? table A table indexed by command names with a value of true for each command this role should give access to
 ---@param members table? A table indexed by the `steamIDs` of the players that have this role
-function Role.constructor(self, name, active, admin, auth, commands, members)
+---@param no_delete boolean? If the role cannot be deleted
+function Role.constructor(self, name, active, admin, auth, commands, members, no_delete)
 	self.name = name
 	self.active = active or true
 	self.admin = admin or false
 	self.auth = auth or false
 	self.commands = commands or {}
 	self.members = members or {}
+	self.no_delete = no_delete or false
 
 	self.save()
 end
@@ -2088,6 +2103,10 @@ end
 function RoleContainer.delete(self, role)
 	if not self.roles[role] then
 		return false, "ROLE NOT FOUND", quote(role) .. " is not a valid role"
+	end
+
+	if self.roles[role].no_delete then
+		return false, "ROLE CANNOT BE DELETED", quote(role) .. " is a special role that cannot be deleted"
 	end
 
 	self.roles[role] = nil
@@ -2406,7 +2425,7 @@ function Player.equip(self, notify, slot, item_id, data1, data2, is_active)
 				return true, "PLAYER EQUIPPED", target_pretty_name .. "'s " .. item_pretty_name .. " in slot " .. slot_name .. " has been updated"
 			else
 				if notify then
-					server.notify(self.peer_ID, "EQUIPPED", caller_pretty_name .. " equipped you with " .. item_pretty_name .. " in slot " .. slot_name, 9)
+					server.notify(self.peerID, "EQUIPPED", caller_pretty_name .. " equipped you with " .. item_pretty_name .. " in slot " .. slot_name, 9)
 				end
 				return true, "PLAYER EQUIPPED", target_pretty_name .. " was equipped with " .. item_pretty_name .. " in slot " .. slot_name
 			end
@@ -2434,7 +2453,7 @@ function Player.updatePrivileges(self)
 	local role_auth = false
 
 	for k, v in pairs(players) do
-		if tostring(v.steamID) == self.steamID then
+		if tostring(v.steam_id) == self.steamID then
 			is_admin = v.admin
 			is_auth = v.auth
 			break
@@ -2602,7 +2621,7 @@ end
 ---@param steamID? string The steamID of the player
 ---@return Player|table|nil player The player you were looking for or nil if it could not be found. If the `steamID` argument was not provided, then a table consisting of all players in this container will be returned
 function PlayerContainer.get(self, steamID)
-	if not steamID then
+	if steamID == nil then
 		return self.players
 	else
 		return self.players[steamID]
@@ -2890,7 +2909,7 @@ function onCreate(is_new)
 	end
 
 	for role_name, data in pairs(g_savedata.roles) do
-		G_roles.create(role_name, data.active, data.admin, data.auth, data.commands, data.members)
+		G_roles.create(role_name, data.active, data.admin, data.auth, data.commands, data.members, data.no_delete)
 	end
 
 	for index, rule in ipairs(g_savedata.rules) do
@@ -3065,6 +3084,8 @@ function onPlayerRespawn(peerID)
 	local steamID = STEAM_IDS[peerID]
 	local player = G_players.get(steamID)
 
+	if not player then return end
+
 	if G_preferences.equipOnRespawn.value then
 		player.giveStartingEquipment()
 	end
@@ -3076,7 +3097,8 @@ function onPlayerRespawn(peerID)
 				local data2 = exploreTable(EQUIPMENT_DATA, {item_id, "data", 2, "default"})
 				player.equip(nil, EQUIPMENT_SLOTS[slot_number].letter, item_id, data1, data2)
 			end
-			player.inventory = nil -- clear temporary inventory from persistent storage
+			player.inventory = nil
+			-- clear temporary inventory from persistent storage
 
 			player.save()
 			return
@@ -3396,12 +3418,14 @@ COMMANDS = {
 			local statuses = ""
 			local statusTitle, statusText
 			for _, player in ipairs(args) do
-				local success
-				success, statusTitle, statusText = player.ban(caller.steamID)
-				if not success then
-					failed = true
-					if #statuses > 0 then statuses = statuses .. "\n" end
-					statuses = statuses .. statusText
+				if not player.hasRole('Owner') then
+					local success
+					success, statusTitle, statusText = player.ban(caller.steamID)
+					if not success then
+						failed = true
+						if #statuses > 0 then statuses = statuses .. "\n" end
+						statuses = statuses .. statusText
+					end
 				end
 			end
 			return not failed, statusTitle, failed and statuses or statusText
@@ -3436,6 +3460,26 @@ COMMANDS = {
 			{name = "steamID", type = {"steamID"}, required = true}
 		},
 		description = "Unbans a player from the server.",
+		syncableData = {"players"}
+	},
+	kickPlayer = {
+		func = function(caller, player)
+			if player == caller then
+				return false, "DENIED", "You cannot kick yourself"
+			end
+
+			if player.hasRole('Owner') then
+				return false, "DENIED", "You cannot kick an owner"
+			end
+
+			server.kickPlayer(player.peerID)
+			return true, "KICKED", player.prettyName() .. " has been kicked from the server"
+		end,
+		category = "Moderation",
+		args = {
+			{name = "playerID", type = {"playerID"}, required = true}
+		},
+		description = "Kicks a player from the server.",
 		syncableData = {"players"}
 	},
 	banned = {
@@ -3667,6 +3711,10 @@ COMMANDS = {
 			local quoted = quote(role_name)
 			if not role then
 				return false, "ROLE NOT FOUND", quoted .. " is not a valid role"
+			end
+
+			if role_name == 'Everyone' then
+				return false, "DENIED", "You cannot remove someone from the Everyone role"
 			end
 
 			role.removeMember(target)
@@ -3921,9 +3969,9 @@ COMMANDS = {
 			local owner_steam_id = vehicle.owner
 			if caller.steam_id == owner_steam_id then
 				vehicle.owner = target_player.steam_id
-				server.notify(target_player.peer_id, "OWNERSHIP TRANSFER", caller.prettyName() .. " has made you the owner of one of their vehicles:\n\n" .. vehicle.pretty_name, 9)
+				server.notify(target_player.peerID, "OWNERSHIP TRANSFER", caller.prettyName() .. " has made you the owner of one of their vehicles:\n\n" .. vehicle.pretty_name, 9)
 			else
-				server.announce("DENIED", "You cannot transfer ownership on a vehicle you do not own", caller.peer_id)
+				server.announce("DENIED", "You cannot transfer ownership on a vehicle you do not own", caller.peerID)
 			end
 		end,
 		args = {
@@ -4730,6 +4778,10 @@ COMMANDS = {
 function handleCompanion(token, command, argstring)
 	local caller = G_players.get(STEAM_IDS[0]) -- TODO: get caller_id from token
 
+	if not COMMANDS[command] then
+		return false, "COMMAND NOT FOUND", "The command " .. quote(command) .. " does not exist"
+	end
+
 	local success, statusTitle, statusText = switch(caller, command, convertArgStringToTable(argstring))
 	local title = statusText and statusTitle or (success and "SUCCESS" or "FAILED")
 	local text = statusText or statusTitle
@@ -4778,7 +4830,7 @@ function switch(caller, command, args)
 	local requiredDivide = 1
 	for argIndex, argData in ipairs(command_data.args) do
 		if argData.required then
-			table.insert(argDecodeOrder,  requiredDivide,{index = argIndex, data = argData})
+			table.insert(argDecodeOrder, requiredDivide,{index = argIndex, data = argData})
 			requiredDivide = requiredDivide + 1
 		else
 			table.insert(argDecodeOrder, {index = argIndex, data = argData})
@@ -4809,22 +4861,20 @@ function switch(caller, command, args)
 		local accepted
 
 		local start = arg.index
-		local fin = 1
-		local step = -1
+		local fin = start
 
 		--if this argument is repeatable, check the rest of the arguments
 		if arg.data.repeatable then
 			start = arg.index
 			fin = #args
-			step = 1
 		end
 
-		for pArgIndex = start, fin, step do
+		for pArgIndex = start, fin do
 			local pArgValue = args[pArgIndex]
 			local is_correct_type, converted_value, err
 
 			-- DEBUG:
-			server.announce(pArgIndex .. " " .. arg.data.name, quote((pArgValue or "nil")))
+			server.announce(pArgIndex .. " " .. arg.data.name, quote((pArgValue or "nil")), caller)
 
 			if not accepted or arg.data.repeatable then
 
@@ -4843,7 +4893,7 @@ function switch(caller, command, args)
 						for i = pArgIndex, #args do
 							text = text .. (#text > 0 and " " or "") .. args[i]
 						end
-						accepted_args[math.max(1, #accepted_args + 1)] = text
+						accepted_args[#accepted_args + 1] = text
 						accepted = true
 						break
 					end
