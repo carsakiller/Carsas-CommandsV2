@@ -3314,7 +3314,7 @@ function onTick()
 				end
 			end
 		elseif event.type == "teleportToPosition" then
-			local player = event.target
+			local player = event.target ---@type Player
 			local peerID = player.peerID
 			local pos = event.target_position
 
@@ -3323,7 +3323,7 @@ function onTick()
 				table.remove(EVENT_QUEUE, i)
 			end
 		elseif event.type == "vehicleVoxelCheck" and event.interval >= event.intervalEnd then
-			local vehicle = event.target
+			local vehicle = event.target ---@type Vehicle
 			local owner = event.owner
 			local is_sim, success = server.getVehicleSimulating(vehicle.vehicleID)
 
