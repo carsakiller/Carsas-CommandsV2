@@ -2077,7 +2077,7 @@ end
 
 ---Creates a role and adds it to this roles container
 ---@param self RoleContainer This role container object's instance
----@param role string The name of the new role
+---@param role string The name of the role
 ---@param active boolean? If the role is active or not
 ---@param admin boolean? If the role grants admin permissions
 ---@param auth boolean? If the role grants auth permissions
@@ -2137,9 +2137,9 @@ local Player = {}
 
 ---Creates a player object
 ---@param self Player This player object's instance
----@param peerID peerID The `peerID` of the player to create
----@param steamID steamID The `steamID` of the player to create
----@param name string The name of the player to create
+---@param peerID peerID The `peerID` of the player
+---@param steamID steamID The `steamID` of the Player
+---@param name string The name of the player
 ---@param banned? steamID The steam_if of the admin that banned them or nil
 function Player.constructor(self, peerID, steamID, name, banned)
 	self.peerID = peerID
@@ -2974,10 +2974,6 @@ function onPlayerJoin(steamID, name, peerID, admin, auth)
 
 	STEAM_IDS[peerID] = steamID
 
-	if invalid_version then -- delay version warnings for when someone joins
-		server.announce("WARNING", "Your code is older than your save data. To prevent data loss/corruption, no data will be processed. Please update Carsa's Commands to the latest version.")
-		return
-	end
 
 	if player then
 		player.peerID = peerID -- update player's peerID
@@ -3043,7 +3039,6 @@ function onPlayerJoin(steamID, name, peerID, admin, auth)
 end
 
 function onPlayerLeave(steamID, name, peerID, is_admin, is_auth)
-	steamID = tostring(steamID)
 	if invalid_version then return end
 
 	if G_preferences.removeVehicleOnLeave.value then
@@ -3060,7 +3055,6 @@ function onPlayerLeave(steamID, name, peerID, is_admin, is_auth)
 end
 
 function onPlayerDie(steamID, name, peerID, is_admin, is_auth)
-	steamID = tostring(steamID)
 	if invalid_version then return end
 
 	if G_preferences.keepInventory.value then
@@ -3079,7 +3073,6 @@ function onPlayerDie(steamID, name, peerID, is_admin, is_auth)
 end
 
 function onPlayerRespawn(peerID)
-	if invalid_version then return end
 
 	local steamID = STEAM_IDS[peerID]
 	local player = G_players.get(steamID)
