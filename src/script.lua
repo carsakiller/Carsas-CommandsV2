@@ -1904,6 +1904,18 @@ function autosave()
 
 	server.save(string.format(string.format("%s_%d", SAVE_NAME, save_index)))
 end
+
+---Gets the length of a table that is not indexed linearly
+---@param t table The table to get the length of
+---@return number The number of items in the table
+function tableLength(t)
+	local count = 0
+	for k, v in pairs(t) do
+		count = count + 1
+	end
+
+	return count
+end
 --#endregion
 
 
@@ -1994,6 +2006,13 @@ function Role.removeMember(self, player)
 	player.updatePrivileges()
 
 	self.save()
+end
+
+---Gets the current number of members of this role
+---@param self Role This role object's instance
+---@return number The number of members of this role
+function Role.memberCount(self)
+	return tableLength(self.members)
 end
 
 ---Sets the active state of this role
