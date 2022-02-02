@@ -2231,13 +2231,16 @@ function Player.ban(self, admin_steamID)
 	local admin = G_players.get(admin_steamID)
 	self.banned = admin_steamID
 
+	local message = self.prettyName(true) .. " has been banned"
+
 	if self.peerID then
 		server.kickPlayer(self.peerID)
-		tellSupervisors("PLAYER BANNED", self.prettyName(true) .. " has been banned by " .. admin.prettyName(), admin.peerID)
+		tellSupervisors("PLAYER BANNED", message .. " by " .. admin.prettyName(), admin.peerID)
 	end
 	self.save()
 
-	return true, "PLAYER BANNED", self.prettyName(true) .. " has been banned"
+	companionLogAppendMessage("Player Banned: " .. message .. " by " .. admin.prettyName())
+	return true, "PLAYER BANNED", message
 end
 
 ---Unbans a player from the server
@@ -2251,8 +2254,13 @@ function Player.unban(self, admin_steamID)
 	self.banned = false
 	self.save()
 
-	tellSupervisors("PLAYER UNBANNED", self.prettyName(true) .. " has been unbanned by " .. admin.prettyName(), admin.peerID)
-	return true, "PLAYER UNBANNED", self.prettyName(true) .. " has been unbanned"
+	local message = self.prettyName(true) .. " has been unbanned"
+
+	tellSupervisors("PLAYER UNBANNED",  message .. " by " .. admin.prettyName(), admin.peerID)
+
+	companionLogAppendMessage("Player Unbanned: " .. message .. " by " .. admin.prettyName())
+
+	return true, "PLAYER UNBANNED", message
 end
 
 ---Gets the position of this player
@@ -3062,6 +3070,8 @@ function onPlayerJoin(steamID, name, peerID, admin, auth)
 
 	autosave()
 
+	companionLogAppendMessage("Player Joined: " .. player.prettyName(true))
+
 	syncData('players')
 end
 
@@ -3573,7 +3583,9 @@ COMMANDS = {
 
 			local success, err, errText = G_rules.add(text, position)
 			if success then
-				tellSupervisors("RULE ADDED", caller.prettyName() .. " added rule #".. (position or #G_rules.rules), caller.peerID)
+				local message = caller.prettyName() .. " added rule #".. (position or #G_rules.rules)
+				tellSupervisors("RULE ADDED", message, caller.peerID)
+				companionLogAppendMessage("Rule Added: " .. message)
 			end
 			return success, err, errText
 		end,
@@ -3590,7 +3602,9 @@ COMMANDS = {
 			local rule = G_rules.rules[position]
 			local success, err, errText = G_rules.remove(position)
 			if success then
-				tellSupervisors("RULE REMOVED", caller.prettyName() .. " removed rule #" .. position .. ":\n" .. rule)
+				local message = caller.prettyName() .. " removed rule #" .. position .. ":\n" .. rule
+				tellSupervisors("RULE REMOVED", message, caller.peerID)
+				companionLogAppendMessage("Rule Removed: " .. message)
 			end
 			return success, err, errText
 		end,
@@ -3623,7 +3637,9 @@ COMMANDS = {
 			local success, err, errText = G_roles.create(name)
 
 			if success then
-				tellSupervisors(caller.prettyName() .. " created the role: " .. quote(name), caller.peerID)
+				local message = caller.prettyName() .. " created the role " .. quote(name)
+				tellSupervisors("ROLE CREATED", message, caller.peerID)
+				companionLogAppendMessage("Role Created: " .. message)
 			end
 			return success, err, errText
 		end,
@@ -3638,7 +3654,9 @@ COMMANDS = {
 		func = function(caller, name)
 			local success, err, errText = G_roles.delete(name)
 			if success then
-				tellSupervisors("ROLE DELETED", quote(name) .. " has been deleted by " .. caller.prettyName())
+				local message = caller.prettyName() .. " has deleted the role " .. quote(name)
+				tellSupervisors("ROLE DELETED", message)
+				companionLogAppendMessage("Role Deleted: " .. message)
 			end
 			return success, err, errText
 		end,
@@ -3661,8 +3679,12 @@ COMMANDS = {
 			if role then
 				local change = role.setPermissions(is_admin, is_auth)
 				local perms = string.format("Admin: %s\nAuth: %s", role.admin and "True" or "False", role.auth and "True" or "False")
+				
 				if change then
-					tellSupervisors("ROLE EDITED", caller.prettyName() .. " edited " .. quoted .. " to have the following permissions:\n" .. perms, caller.peerID)
+					local message = caller.prettyName() .. " edited " .. quoted .. " to have the following permissions:\n" .. perms
+					tellSupervisors("ROLE EDITED", message, caller.peerID)
+					companionLogAppendMessage("Role Edited: " .. message)
+
 					return true, "ROLE EDITED", quoted .. " now has the following permissions:\n" .. perms
 				else
 					return false, "NO EDITS MADE", "No changes were made to " .. quoted
@@ -3692,13 +3714,19 @@ COMMANDS = {
 			if value then
 				if not role.commands[command] then
 					role.addCommandAccess(command)
-					tellSupervisors("ROLE EDITED", caller.prettyName() .. " has given " .. quoted .. " access to the " .. command .. " command", caller.peerID)
+					local message = caller.prettyName() .. " has given " .. quoted .. " access to the " .. command .. " command"
+					tellSupervisors("ROLE EDITED", message, caller.peerID)
+					companionLogAppendMessage("Role Edited: " .. message)
+
 					return true, "ROLE EDITED", quoted .. " has been given access to the " .. command .. " command"
 				end
 			else
 				if role.commands[command] then
 					role.removeCommandAccess(command)
-					tellSupervisors("ROLE EDITED", caller.prettyName() .. " has removed access to the " .. command .. " command for the role " .. quoted, caller.peerID)
+					local message = caller.prettyName() .. " has removed access to the " .. command .. " command for the role " .. quoted
+					tellSupervisors("ROLE EDITED", message, caller.peerID)
+					companionLogAppendMessage("Role Edited: " .. message)
+
 					return true, "ROLE EDITED", quoted .. " has lost access to the " .. command .. " command"
 				end
 			end
@@ -3723,7 +3751,11 @@ COMMANDS = {
 			end
 
 			role.addMember(target)
-			tellSupervisors("ROLE GIVEN", caller.prettyName() .. " has given " .. target.prettyName() .. " the role " .. quoted, caller.peerID)
+
+			local message = caller.prettyName() .. " has given " .. target.prettyName() .. " the role " .. quoted
+			tellSupervisors("ROLE GIVEN", message, caller.peerID)
+			companionLogAppendMessage(message)
+
 			return true, "ROLE GIVEN", target.prettyName() .. " has been given the role " .. quoted
 		end,
 		category = "Roles",
@@ -3743,12 +3775,25 @@ COMMANDS = {
 				return false, "ROLE NOT FOUND", quoted .. " is not a valid role"
 			end
 
+			if role_name == 'Owner' then
+				if caller.hasRole('Owner') then
+					if G_roles.get('Owner').memberCount() == 1 then
+						return false, "DENIED", "You are the only owner so you cannot revoke it"
+					end
+				else
+					return false, "DENIED", "You must be an owner in order to revoke someone else's owner role"
+				end
+			end
+
 			if role_name == 'Everyone' then
 				return false, "DENIED", "You cannot remove someone from the Everyone role"
 			end
 
 			role.removeMember(target)
-			tellSupervisors("ROLE REVOKED", caller.prettyName() .. " has revoked " .. quoted .. " from " .. target.prettyName(), caller.peerID)
+			local message = caller.prettyName() .. " has revoked " .. quoted .. " from " .. target.prettyName()
+			tellSupervisors("ROLE REVOKED", message, caller.peerID)
+			companionLogAppendMessage("Role Revoked: " .. message)
+
 			return true, "ROLE REVOKED", target.prettyName() .. " has had their role " .. quoted .. " revoked"
 		end,
 		category = "Roles",
@@ -4592,7 +4637,10 @@ COMMANDS = {
 		func = function(caller, confirm)
 			if confirm then
 				G_preferences = deepCopyTable(PREFERENCE_DEFAULTS)
-				tellSupervisors("!PREFERENCES RESET!", "The server's preferences have been reset by " .. caller.prettyName(), caller.peerID)
+				local message = "The server's preferences have been reset by " .. caller.prettyName()
+				tellSupervisors("!!PREFERENCES RESET!!", message, caller.peerID)
+				companionLogAppendMessage("!!PREFERENCES RESET!! " .. message)
+
 				return true, "PREFERENCES RESET", "The server's preferences have been reset"
 			end
 		end,
@@ -4650,7 +4698,10 @@ COMMANDS = {
 			end
 
 			if edited then
-				tellSupervisors("PREFERENCE EDITED", caller.prettyName() .. " has set " .. preference_name .. " to:\n" .. tostring(preference.value), caller.peerID)
+				local message = caller.prettyName() .. " has set " .. preference_name .. " to:\n" .. tostring(preference.value)
+				tellSupervisors("PREFERENCE EDITED", message, caller.peerID)
+				companionLogAppendMessage("Preference Edited: " .. message)
+
 				return true, "PREFERENCE EDITED", preference_name .. " has been set to " .. tostring(preference.value)
 			else
 				-- there was an incorrect type
@@ -4765,8 +4816,11 @@ COMMANDS = {
 
 			if nearest then
 				server.setGameSetting(nearest, value)
-				-- give user feedback
-				tellSupervisors("GAME SETTING EDITED", caller.prettyName() .. " changed " .. nearest .. " to " .. tostring(value), caller.peerID)
+
+				local message = caller.prettyName() .. " changed " .. nearest .. " to " .. tostring(value)
+				tellSupervisors("GAME SETTING EDITED", message, caller.peerID)
+				companionLogAppendMessage("Game Setting Edited: " .. message)
+
 				return true, "GAME SETTING EDITED", nearest .. " is now set to " .. tostring(value)
 			else
 				return false, setting_name .. " is not a valid game setting. Use ?gameSettings to view all game settings"
@@ -5013,6 +5067,28 @@ end
 
 
 --[[ Helpers ]]--
+
+local logBuffer = {}
+local companionLogTime = 0
+function companionLogAppendMessage(msg)
+	if G_preferences.companion.value then
+		table.insert(logBuffer, msg)
+
+		if #logBuffer >= 20 then
+			sendToServer('stream-log', logBuffer)
+			companionLogTime = 0
+		end
+	end
+end
+
+function companionLogTick()
+	if companionLogTime >= 300 then
+		sendToServer('stream-log', logBuffer)
+		companionLogTime = 0
+	end
+
+	companionLogTime = companionLogTime + 1
+end
 
 local COMPANION_DEBUGGING_ENABLED = false
 local COMPANION_DEBUGGING_DETAILED_ENABLED = false
@@ -5324,6 +5400,8 @@ function syncTick()
 		--companionDebugDetail("trigger heartbeat, reason: time")
 		triggerHeartbeat()
 	end
+
+	companionLogTick()
 end
 
 -- used when connection to server closes (instead of waiting for a timeout, we can instantly fail pending requests)
