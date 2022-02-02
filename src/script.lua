@@ -2960,6 +2960,8 @@ function onCreate(is_new)
 end
 
 function onDestroy()
+	if invalid_version then return end
+
 	-- set peerIDs to nil for all players
 	for steamID, player in pairs(G_players.get()) do
 		player.peerID = nil
@@ -2968,6 +2970,11 @@ function onDestroy()
 end
 
 function onPlayerJoin(steamID, name, peerID, admin, auth)
+	if invalid_version then
+		server.announce("WARNING", "Your code is older than your save data. To prevent data loss/corruption, no data will be processed. Please update Carsa's Commands to the latest version.")
+		return
+	end
+
 	steamID = tostring(steamID)
 	local player = G_players.get(steamID)
 	local is_new = player == nil
@@ -3041,6 +3048,8 @@ end
 function onPlayerLeave(steamID, name, peerID, is_admin, is_auth)
 	if invalid_version then return end
 
+	steamID = tostring(steamID)
+
 	if G_preferences.removeVehicleOnLeave.value then
 		for vehicleID, vehicle_data in pairs(G_vehicles.get()) do
 			if vehicle_data.owner == steamID then
@@ -3056,6 +3065,8 @@ end
 
 function onPlayerDie(steamID, name, peerID, is_admin, is_auth)
 	if invalid_version then return end
+
+	steamID = tostring(steamID)
 
 	if G_preferences.keepInventory.value then
 		local player = G_players.get(steamID)
@@ -3073,6 +3084,10 @@ function onPlayerDie(steamID, name, peerID, is_admin, is_auth)
 end
 
 function onPlayerRespawn(peerID)
+	if invalid_version then
+		server.announce("WARNING", "Your code is older than your save data. To prevent data loss/corruption, no data will be processed. Please update Carsa's Commands to the latest version.")
+		return
+	end
 
 	local steamID = STEAM_IDS[peerID]
 	local player = G_players.get(steamID)
@@ -3143,6 +3158,8 @@ end
 
 --- This triggers for both press and release events, but not while holding.
 function onButtonPress(vehicleID, peerID, button_name)
+	if invalid_version then return end
+
 	local prefix = string.sub(button_name, 1, 3)
 	if prefix ~= BUTTON_PREFIX then return end
 
