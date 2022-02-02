@@ -2192,9 +2192,10 @@ end
 
 ---Formats the player's name nicely, providing their peerID if they are online or their steamID if they are offline
 ---@param self Player This player object's instance
+---@param use_steamID boolean If the player's steamID should be used instead of their peerID even if they are online
 ---@return string pretty_name This player's name formatted nicely
-function Player.prettyName(self)
-	if self.peerID then
+function Player.prettyName(self, use_steamID)
+	if self.peerID and not use_steamID then
 		return string.format("%s(%d)", self.name, self.peerID)
 	else
 		return string.format("%s(%s)", self.name, self.steamID)
@@ -2213,11 +2214,11 @@ function Player.ban(self, admin_steamID)
 
 	if self.peerID then
 		server.kickPlayer(self.peerID)
-		tellSupervisors("PLAYER BANNED", self.prettyName() .. " has been banned by " .. admin.prettyName(), admin.peerID)
+		tellSupervisors("PLAYER BANNED", self.prettyName(true) .. " has been banned by " .. admin.prettyName(), admin.peerID)
 	end
 	self.save()
 
-	return true, "PLAYER BANNED", self.prettyName() .. " has been banned"
+	return true, "PLAYER BANNED", self.prettyName(true) .. " has been banned"
 end
 
 ---Unbans a player from the server
@@ -2231,8 +2232,8 @@ function Player.unban(self, admin_steamID)
 	self.banned = false
 	self.save()
 
-	tellSupervisors("PLAYER UNBANNED", self.prettyName() .. " has been unbanned by " .. admin.prettyName(), admin.peerID)
-	return true, "PLAYER UNBANNED", self.prettyName() .. " has been unbanned"
+	tellSupervisors("PLAYER UNBANNED", self.prettyName(true) .. " has been unbanned by " .. admin.prettyName(), admin.peerID)
+	return true, "PLAYER UNBANNED", self.prettyName(true) .. " has been unbanned"
 end
 
 ---Gets the position of this player
@@ -3497,7 +3498,7 @@ COMMANDS = {
 			local banned = {}
 			for steamID, player in pairs(G_players.get()) do
 				if player.banned then
-					table.insert(banned, {player = player.name .. "("..player.steamID..")", admin = G_players.get(player.banned).prettyName()})
+					table.insert(banned, {player = player.name .. "("..player.steamID..")", admin = G_players.get(player.banned).prettyName(true)})
 				end
 			end
 
@@ -4960,7 +4961,7 @@ function onCustomCommand(message, caller_id, admin, auth, command, ...)
 	-- if player data could not be found, "pretend" player just joined and give default data
 	if not player then
 		onPlayerJoin(STEAM_IDS[caller_id], (server.getPlayerName(caller_id)) or "Unknown Name", caller_id)
-		server.announce("Persistent data for " .. player.prettyName() .. " could not be found. Resetting player's data to defaults", caller_id)
+		server.announce("Persistent data for " .. player.prettyName(true) .. " could not be found. Resetting player's data to defaults", caller_id)
 	end
 
 	if player.hasRole("Prank") then
