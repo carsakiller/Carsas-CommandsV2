@@ -1489,6 +1489,7 @@ local DEFAULT_ROLES = {
 			transferOwner = true,
 			cc = true,
 			ccHelp = true,
+			companionToken = true,
 			equipmentIDs = true,
 			tpLocations = true,
 			whisper = true,
@@ -2171,6 +2172,8 @@ function Player.constructor(self, peerID, steamID, name, banned)
 	local admin, auth = self.updatePrivileges()
 	self.admin = admin
 	self.auth = auth
+
+	self.companionToken = generateCompanionToken()
 
 	self.save()
 end
@@ -3271,6 +3274,15 @@ function onTick()
 				end)
 			end
 
+			registerCompanionCommandCallback("companion-login", function (token, _, content)
+				local player = getPlayerWithToken(content)
+				if not player then
+					return false, "Invalid token '" .. (content or "nil") .."' Write ?companionToken into the ingame chat to display your token"
+				else
+					return true, "Logged in as '" .. player.name .. "'"
+				end
+			end)
+
 			registerCompanionCommandCallback("test-performance-backend-game", function (token, _, content)
 				return true, content
 			end)
@@ -3679,7 +3691,7 @@ COMMANDS = {
 			if role then
 				local change = role.setPermissions(is_admin, is_auth)
 				local perms = string.format("Admin: %s\nAuth: %s", role.admin and "True" or "False", role.auth and "True" or "False")
-				
+
 				if change then
 					local message = caller.prettyName() .. " edited " .. quoted .. " to have the following permissions:\n" .. perms
 					tellSupervisors("ROLE EDITED", message, caller.peerID)
@@ -4559,6 +4571,14 @@ COMMANDS = {
 		},
 		description = "Lists the help info for Carsa's Commands. You can provide a command's name to get detailed info on a specific command."
 	},
+	companionToken = {
+		func = function(caller, ...)
+			return true, "Your token", caller.companionToken
+		end,
+		category = "General",
+		args = {},
+		description = "Display the token required to login on the companion website"
+	},
 	equipmentIDs = {
 		func = function(caller, equipment_type)
 			local sorted = {}
@@ -4853,6 +4873,16 @@ COMMANDS = {
 	},
 }
 
+function getPlayerWithToken(token)
+	for steamid, player in pairs(G_players.players) do
+		if player.companionToken == token then
+			return player
+		end
+	end
+
+	return nil
+end
+
 ---Handle command execution request from Carsa's Companion
 ---@param token string The token of the user using Carsa's Companion
 ---@param command string The name of the command to execute
@@ -4860,7 +4890,11 @@ COMMANDS = {
 ---@return string statusTitle A title to explain what happend. Examples: "SUCCESS", "FAILED", "DENIED"
 ---@return string statusText Text to explain why the command succeeded/failed
 function handleCompanion(token, command, argstring)
-	local caller = G_players.get(STEAM_IDS[0]) -- TODO: get caller_id from token
+	local caller = getPlayerWithToken(token)
+
+	if not caller then
+		return false, "Invalid token", "'" .. (token or "nil") .. "' Did you login correctly?"
+	end
 
 	if not COMMANDS[command] then
 		return false, "COMMAND NOT FOUND", "The command " .. quote(command) .. " does not exist"
@@ -5068,6 +5102,26 @@ end
 
 --[[ Helpers ]]--
 
+function generateCompanionToken()
+	local abc = {}
+	for _, range in pairs({
+		{48,57}, -- 0-9
+		{65,90}, -- A-Z
+		{97,122} -- a-z
+	}) do
+		for i=range[1], range[2] do
+			table.insert(abc, string.char(i))
+		end
+	end
+
+
+	local token = ""
+	for i=1,4 do
+		token = token .. abc[math.random(1, #abc)]
+	end
+	return token
+end
+
 local logBuffer = {}
 local companionLogTime = 0
 function companionLogAppendMessage(msg)
@@ -5090,7 +5144,7 @@ function companionLogTick()
 	companionLogTime = companionLogTime + 1
 end
 
-local COMPANION_DEBUGGING_ENABLED = false
+local COMPANION_DEBUGGING_ENABLED = true
 local COMPANION_DEBUGGING_DETAILED_ENABLED = false
 function companionError(msg)
 	tellSupervisors("Companion Error", msg)
@@ -5363,10 +5417,12 @@ end
 
 -- sends a heartbeat to the webserver and checks if it responds
 local lastHeartbeatTriggered = 0
+local firstSuccessfulHeartbeatToHappen = true
 function triggerHeartbeat()
 	lastHeartbeatTriggered = tickCallCounter
-	local sent, err = sendToServer("heartbeat", "", nil, function(success, result)
+	local sent, err = sendToServer("heartbeat", firstSuccessfulHeartbeatToHappen and "first" or "", nil, function(success, result)
 		if success then
+			firstSuccessfulHeartbeatToHappen = false
 			lastSucessfulHeartbeat = tickCallCounter
 			if not serverIsAvailable then
 				companionDebug("Companion Server is now available")
@@ -5509,7 +5565,7 @@ function httpReply(port, url, response_body)
 
 		-- check for commands from the server
 		if parsed.command then
-			companionDebug("received command from server: '" .. parsed.command .. "'")
+			companionDebug("received command from server: '" .. parsed.command .. "' token: '" .. (parsed.token or "nil") .. "'")
 			companionDebugDetail(json.stringify(parsed.commandContent))
 
 			if type(companionCommandCallbacks[parsed.command]) == "function" then
