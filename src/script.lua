@@ -4875,7 +4875,7 @@ COMMANDS = {
 
 function getPlayerWithToken(token)
 	for steamid, player in pairs(G_players.players) do
-		if player.companionToken == token then
+		if player.companionToken ~= nil and player.companionToken == token then
 			return player
 		end
 	end
