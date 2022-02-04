@@ -5144,7 +5144,7 @@ function companionLogTick()
 	companionLogTime = companionLogTime + 1
 end
 
-local COMPANION_DEBUGGING_ENABLED = true
+local COMPANION_DEBUGGING_ENABLED = false
 local COMPANION_DEBUGGING_DETAILED_ENABLED = false
 function companionError(msg)
 	tellSupervisors("Companion Error", msg)
@@ -5309,14 +5309,14 @@ function sendToServer(datatype, data, meta --[[optional]], callback--[[optional]
 		-- while we are below the char limit, keep adding chars of the data to this part
 		-- because it is json inside json, we need to replace " with \"
 		-- because http urls need to be urlencoded, do this here (instead of letting the game do it), so we can calculate the size correctly
-		local nextCharEncoded = urlencode( string.gsub(string.sub(dataToEncode, 1, 1), '"', '\\"') );
+		local nextCharEncoded = urlencode( string.gsub(string.gsub(string.sub(dataToEncode, 1, 1), '\\', '\\\\'), '"', '\\"') );
 		while string.len(myPartOfTheData) + string.len(nextCharEncoded) < maxLength do
 			myPartOfTheData = myPartOfTheData .. nextCharEncoded
 			dataToEncode = string.sub(dataToEncode, 2)
 			if string.len(dataToEncode) == 0 then
 				break
 			end
-			nextCharEncoded = urlencode( string.gsub(string.sub(dataToEncode, 1, 1), '"', '\\"') );
+			nextCharEncoded = urlencode( string.gsub(string.gsub(string.sub(dataToEncode, 1, 1), '\\', '\\\\'), '"', '\\"') );
 		end
 
 		if string.len(dataToEncode) == 0 then
@@ -5452,8 +5452,7 @@ function syncTick()
 	if lastSentPacketPartHasBeenRespondedTo and c2HasMoreCommands then
 		companionDebugDetail("trigger heartbeat, reason: moreCommands")
 		triggerHeartbeat()
-	elseif (tickCallCounter - lastPacketSentTickCallCount) > HTTP_GET_HEARTBEAT_TIMEOUT and (tickCallCounter - lastHeartbeatTriggered) > HTTP_GET_HEARTBEAT_TIMEOUT then
-		--companionDebugDetail("trigger heartbeat, reason: time")
+	elseif (tickCallCounter - lastHeartbeatTriggered) > HTTP_GET_HEARTBEAT_TIMEOUT then
 		triggerHeartbeat()
 	end
 
@@ -5554,6 +5553,8 @@ function httpReply(port, url, response_body)
 			-- if json parsing failed (server side), we dont know which pending packet failed (missing packet identifier), so we fail all of them
 			if parsed ~= nil and parsed.success == false then
 				failAllPendingHTTPRequests("unknown packet id failed, maybe json syntax error, check companion server logs")
+				companionError("unknown packet id failed, maybe json syntax error, check companion server logs")
+				companionError(json.stringify(parsed))
 			end
 		end
 
