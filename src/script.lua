@@ -2173,8 +2173,6 @@ function Player.constructor(self, peerID, steamID, name, banned)
 	self.admin = admin
 	self.auth = auth
 
-	self.companionToken = generateCompanionToken()
-
 	self.save()
 end
 
@@ -2920,6 +2918,7 @@ function onCreate(is_new)
 	g_savedata.preferences = g_savedata.preferences or deepCopyTable(PREFERENCE_DEFAULTS)
 	g_savedata.rules = g_savedata.rules or {}
 	g_savedata.aliases = g_savedata.aliases or deepCopyTable(DEFAULT_ALIASES)
+	g_savedata.companionTokens = g_savedata.companionTokens or {}
 
 	-- create references to shorten code
 	G_vehicles = G_vehicles or new(VehicleContainer) ---@type VehicleContainer
@@ -2929,6 +2928,7 @@ function onCreate(is_new)
 	G_rules = new(Rules) ---@type Rules
 	G_preferences = g_savedata.preferences
 	G_aliases = g_savedata.aliases
+	G_companionTokens = g_savedata.companionTokens
 
 	-- deserialize data
 	for steamID, data in pairs(g_savedata.players) do
@@ -3070,6 +3070,11 @@ function onPlayerJoin(steamID, name, peerID, admin, auth)
 	})
 
 	player.save()
+
+	-- token
+	if player.steamID and G_companionTokens[player.steamID] == nil then
+		G_companionTokens[player.steamID] = generateCompanionToken()
+	end
 
 	autosave()
 
@@ -3275,11 +3280,11 @@ function onTick()
 			end
 
 			registerCompanionCommandCallback("companion-login", function (token, _, content)
-				local player = getPlayerWithToken(content)
-				if not player then
+				local steamid = getSteamIdWithToken(content)
+				if not steamid then
 					return false, "Invalid token '" .. (content or "nil") .."' Write ?companionToken into the ingame chat to display your token"
 				else
-					return true, "Logged in as '" .. player.name .. "'"
+					return true, steamid
 				end
 			end)
 
@@ -4573,7 +4578,14 @@ COMMANDS = {
 	},
 	companionToken = {
 		func = function(caller, ...)
-			return true, "Your token", caller.companionToken
+			for steamid, token in pairs(G_companionTokens) do
+				if steamid == caller.steamID then
+					return true, "Your token: " .. token
+				end
+			end
+
+			tellSupervisors("Error", "player " .. caller.name .. " has no token assigned to him!")
+			return false, "You have no token, contact an admin"
 		end,
 		category = "General",
 		args = {},
@@ -4873,14 +4885,24 @@ COMMANDS = {
 	},
 }
 
-function getPlayerWithToken(token)
-	for steamid, player in pairs(G_players.players) do
-		if player.companionToken ~= nil and player.companionToken == token then
-			return player
+function getSteamIdWithToken(token)
+	for steamid, companionToken in pairs(G_companionTokens) do
+		if companionToken ~= nil and companionToken == token then
+			return steamid
 		end
 	end
 
 	return nil
+end
+
+function getPlayerWithToken(token)
+	local steamid = getSteamIdWithToken(token)
+
+	if steamid == nil then
+		return nil
+	else
+		return G_players.get(steamid)
+	end
 end
 
 ---Handle command execution request from Carsa's Companion
