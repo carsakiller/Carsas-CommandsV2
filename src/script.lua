@@ -4591,6 +4591,17 @@ COMMANDS = {
 		args = {},
 		description = "Display the token required to login on the companion website"
 	},
+	newCompanionToken = {
+		func = function(caller, ...)
+			local newToken = generateCompanionToken()
+			G_companionTokens[caller.steamID] = newToken
+
+			return true, "Your new token: " .. newToken
+		end,
+		category = "General",
+		args = {},
+		description = "Generates a new token for you to use on the companion website"
+	},
 	equipmentIDs = {
 		func = function(caller, equipment_type)
 			local sorted = {}
