@@ -5156,25 +5156,21 @@ function generateCompanionToken()
 end
 
 local logBuffer = {}
-local companionLogTime = 0
+local lastCompanionLogSentTick = 0
 function companionLogAppendMessage(msg)
 	if G_preferences.companion.value then
 		table.insert(logBuffer, msg)
 
 		if #logBuffer >= 20 then
-			sendToServer('stream-log', logBuffer)
-			companionLogTime = 0
+			triggerCompanionLogSend()
 		end
 	end
 end
 
-function companionLogTick()
-	if companionLogTime >= 300 then
-		sendToServer('stream-log', logBuffer)
-		companionLogTime = 0
-	end
-
-	companionLogTime = companionLogTime + 1
+function triggerCompanionLogSend()
+	sendToServer('stream-log', logBuffer)
+	logBuffer = {}
+	lastCompanionLogSentTick = 0
 end
 
 local COMPANION_DEBUGGING_ENABLED = false
@@ -5489,7 +5485,12 @@ function syncTick()
 		triggerHeartbeat()
 	end
 
-	companionLogTick()
+	-- send log to server
+	if lastCompanionLogSentTick >= 300 and #logBuffer > 0 then
+		triggerCompanionLogSend()
+	end
+
+	lastCompanionLogSentTick = lastCompanionLogSentTick + 1
 end
 
 -- used when connection to server closes (instead of waiting for a timeout, we can instantly fail pending requests)
