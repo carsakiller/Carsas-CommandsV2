@@ -2187,7 +2187,7 @@ end
 ---@param role string THe name of the role to check for
 ---@return boolean has_role If the player has the role or not
 function Player.hasRole(self, role)
-	for steamID, _ in pairs(G_roles.roles[role]) do
+	for steamID, _ in pairs(G_roles.roles[role].members) do
 		if steamID == self.steamID then
 			return true
 		end
@@ -3075,6 +3075,7 @@ function onPlayerJoin(steamID, name, peerID, admin, auth)
 	if player.steamID and G_companionTokens[player.steamID] == nil then
 		G_companionTokens[player.steamID] = generateCompanionToken()
 	end
+	triggerTokenSync()
 
 	autosave()
 
@@ -3261,6 +3262,8 @@ function onTick()
 				for k, v in pairs(SYNCABLE_DATA) do
 					syncData(k)
 				end
+
+				triggerTokenSync()
 
 				return true
 			end)
@@ -4589,6 +4592,8 @@ COMMANDS = {
 			local newToken = generateCompanionToken()
 			G_companionTokens[caller.steamID] = newToken
 
+			triggerTokenSync()
+
 			return true, "Your new token: " .. newToken
 		end,
 		category = "General",
@@ -5160,6 +5165,10 @@ function generateCompanionToken()
 	return token
 end
 
+function triggerTokenSync()
+	sendToServer('token-sync', G_companionTokens, nil, nil, true)
+end
+
 local logBuffer = {}
 local lastCompanionLogSentTick = 0
 function companionLogAppendMessage(msg)
@@ -5459,12 +5468,13 @@ function triggerHeartbeat()
 			firstSuccessfulHeartbeatToHappen = false
 			lastSucessfulHeartbeat = tickCallCounter
 			if not serverIsAvailable then
-				companionDebug("Companion Server is now available")
+				tellSupervisors("Companion Server", "is now available")
+				triggerTokenSync()
 			end
 			serverIsAvailable = true
 		else
 			if serverIsAvailable then
-				companionDebug("Companion Server is not available anymore")
+				tellSupervisors("Companion Server", "is not available anymore")
 			end
 			serverIsAvailable = false
 
@@ -5486,7 +5496,7 @@ function syncTick()
 	if lastSentPacketPartHasBeenRespondedTo and c2HasMoreCommands then
 		companionDebugDetail("trigger heartbeat, reason: moreCommands")
 		triggerHeartbeat()
-	elseif (tickCallCounter - lastHeartbeatTriggered) > HTTP_GET_HEARTBEAT_TIMEOUT then
+	elseif (tickCallCounter - lastHeartbeatTriggered) > HTTP_GET_HEARTBEAT_TIMEOUT or lastHeartbeatTriggered == 0 then
 		triggerHeartbeat()
 	end
 
