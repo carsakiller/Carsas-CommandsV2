@@ -5534,6 +5534,12 @@ function httpReply(port, url, response_body)
 			return
 		end
 
+		-- if application that is listening that port failed with an error
+		if string.sub(response_body, 1, string.len("recv(): Connection reset by peer")) == "recv(): Connection reset by peer" then
+			failAllPendingHTTPRequests("Companion Server is not running!")
+			return
+		end
+
 		-- if application is not responding to our http request
 		if string.sub(response_body, 1, string.len("timeout")) == "timeout" then
 			local urlDataPart = urldecode( string.sub(url, string.len(HTTP_GET_API_URL) + 1) )
