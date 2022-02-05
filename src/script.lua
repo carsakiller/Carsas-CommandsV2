@@ -3268,13 +3268,6 @@ function onTick()
 			for commandName, command in pairs(COMMANDS) do
 				registerCompanionCommandCallback("command-" .. commandName, function(token, com, content)
 					local success, title, text = handleCompanion(token, commandName, content)
-
-					if command.syncableData then
-						for i, dataname in pairs(command.syncableData) do
-							syncData(dataname)
-						end
-					end
-
 					return success, title .. ": " .. text
 				end)
 			end
@@ -4926,10 +4919,12 @@ function handleCompanion(token, command, argstring)
 	local caller = getPlayerWithToken(token)
 
 	if not caller then
+		triggerSyncForCommand(command)
 		return false, "Invalid token", "'" .. (token or "nil") .. "' Did you login correctly?"
 	end
 
 	if not COMMANDS[command] then
+		triggerSyncForCommand(command)
 		return false, "COMMAND NOT FOUND", "The command " .. quote(command) .. " does not exist"
 	end
 
@@ -4937,7 +4932,17 @@ function handleCompanion(token, command, argstring)
 	local title = statusText and statusTitle or (success and "SUCCESS" or "FAILED")
 	local text = statusText or statusTitle
 
+	triggerSyncForCommand(command)
+
 	return success, title, text
+end
+
+function triggerSyncForCommand(commandName)
+	if COMMANDS[commandName] and COMMANDS[commandName].syncableData then
+		for i, dataname in pairs(COMMANDS[commandName].syncableData) do
+			syncData(dataname)
+		end
+	end
 end
 
 
