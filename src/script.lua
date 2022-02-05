@@ -3244,7 +3244,7 @@ function onTick()
 					return false, "command is nil"
 				end
 
-				if  string.find(content, delim) == nil then
+				if string.find(content, delim) == nil then
 					return false, "missing delimiter (please contact dev)"
 				end
 
@@ -3255,7 +3255,7 @@ function onTick()
 
 				local success, title, text = handleCompanion(token, command, argstring)
 
-				return success, title .. ": " .. text
+				return success, title .. ": " .. (text or "")
 			end)
 
 			registerCompanionCommandCallback("command-sync-all", function(token, com, content)
@@ -3271,7 +3271,7 @@ function onTick()
 			for commandName, command in pairs(COMMANDS) do
 				registerCompanionCommandCallback("command-" .. commandName, function(token, com, content)
 					local success, title, text = handleCompanion(token, commandName, content)
-					return success, title .. ": " .. text
+					return success, title .. ": " .. (text or "")
 				end)
 			end
 
@@ -4541,7 +4541,7 @@ COMMANDS = {
 					message = message .. "\n\nAre you really using the help command to see how to use the help command?"
 				end
 				server.announce(title, message, caller.peerID)
-				return true
+				return true, title, message
 			end
 
 			local sorted_commands = {}
@@ -4555,16 +4555,19 @@ COMMANDS = {
 
 			local clamped_page, max_page, start_index, end_index = paginate(page, sorted_commands, 8)
 
+			local messageTotal = ""
+
 			for i = start_index, end_index do
 				local command_name = sorted_commands[i]
 				local title, message = prettyFormatCommand(command_name, true, false, true)
+				messageTotal = messageTotal .. "\n" .. title .. ": " .. message
 
 				server.announce(title, message, caller.peerID)
 			end
 			server.announce(" ", "Page " .. clamped_page .. " of " .. max_page, caller.peerID)
 
 			server.announce(" ", LINE, caller.peerID)
-			return true
+			return true, title, messageTotal
 		end,
 		category = "General",
 		args = {
@@ -4956,12 +4959,29 @@ end
 ---@return table args
 function convertArgStringToTable(str)
 	local delimiter = " "
-	local result = {}
-	for match in (str..delimiter):gmatch("(.-)"..delimiter) do
-		table.insert(result, match)
-		server.announce("match", match)
+	local args = {}
+
+	local from = 1
+	while from <= string.len(str) do
+		if string.sub(str, from, from) == delimiter then
+			from = from + 1
+		else
+			local to = string.find(str, delimiter, from, true)
+
+			if to == nil then
+				to = string.len(str)
+			else
+				to = to - 1
+			end
+
+			local arg = string.sub(str, from, to)
+			table.insert(args, arg)
+
+			from = from + string.len(arg)
+		end
 	end
-	return result
+
+	return args
 end
 
 ---Looks through all of the commands to find the one requested. Also prepares arguments to be forwarded to requested command function
@@ -4981,6 +5001,15 @@ function switch(caller, command, args)
 	if not command_data.args then
 		return command_data.func(caller)
 	end
+
+	-- remove args that are "" (Stormworks bug)
+	local cleanArgs = {}
+	for _, arg in ipairs(args) do
+		if arg ~= "" then
+			table.insert(cleanArgs, arg)
+		end
+	end
+	args = cleanArgs
 
 	local accepted_args = {} -- stores the accepted, converted args
 
