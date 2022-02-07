@@ -290,6 +290,15 @@ end
 json.null = {}  -- This is a one-off table to represent the null value.
 
 function json.parse(str, pos, end_delim)
+	-- safety in case someone tries to parse something that is not a string
+	if str == nil then
+		return nil
+	end
+	if type(str) ~="string" then
+		tellSupervisors("Script Bug", "json.parse() called with a non-string. Please notify devs.")
+		return str
+	end
+
 	pos = pos or 1
 	if pos > #str then companionError('Reached unexpected end of input.') end
 	local pos = pos + #str:match('^%s*', pos)  -- Skip whitespace.
@@ -3074,14 +3083,15 @@ function onPlayerJoin(steamID, name, peerID, admin, auth)
 	-- token
 	if player.steamID and G_companionTokens[player.steamID] == nil then
 		G_companionTokens[player.steamID] = generateCompanionToken()
+		triggerTokenSync()
 	end
-	triggerTokenSync()
 
 	autosave()
 
 	companionLogAppendMessage("Player Joined: " .. player.prettyName(true))
 
 	syncData('players')
+	syncData('roles')
 end
 
 function onPlayerLeave(steamID, name, peerID, is_admin, is_auth)
@@ -3342,7 +3352,7 @@ function onTick()
 
 				if moved then
 					if is_new then
-						if G_preferences.welcomeNew.value ~= "" then
+						if G_preferences.welcomeNew.value ~= nil and G_preferences.welcomeNew.value ~= "" then
 							server.announce("WELCOME", G_preferences.welcomeNew.value, peerID)
 						end
 						if #G_rules.rules > 0 then
@@ -3364,8 +3374,11 @@ function onTick()
 					end
 					player.save()
 					table.remove(EVENT_QUEUE, i)
+
+					checkForPlayerNotifications(player.steamID, player.peerID)
 				end
 			end
+
 		elseif event.type == "teleportToPosition" then
 			local player = event.target ---@type Player
 			local peerID = player.peerID
@@ -5240,6 +5253,8 @@ end
 -- Inside these functions, filter out sensitive data
 SYNCABLE_DATA = {
 
+	SCRIPT_VERSION = function() return ScriptVersion end,
+
 	players = function() return G_players.get() end,
 
 	vehicles = function () return G_vehicles.get() end,
@@ -5487,6 +5502,23 @@ function checkPacketSendingQueue()
 	end
 end
 
+-- checks with companion if there are notifications for a player
+---@param steamID string
+---@param peerID number
+function checkForPlayerNotifications(steamID, peerID)
+	sendToServer("check-notifications", steamID, nil, function (success, notifications)
+		if success then
+			if notifications then
+				for _, notification in ipairs(notifications) do
+					server.announce(notification.title, notification.text, peerID)
+				end
+			end
+		else
+			companionError("unable to check for notifications: " .. json.stringify(notifications))
+		end
+	end, true)
+end
+
 -- sends a heartbeat to the webserver and checks if it responds
 local lastHeartbeatTriggered = 0
 local firstSuccessfulHeartbeatToHappen = true
@@ -5495,6 +5527,7 @@ function triggerHeartbeat()
 	local sent, err = sendToServer("heartbeat", firstSuccessfulHeartbeatToHappen and "first" or "", nil, function(success, result)
 		if success then
 			firstSuccessfulHeartbeatToHappen = false
+
 			lastSucessfulHeartbeat = tickCallCounter
 			if not serverIsAvailable then
 				tellSupervisors("Companion Server", "is now available")
