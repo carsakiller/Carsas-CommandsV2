@@ -5551,7 +5551,7 @@ end
 
 -- must be called every onTick()
 local c2HasMoreCommands = false
-local HTTP_GET_HEARTBEAT_TIMEOUT = 60 * 5 -- at least one heartbeat every 5 seconds
+local HTTP_GET_HEARTBEAT_TIMEOUT = 60 * 1 -- at least one heartbeat every second
 function syncTick()
 	checkPacketSendingQueue()
 
