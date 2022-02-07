@@ -3294,15 +3294,47 @@ function onTick()
 				end
 			end)
 
+			registerCompanionCommandCallback("debug-set-companion", function (token, _, content)
+				local player = getPlayerWithToken(token)
+				if player == nil or not player.hasRole("Owner") then
+					return false, "you are not allowed to do this"
+				end
+				COMPANION_DEBUGGING_ENABLED = content == "true"
+				server.announce("Companion Debug", "set to " .. (COMPANION_DEBUGGING_ENABLED and "Enabled" or "Disabled"))
+				return true, "set COMPANION_DEBUGGING_ENABLED to " .. (COMPANION_DEBUGGING_ENABLED and "true" or "false")
+			end)
+
+			registerCompanionCommandCallback("debug-set-companion-detailed", function (token, _, content)
+				local player = getPlayerWithToken(token)
+				if player == nil or not player.hasRole("Owner") then
+					return false, "you are not allowed to do this"
+				end
+				COMPANION_DEBUGGING_DETAILED_ENABLED = content == "true"
+				server.announce("Companion DebugD", "set to " .. (COMPANION_DEBUGGING_DETAILED_ENABLED and "Enabled" or "Disabled"))
+				return true, "set COMPANION_DEBUGGING_DETAILED_ENABLED to " .. (COMPANION_DEBUGGING_DETAILED_ENABLED and "true" or "false")
+			end)
+
 			registerCompanionCommandCallback("test-performance-backend-game", function (token, _, content)
+				local player = getPlayerWithToken(token)
+				if player == nil or not player.hasRole("Owner") then
+					return false, "you are not allowed to do this"
+				end
 				return true, content
 			end)
 
 			registerCompanionCommandCallback("test-performance-frontend-game", function (token, _, content)
+				local player = getPlayerWithToken(token)
+				if player == nil or not player.hasRole("Owner") then
+					return false, "you are not allowed to do this"
+				end
 				return true, content
 			end)
 
 			registerCompanionCommandCallback("test-performance-game-backend-proxy", function (token, _, content)
+				local player = getPlayerWithToken(token)
+				if player == nil or not player.hasRole("Owner") then
+					return false, "you are not allowed to do this"
+				end
 				return sendToServer("test-performance-game-backend", content)
 			end)
 		end
@@ -5229,8 +5261,8 @@ function triggerCompanionLogSend()
 	lastCompanionLogSentTick = 0
 end
 
-local COMPANION_DEBUGGING_ENABLED = false
-local COMPANION_DEBUGGING_DETAILED_ENABLED = false
+COMPANION_DEBUGGING_ENABLED = false
+COMPANION_DEBUGGING_DETAILED_ENABLED = false
 function companionError(msg)
 	tellSupervisors("Companion Error", msg)
 	if COMPANION_DEBUGGING_ENABLED then
