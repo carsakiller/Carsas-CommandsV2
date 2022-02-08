@@ -2994,6 +2994,8 @@ function onCreate(is_new)
 		end
 	end
 
+	TILE_POSITIONS = getTilePositions()
+
 	DLC = {weapons = server.dlcWeapons()}
 
 	autosave()
@@ -4942,6 +4944,24 @@ COMMANDS = {
 	},
 }
 
+function getTilePositions()
+	local zones = server.getZones("CARSAS_COMMANDS_COMPANION_TILE_POSITIONING_ZONE")
+
+	local zonesCoordinates = {}
+
+	if zones ~= nil then
+		for _, zone in pairs(zones) do
+			table.insert(zonesCoordinates, {
+				name = zone.name,
+				x = zone.transform[13],
+				y = zone.transform[15]
+			})
+		end
+	end
+
+	return zonesCoordinates
+end
+
 function getSteamIdWithToken(token)
 	for steamid, companionToken in pairs(G_companionTokens) do
 		if companionToken ~= nil and companionToken == token then
@@ -5284,6 +5304,8 @@ end
 
 -- Inside these functions, filter out sensitive data
 SYNCABLE_DATA = {
+
+	TILE_POSITIONS = function() return TILE_POSITIONS end,
 
 	SCRIPT_VERSION = function() return ScriptVersion end,
 
