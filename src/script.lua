@@ -5260,11 +5260,11 @@ function generateCompanionToken()
 end
 
 function triggerTokenSync()
-	sendToServer('token-sync', G_companionTokens, nil, nil, true)
+	sendToServer("token-sync", G_companionTokens, nil, nil, true)
 end
 
 local logBuffer = {}
-local lastCompanionLogSentTick = 0
+local ticksSinceLastCompanionLogSent = 0
 function companionLogAppendMessage(msg)
 	if G_preferences.companion.value then
 		table.insert(logBuffer, msg)
@@ -5276,10 +5276,11 @@ function companionLogAppendMessage(msg)
 end
 
 function triggerCompanionLogSend()
-	sendToServer('stream-log', logBuffer)
+	sendToServer("stream-log", logBuffer)
 	logBuffer = {}
-	lastCompanionLogSentTick = 0
+	ticksSinceLastCompanionLogSent = 0
 end
+
 
 COMPANION_DEBUGGING_ENABLED = false
 COMPANION_DEBUGGING_DETAILED_ENABLED = false
@@ -5434,7 +5435,7 @@ function sendToServer(datatype, data, meta --[[optional]], callback--[[optional]
 		packet.morePackets = 1--1 = true, 0 = false
 
 		-- we need to encode the whole packet (with dummy data), then measure its size, after that we know how much chars are left for the actual data.
-		local DATA_PLACEHOLDER = 'DATA_PLACEHOLDERINO'
+		local DATA_PLACEHOLDER = "DATA_PLACEHOLDERINO"
 
 		packet.data = DATA_PLACEHOLDER
 
@@ -5551,8 +5552,27 @@ function checkPacketSendingQueue()
 		end
 	end
 
-	if tickCallCounter % 60 * 5 == 0 and #packetSendingQueue > 5 then
-		companionDebug("#packetSendingQueue " .. #packetSendingQueue)
+	if tickCallCounter % 60 * 5 == 0 and #packetSendingQueue > 500 then
+		local typeCounts = {}
+
+		for _, packet in pairs(packetSendingQueue) do
+			if typeCounts[packet._datatype] == nil then
+				typeCounts[packet._datatype] = 0
+			end
+
+			typeCounts[packet._datatype] = typeCounts[packet._datatype] + 1
+		end
+
+		local maxCount = 0
+		local maxCountType = ""
+
+		for packetType, count in pairs(typeCounts) do
+			if count > maxCount and packetType ~= "heartbeat" then
+				maxCountType = packetType
+			end
+		end
+
+		tellSupervisors("Warning", "C2 packetSendingQueue is filling up (please contact a dev): " .. #packetSendingQueue .. " most packet type: " .. maxCountType)
 	end
 end
 
@@ -5578,7 +5598,7 @@ local lastHeartbeatTriggered = 0
 local firstSuccessfulHeartbeatToHappen = true
 function triggerHeartbeat()
 	lastHeartbeatTriggered = tickCallCounter
-	local sent, err = sendToServer("heartbeat", firstSuccessfulHeartbeatToHappen and "first" or "", nil, function(success, result)
+	local sent, err = sendToServer("heartbeat", firstSuccessfulHeartbeatToHappen and "first" or { queueLength = #packetSendingQueue}, nil, function(success, result)
 		if success then
 			firstSuccessfulHeartbeatToHappen = false
 
@@ -5603,9 +5623,38 @@ function triggerHeartbeat()
 	end
 end
 
+
+local LIVESTREAM_TIME_BETWEEN = 60 * 2
+local lastLiveStreamSentTick = 0
+function triggerMapStream()
+	lastLiveStreamSentTick = tickCallCounter
+
+	local streamData = {
+		playerPositions = {},
+		vehiclePositions = {}
+	}
+
+	for _, player in pairs(server.getPlayers()) do
+		local matrix, success = server.getPlayerPos(player.id)
+		if success and matrix then
+			streamData.playerPositions[player.steam_id] = {x = matrix[13], y = matrix[15]}
+		end
+	end
+
+	for vehicleID, vehicle in pairs(G_vehicles.vehicles) do
+		local matrix, success = server.getVehiclePos(vehicleID)
+		if success and matrix then
+			streamData.vehiclePositions[vehicleID] = {x = matrix[13], y = matrix[15]}
+		end
+	end
+
+	sendToServer("stream-map", streamData, nil, nil, true)
+end
+
 -- must be called every onTick()
 local c2HasMoreCommands = false
 local HTTP_GET_HEARTBEAT_TIMEOUT = 60 * 1 -- at least one heartbeat every second
+
 function syncTick()
 	checkPacketSendingQueue()
 
@@ -5617,11 +5666,16 @@ function syncTick()
 	end
 
 	-- send log to server
-	if lastCompanionLogSentTick >= 300 and #logBuffer > 0 then
+	if ticksSinceLastCompanionLogSent >= 300 and #logBuffer > 0 then
 		triggerCompanionLogSend()
 	end
 
-	lastCompanionLogSentTick = lastCompanionLogSentTick + 1
+	ticksSinceLastCompanionLogSent = ticksSinceLastCompanionLogSent + 1
+
+	-- stream live data
+	if (tickCallCounter - lastLiveStreamSentTick) > LIVESTREAM_TIME_BETWEEN then
+		triggerMapStream()
+	end
 end
 
 -- used when connection to server closes (instead of waiting for a timeout, we can instantly fail pending requests)
