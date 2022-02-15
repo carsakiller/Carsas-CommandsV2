@@ -5637,14 +5637,14 @@ function triggerMapStream()
 	for _, player in pairs(server.getPlayers()) do
 		local matrix, success = server.getPlayerPos(player.id)
 		if success and matrix then
-			streamData.playerPositions[player.steam_id] = {x = matrix[13], y = matrix[15]}
+			streamData.playerPositions[player.steam_id] = {x = matrix[13], y = matrix[15], alt = matrix[14]}
 		end
 	end
 
 	for vehicleID, vehicle in pairs(G_vehicles.vehicles) do
 		local matrix, success = server.getVehiclePos(vehicleID)
 		if success and matrix then
-			streamData.vehiclePositions[vehicleID] = {x = matrix[13], y = matrix[15]}
+			streamData.vehiclePositions[vehicleID] = {x = matrix[13], y = matrix[15], alt = matrix[14]}
 		end
 	end
 
