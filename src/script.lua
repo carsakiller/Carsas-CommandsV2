@@ -5611,6 +5611,7 @@ function triggerHeartbeat()
 		else
 			if serverIsAvailable then
 				tellSupervisors("Companion Server", "is not available anymore")
+				--failAllPendingHTTPRequests("Companion Server not available") --TODO: this should be done, but leads to stack overflow (probably because of v.callback() looping)
 			end
 			serverIsAvailable = false
 
