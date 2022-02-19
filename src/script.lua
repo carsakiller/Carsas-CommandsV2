@@ -3873,15 +3873,16 @@ COMMANDS = {
 	transferOwner = {
 		func = function(caller, vehicle, target_player)
 			local owner_steam_id = vehicle.owner
-			if caller.steam_id == owner_steam_id then
-				vehicle.owner = target_player.steam_id
-				server.notify(target_player.peer_id, "OWNERSHIP TRANSFER", caller.prettyName() .. " has made you the owner of one of their vehicles:\n\n" .. vehicle.pretty_name, 9)
-			else
-				server.announce("DENIED", "You cannot transfer ownership on a vehicle you do not own", caller.peer_id)
+			if caller.steam_id ~= owner_steam_id then
+				return false, "DENIED", "You cannot transfer ownership on a vehicle you do not own"
 			end
+
+			vehicle.owner = target_player.steam_id
+			server.notify(target_player.peer_id, "OWNERSHIP TRANSFER", caller.prettyName() .. " has made you the owner of one of their vehicles:\n\n" .. vehicle.pretty_name, 9)
+			return true, "OWNERSHIP TRANSFERRED", G_players.get(target_player).prettyName() .. " has been made the owner of " .. vehicle.pretty_name
 		end,
 		args = {
-			{name = "vehicleID", type = {"vehicle"}, required = true},
+			{name = "vehicleID", type = {"vehicleID"}, required = true},
 			{name = "playerID", type = {"playerID"}, required = true}
 		},
 		description = "Transfers ownership of a vehicle to another player."
