@@ -1821,7 +1821,7 @@ function paginate(page, data_table, entries_per_page)
     page = clamp(page, 1, max_page)
     local start_index = (page - 1) * entries_per_page + 1
     local end_index = math.min(#data_table, page * entries_per_page)
-    
+
     return page, max_page, start_index, end_index
 end
 
@@ -2973,7 +2973,7 @@ function onPlayerJoin(steamID, name, peerID, admin, auth)
 	else
 		-- add new player's data to persistent data table
 		player = G_players.create(peerID, steamID, name)
-		
+
 		-- if player's steamID matches hardcoded one, make them an owner
 		if #OWNER_STEAM_ID == #STEAM_ID_MIN then
 			if steamID == OWNER_STEAM_ID then
@@ -3733,7 +3733,7 @@ COMMANDS = {
 				if not nearest then
 					return nearest, err, errText
 				end
-				
+
 				local prettyName = nearest[1].pretty_name
 				local success = server.despawnVehicle(nearest[1].vehicleID, true)
 				return success, success and "VEHICLE REMOVED" or "ERROR", prettyName .. (success and " has been removed" or " could not be despawned due to an error")
@@ -4630,7 +4630,7 @@ COMMANDS = {
 				server.setGameSetting(nearest, value)
 				-- give user feedback
 				tellSupervisors("GAME SETTING EDITED", caller.prettyName() .. " changed " .. nearest .. " to " .. tostring(value), caller.peerID)
-				return true, "GAME SETTING EDITED", nearest .. " is now set to " .. tostring(value)			
+				return true, "GAME SETTING EDITED", nearest .. " is now set to " .. tostring(value)
 			else
 				return false, setting_name .. " is not a valid game setting. Use ?gameSettings to view all game settings"
 			end
