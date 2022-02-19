@@ -3886,6 +3886,20 @@ COMMANDS = {
 		},
 		description = "Transfers ownership of a vehicle to another player."
 	},
+	charge = {
+		func = function(caller, vehicle, amount, batteryName)
+			local charge = amount / 100
+			local success = server.setVehicleBattery(vehicle.vehicleID, batteryName, charge)
+
+			return true, "BATTERY CHARGED", (batteryName and "The battery " .. quote(batteryName) or "A battery") .. " on " .. vehicle.pretty_name .. " maybe had it's charge set to " .. math.floor(amount) .. "%"
+		end,
+		args = {
+			{name = "vehicleID", type = {"vehicleID"}, required = true},
+			{name = "amount", type = {"number"}, required = true},
+			{name = "batteryName", type = {"string"}}
+		},
+		description = "Sets the charge of a vehicle's battery. The charge amount is a percentage from 0 to 100"
+	},
 	--#endregion
 
 	-- Player --
