@@ -3,9 +3,9 @@ TITLE CC Build Tool
 
 SETLOCAL
 SET MY_DIR=%~dp0
-SET SRC_DIR=%MY_DIR%..\..\src
+SET SRC_DIR="%MY_DIR%..\..\src"
 SET ADDON_NAME="Carsa's Commands"
-SET TARGET_DIR=%AppData%\Stormworks\data\missions
+SET TARGET_DIR="%AppData%\Stormworks\data\missions"
 
 CALL :NORMALIZEPATH %SRC_DIR%
 SET SOURCE="%ABSPATH%"
