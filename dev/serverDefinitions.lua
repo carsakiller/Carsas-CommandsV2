@@ -1,5 +1,5 @@
 -- Stormworks Addon Lua Definitions
--- Stormworks v1.3.14 64bit
+-- Stormworks v1.4.7 64bit
 
 -- Recommended extension: https://marketplace.visualstudio.com/items?itemName=sumneko.lua
 
@@ -351,17 +351,29 @@ function onChatMessage(peer_id, sender_name, message) end
 ---@param auth boolean If the player is authorized
 function onPlayerJoin(steam_id, name, peer_id, admin, auth) end
 
----Called whenever a player sits in a seat
+---Called whenever a player sits in a seat or gets on a ladder
 ---@param peer_id peer_id The peer_id of the player that has sat down
 ---@param vehicle_id vehicle_id The vehicle_id of the vehicle the seat is attached to
 ---@param seat_name string The name of the seat the player sat in
 function onPlayerSit(peer_id, vehicle_id, seat_name) end
 
----Called whenever a character sits (or is sat) in a seat
+---Called whenever a player gets out of a seat or gets off a ladder
+---@param peer_id peer_id The peer_id of the player that has gotten out of the seat
+---@param vehicle_id vehicle_id The vehicle_id of the vehicle the seat is attached to
+---@param seat_name string The name of the seat the player got out of
+function onPlayerUnsit(peer_id, vehicle_id, seat_name) end
+
+---Called whenever a character sits (or is sat) in a seat or gets on a ladder
 ---@param object_id object_id The object_id of the character that has sat down
 ---@param vehicle_id vehicle_id The vehicle_id of the vehicle the seat is attached to
 ---@param seat_name string The name of the seat the character sat in
 function onCharacterSit(object_id, vehicle_id, seat_name) end
+
+---Called whenever a character gets out of it's seat (or is picked up from their seat) or gets off a ladder
+---@param object_id object_id The object_id of the character that has gotten out of the seat
+---@param vehicle_id vehicle_id The vehicle_id of the vehicle the seat is attached to
+---@param seat_name string The name of the seat the character got out of
+function onCharacterUnsit(object_id, vehicle_id, seat_name) end
 
 ---Called when a player **re**spawns
 ---@param peer_id peer_id The peer_id of the user that has respawned
@@ -671,7 +683,7 @@ function server.getAddonPath(name, is_rom) return path, is_success end
 ---        ["size"] = {x, y, z},
 ---        ["radius"] = radius,
 ---        ["type"] = ZONE_TYPE
----    }  
+---    }
 ---}
 ---```
 --- ## Zone types:
@@ -697,10 +709,10 @@ function server.getAddonCount() return count end
 --- ## Example Addon Data
 ---```
 ---{
----    ["name"] = name, 
----    ["path_id"] = folder_path, 
----    ["file_store"] = is_app_data, 
----    ["location_count"] = location_count 
+---    ["name"] = name,
+---    ["path_id"] = folder_path,
+---    ["file_store"] = is_app_data,
+---    ["location_count"] = location_count
 ---}
 ---```
 function server.getAddonData(addon_index) return addon_data end
@@ -714,10 +726,10 @@ function server.getAddonData(addon_index) return addon_data end
 ---```
 ---LOCATION_DATA = {
 ---    ["name"] = name,
----    ["tile"] = tile_filename, 
----    ["env_spawn_count"] = spawn_count, 
----    ["env_mod"] = is_env_mod, 
----    ["component_count"] = component_count 
+---    ["tile"] = tile_filename,
+---    ["env_spawn_count"] = spawn_count,
+---    ["env_mod"] = is_env_mod,
+---    ["component_count"] = component_count
 ---}
 ---```
 function server.getLocationData(addon_index, location_index) return location_data, is_success end
@@ -733,13 +745,13 @@ function server.getLocationData(addon_index, location_index) return location_dat
 ---COMPONENT_DATA = {
 ---    ["tags_full"] = tags,
 ---    ["tags"] = { [i] = tag },
----    ["display_name"] = display_name, 
+---    ["display_name"] = display_name,
 ---    ["type"] = TYPE_STRING,
 ---    ["id"] = component_id,
 ---    ["dynamic_object_type"] = OBJECT_TYPE,
----    ["transform"] = transform_matrix, 
+---    ["transform"] = transform_matrix,
 ---    ["vehicle_parent_component_id"] = vehicle parent component id ,
----    ["character_outfit_type"] = OUTFIT_TYPE 
+---    ["character_outfit_type"] = OUTFIT_TYPE
 ---}
 ---```
 function server.getLocationComponentData(addon_index, location_index, component_index) return component_data, is_success end
@@ -749,18 +761,18 @@ function server.getLocationComponentData(addon_index, location_index, component_
 ---@param addon_index number The index of the addon that the location is a part of
 ---@param location_index number The index of the location that the component is a part of
 ---@param component_index number The index of the component
----@param parent_vehicle_id? vehicle_id The parent vehicle for a zone or fire 
+---@param parent_vehicle_id? vehicle_id The parent vehicle for a zone or fire
 ---@return table component Data on the component
 ---@return boolean is_success If the function succeeded
 ---## Example Component Data
 ---```
 ---COMPONENT = {
----    ["tags_full"] = tags, 
----    ["tags"] = { [i] = tag }, 
----    ["display_name"] = display_name, 
----    ["type"] = TYPE_STRING, 
----    ["transform"] = transform_matrix, 
----    ["id"] = object_id/vehicle_id 
+---    ["tags_full"] = tags,
+---    ["tags"] = { [i] = tag },
+---    ["display_name"] = display_name,
+---    ["type"] = TYPE_STRING,
+---    ["transform"] = transform_matrix,
+---    ["id"] = object_id/vehicle_id
 ---}
 ---```
 function server.spawnAddonComponent(matrix, addon_index, location_index, component_index, parent_vehicle_id) return component, is_success end
@@ -1098,6 +1110,12 @@ function server.setVehicleEditable(vehicle_id, is_editable) return is_success en
 ---@return boolean is_success If the function succeeded
 function server.setVehicleShownOnMap(vehicle_id, show_on_map) return is_success end
 
+---Sets a vehicle to be invulnerable to damage. Makes a vehicle unbreakable.
+---@param vehicle_id vehicle_id The vehicle_id of the vehicle to edit
+---@param is_invulnerable boolean If the vehicle is invulnerable
+---@return boolean is_success If the function succeeded
+function server.setVehicleInvulnerable(vehicle_id, is_invulnerable) return is_success end
+
 ---Undocumented by the devs. It can be assumed that this function resets a vehicle to the state it was in when it was spawned.
 ---@param vehicle_id vehicle_id The vehicle_id of the vehicle to reset
 function server.resetVehicleState(vehicle_id) end
@@ -1378,7 +1396,8 @@ function server.getTileTransform(matrix, tile_name, search_radius) return matrix
 ---```
 function server.getTile(matrix) return tile_data, is_success end
 
----Get data on the starting tile
+---Get data on the starting tile.
+---Has the alias `getStartIsland()`
 ---@return table tile_data Data on the starting tile
 ---## Example Tile Data
 ---```
@@ -1475,30 +1494,30 @@ function property.slider(text, min, max, increment, default_value) return value 
 ---Hotkey 2 = Engine Off
 ---Axis W = Throttle
 ---Axis D = Steering
----	
+---
 ---### SEAT TYPE = Helicopter Pilot
----Hotkey 1 = Engine On 
+---Hotkey 1 = Engine On
 ---Hotkey 2 = Engine Off
 ---Axis W = Pitch
 ---Axis D = Roll
 ---Axis Up = Collective
 ---Axis Right = Yaw
 ---Trigger = Shoot
----	
+---
 ---### SEAT TYPE = Plane Pilot
----Hotkey 1 = Engine On 
+---Hotkey 1 = Engine On
 ---Hotkey 2 = Engine Off
 ---Axis W = Pitch
 ---Axis D = Roll
 ---Axis Up = Throttle
 ---Axis Right = Yaw
 ---Trigger = Shoot
----	
+---
 ---### SEAT TYPE = Gunner
 ---Axis W = Pitch
 ---Axis D = Yaw
 ---Trigger = Shoot
----	
+---
 ---### SEAT TYPE = Designator
 ---Axis W = Pitch
 ---Axis D = Yaw
@@ -1534,6 +1553,64 @@ function server.setAITargetCharacter(object_id, target_object_id) end
 ---@param object_id object_id The object_id of the character to set target data for
 ---@param target_vehicle_id vehicle_id The vehicle_id of the vehicle to target
 function server.setAITargetVehicle(object_id, target_vehicle_id) end
+
+--#endregion
+
+-- Natural Disasters --
+--#region
+
+---Spawns a tsunami with it's epicenter at `matrix`. Only one tsunami/whirlpool can be active at once. A stronger event overrides a weaker one.
+---@param matrix matrix The target position for the epicenter of the tsunami
+---@param magnitude number The intensity of the tsunami
+---@return boolean is_success If the tsunami was successfully started
+function server.spawnTsunami(matrix, magnitude) return is_success end
+
+---Spawns a whirpool at the target position. If the ocean is too shallow at the target location, spawning will fail.  Only one tsunami/whirlpool can be active at once. A stronger event overrides a weaker one.
+---@param matrix matrix The target position for the epicenter of the whirlpool
+---@param magnitude number The intensity of the whirlpool
+---@return boolean is_success If the whirlpool was successfully started
+function server.spawnWhirlpool(matrix, magnitude) return is_success end
+
+---Cancels a tsunami/whirpool event
+function server.cancelGerstner() end
+
+---Spawns a tornado at the target position
+---@param matrix matrix The target spawn location for the tornado
+---@return boolean is_success If the tornado was successfully started
+function server.spawnTornado(matrix) return is_success end
+
+---Spawns a meteor that strikes the target position
+---@param matrix matrix The target location for the meteor
+---@param magnitude number The size of the meteor. Accepts values 0 - 1. Scales at a factor of `magnitude` * 20
+---@param spawns_tsunami boolean If the meteor should spawn a tsunami upon impact
+---@return boolean is_success If the meteor was successfully spawned
+function server.spawnMeteor(matrix, magnitude, spawns_tsunami) return is_success end
+
+---Spawns a meteor shower that aims for the target position
+---@param matrix matrix The target location for the shower
+---@param magnitude number The size of the main meteor. Larger values also increase the number of secondary meteors. Accepts values 0 - 1.
+---@param spawns_tsunami boolean If the main meteor should spawn a tsunami upon impact
+---@return boolean is_success If the shower was successfully started
+function server.spawnMeteorShower(matrix, magnitude, spawns_tsunami) return is_success end
+
+---Activates the closest volcano **if that tile is being simulated**. Unloaded tiles will not activate.
+---@param matrix matrix The target position for starting a volcanic event. Does not need to be exact
+---@return any
+function server.spawnVolcano(matrix) return is_success end
+
+---Gets a table of all volcanos in the world
+---@return table volcanos A list of all volcanos
+---## Example of volcanos table:
+---```
+---{
+--- x = world_x,
+--- y = world_y,
+--- z = world_z,
+--- tile_x = tile_grid_x,
+--- tile_y = tile_grid_z
+---}
+---```
+function server.getVolcanos() return volcanos end
 
 --#endregion
 
