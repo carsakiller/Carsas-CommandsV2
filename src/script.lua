@@ -2736,7 +2736,7 @@ function VehicleContainer.get(self, vehicleID, list_server)
 		local playerVehicles = {}
 		for k, v in pairs(vehicles) do
 			if not v.server_spawned then
-				table.insert(playerVehicles, v, k)
+				playerVehicles[k] = v
 			end
 		end
 		return playerVehicles
