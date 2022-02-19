@@ -3337,6 +3337,7 @@ end
 COMMANDS = {
 
 	-- Moderation --
+	--#region
 	banPlayer = {
 		func = function(caller, ...)
 			local args = {...}
@@ -3435,8 +3436,10 @@ COMMANDS = {
 		category = "Moderation",
 		description = "Cleans up all irradiated areas on the map."
 	},
+	--#endregion
 
 	-- Rules --
+	--#region
 	addRule = {
 		func = function(caller, text, position)
 			-- if position could not be parsed, look for a position value at the end of the text provided
@@ -3494,8 +3497,10 @@ COMMANDS = {
 		},
 		description = "Displays the rules of this server."
 	},
+	--#endregion
 
 	-- Roles --
+	--#region
 	addRole = {
 		func = function(caller, name)
 			if string.find(name, "%s") then
@@ -3722,8 +3727,10 @@ COMMANDS = {
 		},
 		description = "Gets or sets whether a role is active or not. An inactive role won't apply it's permissions to it's members"
 	},
+	--#endregion
 
 	-- Vehicles --
+	--#region
 	clearVehicle = {
 		func = function(caller, ...)
 			local vehicles = {...}
@@ -3879,8 +3886,10 @@ COMMANDS = {
 		},
 		description = "Transfers ownership of a vehicle to another player."
 	},
+	--#endregion
 
 	-- Player --
+	--#region
 	kill = {
 		func = function(caller, target_player)
 			local character_id = server.getPlayerCharacterID(target_player.peerID)
@@ -4042,8 +4051,10 @@ COMMANDS = {
 		},
 		description = "Displays the steamID of the requested player. Displays your steamID if no player is specified."
 	},
+	--#endregion
 
 	-- Teleport --
+	--#region
 	tpb = {
 		func = function(caller)
 			caller.setTpBlocking()
@@ -4291,8 +4302,10 @@ COMMANDS = {
 		},
 		description = "Teleports you to a vehicle."
 	},
+	--#endregion
 
 	-- General --
+	--#region
 	bailout = {
 		func = function(caller, amount)
 			local money = server.getCurrency()
@@ -4454,8 +4467,10 @@ COMMANDS = {
 		},
 		description = "Whispers your message to the specified player."
 	},
+	--#endregion
 
 	-- Preferences --
+	--#region
 	resetPreferences = {
 		func = function(caller, confirm)
 			if confirm then
@@ -4554,8 +4569,10 @@ COMMANDS = {
 		category = "Preferences",
 		description = "Lists the preferences and their states for you."
 	},
+	--#endregion
 
 	-- Aliases --
+	--#region
 	addAlias = {
 		func = function(caller, alias, command)
 			if COMMANDS[alias] then
@@ -4620,8 +4637,10 @@ COMMANDS = {
 		},
 		description = "Removes an alias for a command"
 	},
+	--#endregion
 
 	-- Game Settings
+	--#region
 	setGameSetting = {
 		func = function(caller, setting_name, value)
 			local nearest = fuzzyStringInTable(setting_name, GAME_SETTING_OPTIONS, false)
@@ -4659,6 +4678,7 @@ COMMANDS = {
 		category = "Game Settings",
 		description = "Lists all of the game settings and their states."
 	},
+	--#endregion
 }
 
 ---Handle command execution request from Carsa's Companion
