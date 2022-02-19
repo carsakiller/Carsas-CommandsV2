@@ -3,10 +3,10 @@ TITLE CC Save Generation Tool
 
 SETLOCAL
 SET MY_DIR=%~dp0
-SET SRC_DIR=%MY_DIR%..\..\dev\test\freshSave
+SET SRC_DIR="%MY_DIR%..\..\dev\test\freshSave"
 
 SET SAVE_NAME="autosave"
-SET TARGET_DIR=%AppData%\Stormworks\saves
+SET TARGET_DIR="%AppData%\Stormworks\saves"
 
 CALL :NORMALIZEPATH %SRC_DIR%
 SET SOURCE="%ABSPATH%"
