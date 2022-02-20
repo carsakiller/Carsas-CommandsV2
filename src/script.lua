@@ -374,6 +374,7 @@ end
 local invalid_version -- Flag used to notify of an outdated version
 local previous_game_settings
 local deny_tp_ui_id
+local is_dedicated_server
 
 
 --[ CONSTANTS ]--
@@ -1892,6 +1893,10 @@ end
 function autosave()
 	local save_index
 
+	if not is_dedicated_server then
+		return
+	end
+
 	if g_savedata.autosave >= MAX_AUTOSAVES then
 		g_savedata.autosave = 1
 		save_index = MAX_AUTOSAVES
@@ -2872,6 +2877,7 @@ function onCreate(is_new)
 
 	g_savedata.version = SaveDataVersion
 	g_savedata.autosave = g_savedata.autosave or 1
+	g_savedata.is_dedicated_server = g_savedata.is_dedicated_server or false
 	-- define if undefined
 	g_savedata.vehicles = g_savedata.vehicles or {}
 	g_savedata.objects = g_savedata.objects or {}
@@ -2890,6 +2896,8 @@ function onCreate(is_new)
 	G_rules = new(Rules) ---@type Rules
 	G_preferences = g_savedata.preferences
 	G_aliases = g_savedata.aliases
+
+	is_dedicated_server = g_savedata.is_dedicated_server
 
 	-- deserialize data
 	for steamID, data in pairs(g_savedata.players) do
@@ -2966,9 +2974,8 @@ function onPlayerJoin(steamID, name, peerID, admin, auth)
 
 	STEAM_IDS[peerID] = steamID
 
-	if invalid_version then -- delay version warnings for when someone joins
-		server.announce("WARNING", "Your code is older than your save data. To prevent data loss/corruption, no data will be processed. Please update Carsa's Commands to the latest version.")
-		return
+	if peerID == -1 then
+		is_dedicated_server = true
 	end
 
 	if player then
