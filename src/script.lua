@@ -1280,6 +1280,16 @@ local EQUIPMENT_DATA = {
 		}
 	},
 }
+
+local FLUIDS = {
+	water = 0,
+	diesel = 1,
+	jet = 2,
+	air = 3,
+	exhaust = 4,
+	oil = 5,
+	saltwater = 6
+}
 --#endregion
 
 -- [ DEFAULTS ]--
@@ -1367,6 +1377,7 @@ local DEFAULT_ROLES = {
 			equip = true,
 			equipmentIDs = true,
 			equipp = true,
+			fuel = true,
 			gameSettings = true,
 			giveRole = true,
 			heal = true,
@@ -1423,6 +1434,7 @@ local DEFAULT_ROLES = {
 			equip = true,
 			equipmentIDs = true,
 			equipp = true,
+			fuel = true,
 			heal = true,
 			playerPerms = true,
 			playerRoles = true,
@@ -3908,6 +3920,37 @@ COMMANDS = {
 			{name = "batteryName", type = {"string"}}
 		},
 		description = "Sets the charge of a vehicle's battery. The charge amount is a percentage from 0 to 100"
+	},
+	fuel ={
+		func = function(caller, vehicle, fluidType, amount, tankName)
+			local tankData
+
+			local exists
+			tankData, exists = server.getVehicleTank(vehicle.vehicleID, tankName)
+
+			if not exists then
+				return false, "TANK NOT FOUND", (tankName and quote(tankName) .. " does not exist" or "There are no (unnamed) tanks") .. " on " .. vehicle.pretty_name
+			end
+
+			local fluidNames = getTableKeys(FLUIDS, true)
+			local fluid = fuzzyStringInTable(fluidType, fluidNames)
+
+			if not fluid then
+				return false, "INVALID FLUID", quote(fluidType) .. " is not a valid fluid type. Options:\n" .. table.concat(fluidNames, ', ')
+			end
+
+			local fluidAmount = tankData.capacity * (amount / 100)
+			server.setVehicleTank(vehicle.vehicleID, tankName, fluidAmount, FLUIDS[fluid])
+
+			return true, "TANK REFILLED", (tankName and "The tank " .. quote(tankName) or "A tank") .. " on " .. vehicle.pretty_name .. " had it's fluid set to " .. tostring(fluid) .. " and was filled to " .. string.format("%0.1fL(%0.1f%%)", fluidAmount, amount)
+		end,
+		args = {
+			{name = "vehicleID", type = {"vehicleID"}, required = true},
+			{name = "fluidType", type = {"string"}, required = true},
+			{name = "amount", type = {"string"}, required = true},
+			{name = "tankName", type = {"string"}}
+		},
+		description = "Sets the type and amount of fluid in a vehicle's fluid tank. The amount is a percentage from 0 to 100. Does not support custom tanks."
 	},
 	--#endregion
 
