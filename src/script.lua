@@ -3372,6 +3372,9 @@ COMMANDS = {
 			local statuses = ""
 			local statusTitle, statusText
 			for _, player in ipairs(args) do
+				if player.steamID == caller.steamID then
+					return false, "DENIED", "You cannot ban yourself"
+				end
 				local success
 				success, statusTitle, statusText = player.ban(caller.steamID)
 				if not success then
