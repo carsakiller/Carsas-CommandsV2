@@ -1361,6 +1361,7 @@ local DEFAULT_ROLES = {
 			banned = true,
 			cc = true,
 			ccHelp = true,
+			charge = true,
 			clearRadiation = true,
 			clearVehicle = true,
 			equip = true,
@@ -1416,6 +1417,7 @@ local DEFAULT_ROLES = {
 			banned = true,
 			cc = true,
 			ccHelp = true,
+			charge = true,
 			clearRadiation = true,
 			clearVehicle = true,
 			equip = true,
@@ -3889,10 +3891,16 @@ COMMANDS = {
 	},
 	charge = {
 		func = function(caller, vehicle, amount, batteryName)
-			local charge = amount / 100
-			local success = server.setVehicleBattery(vehicle.vehicleID, batteryName, charge)
+			local batteryData, exists = server.getVehicleBattery(vehicle.vehicleID, batteryName or "")
 
-			return true, "BATTERY CHARGED", (batteryName and "The battery " .. quote(batteryName) or "A battery") .. " on " .. vehicle.pretty_name .. " maybe had it's charge set to " .. math.floor(amount) .. "%"
+			if not exists then
+				return false, "BATTERY NOT FOUND", (batteryName and quote(batteryName) .. " does not exist" or "No (unnamed) batteries exist") .. " on " .. vehicle.pretty_name
+			end
+
+			local charge = amount / 100
+			local success = server.setVehicleBattery(vehicle.vehicleID, batteryName or "", charge)
+
+			return true, "BATTERY CHARGED", (batteryName and "The battery " .. quote(batteryName) or "A battery") .. " on " .. vehicle.pretty_name .. " had it's charge set to " .. clamp(amount, 0, 100) .. "%"
 		end,
 		args = {
 			{name = "vehicleID", type = {"vehicleID"}, required = true},
