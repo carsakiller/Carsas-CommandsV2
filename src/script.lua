@@ -1724,6 +1724,12 @@ end
 function validatePlayerID(playerID, caller)
 	local as_num = tonumber(playerID)
 
+	-- if steamID given
+	local player = G_players.get(playerID)
+	if player then
+		return true, player
+	end
+
 	if as_num then
 		if STEAM_IDS[as_num] then
 			return true, G_players.get(STEAM_IDS[as_num])
