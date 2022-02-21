@@ -1787,7 +1787,13 @@ function dataIsOfType(data, target_type, caller)
 		end
 	elseif target_type == "steamID" then
 		if #data == #STEAM_ID_MIN then
-			return true, data
+			local player = G_players.get(data)
+			if not player then
+				-- create a new player with that steamID
+				-- used for banning players that have not yet joined
+				player = G_players.create(nil, data, "Unknown")
+			end
+			return true, player
 		else
 			return false, nil, (data .. " is not a valid steamID")
 		end
@@ -3387,7 +3393,7 @@ COMMANDS = {
 		end,
 		category = "Moderation",
 		args = {
-			{name = "playerID", type = {"playerID"}, required = true}
+			{name = "playerID", type = {"playerID", "steamID"}, required = true}
 		},
 		description = "Bans a player so that when they join they are immediately kicked. Replacement for vanilla perma-ban (?ban).",
 		syncableData = {
