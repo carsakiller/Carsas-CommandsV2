@@ -1731,6 +1731,12 @@ end
 function validatePlayerID(playerID, caller)
 	local as_num = tonumber(playerID)
 
+	-- if steamID given
+	local player = G_players.get(playerID)
+	if player then
+		return true, player
+	end
+
 	if as_num then
 		if STEAM_IDS[as_num] then
 			return true, G_players.get(STEAM_IDS[as_num])
@@ -1788,7 +1794,13 @@ function dataIsOfType(data, target_type, caller)
 		end
 	elseif target_type == "steamID" then
 		if #data == #STEAM_ID_MIN then
-			return true, data
+			local player = G_players.get(data)
+			if not player then
+				-- create a new player with that steamID
+				-- used for banning players that have not yet joined
+				player = G_players.create(nil, data, "Unknown")
+			end
+			return true, player
 		else
 			return false, nil, (data .. " is not a valid steamID")
 		end
@@ -3373,6 +3385,9 @@ COMMANDS = {
 			local statuses = ""
 			local statusTitle, statusText
 			for _, player in ipairs(args) do
+				if player.steamID == caller.steamID then
+					return false, "DENIED", "You cannot ban yourself"
+				end
 				local success
 				success, statusTitle, statusText = player.ban(caller.steamID)
 				if not success then
