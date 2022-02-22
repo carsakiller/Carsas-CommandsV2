@@ -3924,6 +3924,7 @@ COMMANDS = {
 			server.notify(target_player.peer_id, "OWNERSHIP TRANSFER", caller.prettyName() .. " has made you the owner of one of their vehicles:\n\n" .. vehicle.pretty_name, 9)
 			return true, "OWNERSHIP TRANSFERRED", G_players.get(target_player).prettyName() .. " has been made the owner of " .. vehicle.pretty_name
 		end,
+		category = "Vehicles",
 		args = {
 			{name = "vehicleID", type = {"vehicleID"}, required = true, description = "The vehicle to transfer ownership of."},
 			{name = "playerID", type = {"playerID"}, required = true, description = "The player to give ownership to."}
@@ -3943,6 +3944,7 @@ COMMANDS = {
 
 			return true, "BATTERY CHARGED", (batteryName and "The battery " .. quote(batteryName) or "A battery") .. " on " .. vehicle.pretty_name .. " had it's charge set to " .. clamp(amount, 0, 100) .. "%"
 		end,
+		category = "Vehicles",
 		args = {
 			{name = "vehicleID", type = {"vehicleID"}, required = true, description = "The vehicle the battery is on."},
 			{name = "amount", type = {"number"}, required = true, description = "The percentage the battery's charge will be set to from 0 to 100."},
@@ -3973,6 +3975,7 @@ COMMANDS = {
 
 			return true, "TANK REFILLED", (tankName and "The tank " .. quote(tankName) or "A tank") .. " on " .. vehicle.pretty_name .. " had it's fluid set to " .. tostring(fluid) .. " and was filled to " .. string.format("%0.1fL(%0.1f%%)", fluidAmount, amount)
 		end,
+		category = "Vehicles",
 		args = {
 			{name = "vehicleID", type = {"vehicleID"}, required = true, description = "The vehicle the fluid tank is on."},
 			{name = "fluidType", type = {"string"}, required = true, description = "The type of fluid to use."},
