@@ -3979,7 +3979,7 @@ COMMANDS = {
 		args = {
 			{name = "vehicleID", type = {"vehicleID"}, required = true, description = "The vehicle the fluid tank is on."},
 			{name = "fluidType", type = {"string"}, required = true, description = "The type of fluid to use."},
-			{name = "amount", type = {"string"}, required = true, description = "The percentage filled the tank should be set to from 0 to 100."},
+			{name = "amount", type = {"number"}, required = true, description = "The percentage filled the tank should be set to from 0 to 100."},
 			{name = "tankName", type = {"string"}, description = "The name of the tank to fill. If omitted, the first unnamed tank on the vehicle will be filled."}
 		},
 		description = "Sets the type and amount of fluid in a vehicle's fluid tank. Does not support custom tanks."
