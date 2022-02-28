@@ -5385,7 +5385,7 @@ local lastSentPacketIdent = nil
 --
 -- returns true --if your data will be sent
 -- returns false, "error message" --if not
-function sendToServer(datatype, data, meta --[[optional]], callback--[[optional]], ignoreServerNotAvailable--[[optional]])
+function sendToServer(datatype, data, meta --[[optional]], callback--[[optional]], ignoreServerNotAvailable--[[optional]], prioritizeMessageInQueue--[[optional]])
 	--[[
 
 	Packet Structure (example):
@@ -5479,12 +5479,21 @@ function sendToServer(datatype, data, meta --[[optional]], callback--[[optional]
 		end
 
 		-- push into queue for sending
-		table.insert(packetSendingQueue, {
-			packetId = myPacketId,
-			packetPart = myPacketPart,
-			data = packetString,
-			_datatype = datatype
-		})
+		if prioritizeMessageInQueue then
+			table.insert(packetSendingQueue, myPacketPart, {
+				packetId = myPacketId,
+				packetPart = myPacketPart,
+				data = packetString,
+				_datatype = datatype
+			})
+		else
+			table.insert(packetSendingQueue, {
+				packetId = myPacketId,
+				packetPart = myPacketPart,
+				data = packetString,
+				_datatype = datatype
+			})
+		end
 
 		-- add to pending packets (needed later when waiting for the response)
 		table.insert(pendingPacketParts, {
@@ -5799,7 +5808,7 @@ function httpReply(port, url, response_body)
 			if type(companionCommandCallbacks[parsed.command]) == "function" then
 				local success, message = companionCommandCallbacks[parsed.command](parsed.token, parsed.command, parsed.commandContent)
 
-				local sent, err = sendToServer("command-response", success and "ok" or message, {commandId = parsed.commandId, statusMessage = message})
+				local sent, err = sendToServer("command-response", success and "ok" or message, {commandId = parsed.commandId, statusMessage = message}, nil, false, parsed.command == "command-sync-all")
 				if not sent then
 					companionError("when sending command response: " .. (err or "nil"))
 				end
