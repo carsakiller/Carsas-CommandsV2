@@ -3292,7 +3292,8 @@ function onTick()
 				if not steamid then
 					return false, "Invalid token '" .. (content or "nil") .."' Write ?companionToken into the ingame chat to display your token"
 				else
-					return true, steamid
+					local player = G_players.get(steamid)
+					return true, {steamId = steamid, name = player and player.name or "?"}
 				end
 			end)
 
