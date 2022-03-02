@@ -5370,7 +5370,7 @@ end
 
 serverIsAvailable = false
 local HTTP_GET_URL_CHAR_LIMIT = 4000 --TODO calc more precise
-local HTTP_GET_API_PORT = 3000
+local HTTP_GET_API_PORT = 3367
 local HTTP_GET_API_URL = "/game-api?data="
 local packetSendingQueue = {}
 local packetToServerIdCounter = 0
