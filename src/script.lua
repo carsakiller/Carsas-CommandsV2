@@ -1346,7 +1346,11 @@ local PREFERENCE_DEFAULTS = {
 		type = "text"
 	},
 	companion = {
-		value = "",
+		value = false,
+		type = "bool"
+	},
+	companionInformationOnJoin = {
+		value = false,
 		type = "bool"
 	}
 }
@@ -3246,8 +3250,11 @@ function onTick()
 	-- stuff for web companion
 	if G_preferences.companion.value == true then
 		syncTick()
+
 		if initialize then
 			initialize = false
+
+			requestCompanionUrl()
 
 			registerCompanionCommandCallback("command-run-custom-command", function (token, _, content)
 				local delim = ";DELIM;"
@@ -3407,6 +3414,11 @@ function onTick()
 							end
 						end
 					end
+
+					if G_preferences.companion.value and G_preferences.companionInformationOnJoin.value then
+						server.announce("C2 Information", "You can visit Carsa's Companion on " .. COMPANION_URL .. " and login with your token: " .. (G_companionTokens[player.steamID] or "?"), peerID)
+					end
+
 					player.save()
 					table.remove(EVENT_QUEUE, i)
 
@@ -4623,20 +4635,13 @@ COMMANDS = {
 		},
 		description = "Lists the help info for Carsa's Commands. You can provide a command's name to get detailed info on a specific command."
 	},
-	companionToken = {
+	companionInfo = {
 		func = function(caller, ...)
-			for steamid, token in pairs(G_companionTokens) do
-				if steamid == caller.steamID then
-					return true, "Your token: " .. token
-				end
-			end
-
-			tellSupervisors("Error", "player " .. caller.name .. " has no token assigned to him!")
-			return false, "You have no token, contact an admin"
+			return true, "You can visit Carsa's Companion on " .. COMPANION_URL .. " and login with your token: " .. (G_companionTokens[caller.steamID] or "?")
 		end,
 		category = "General",
 		args = {},
-		description = "Display the token required to login on the companion website"
+		description = "Display the url and token for the companion website"
 	},
 	newCompanionToken = {
 		func = function(caller, ...)
@@ -5634,6 +5639,17 @@ function triggerHeartbeat()
 	end
 end
 
+COMPANION_URL = "?"
+function requestCompanionUrl()
+	sendToServer("get-companion-url", nil, nil, function (success, response)
+		if success then
+			COMPANION_URL = response
+			companionDebug("got companion url " .. COMPANION_URL)
+		else
+			requestCompanionUrl()
+		end
+	end, true)
+end
 
 local LIVESTREAM_TIME_BETWEEN = 60 * 2
 local lastLiveStreamSentTick = 0
