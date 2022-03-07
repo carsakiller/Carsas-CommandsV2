@@ -3005,6 +3005,39 @@ function onCreate(is_new)
 	autosave()
 end
 
+function onChatMessage(peerID, senderName, message)
+
+	for key, player in pairs(G_players.players) do
+
+		if player.peerID == peerID then
+			chatLogAppendMessage(player.steamID, message)
+			return
+		end
+	end
+
+	companionError("unable to find player for peerID " .. peerID)
+end
+
+
+local chatBuffer = {}
+local ticksSinceLastChatLogSent = 0
+function chatLogAppendMessage(steamID, message)
+
+	if G_preferences.companion.value then
+		table.insert(chatBuffer, {author = steamID, message = message})
+
+		if #chatBuffer >= 20 then
+			triggerChatLogSend()
+		end
+	end
+end
+
+function triggerChatLogSend()
+	sendToServer("stream-chat", chatBuffer)
+	chatBuffer = {}
+	ticksSinceLastChatLogSent = 0
+end
+
 function onDestroy()
 	if invalid_version then return end
 
@@ -3275,6 +3308,19 @@ function onTick()
 				local success, title, text = handleCompanion(token, command, argstring)
 
 				return success, title .. ": " .. (text or "")
+			end)
+
+			registerCompanionCommandCallback("chat-write", function (token, _, content)
+				local caller = getPlayerWithToken(token)
+
+				if not caller then
+					return false, "invalid token"
+				end
+
+				server.announce(caller.name .. " (via web)", content, -1)
+				chatLogAppendMessage(caller.steamID, content)
+
+				return true, ""
 			end)
 
 			registerCompanionCommandCallback("command-sync-all", function(token, com, content)
@@ -5696,8 +5742,13 @@ function syncTick()
 	if ticksSinceLastCompanionLogSent >= 300 and #logBuffer > 0 then
 		triggerCompanionLogSend()
 	end
-
 	ticksSinceLastCompanionLogSent = ticksSinceLastCompanionLogSent + 1
+
+	-- send chat to server
+	if ticksSinceLastChatLogSent >= 180 and #chatBuffer > 0 then
+		triggerChatLogSend()
+	end
+	ticksSinceLastChatLogSent = ticksSinceLastChatLogSent + 1
 
 	-- stream live data
 	if (tickCallCounter - lastLiveStreamSentTick) > LIVESTREAM_TIME_BETWEEN then
