@@ -3287,8 +3287,6 @@ function onTick()
 		if initialize then
 			initialize = false
 
-			requestCompanionUrl()
-
 			registerCompanionCommandCallback("command-run-custom-command", function (token, _, content)
 				local delim = ";DELIM;"
 
@@ -5686,14 +5684,20 @@ function triggerHeartbeat()
 end
 
 COMPANION_URL = "?"
+isRequestingCompanionUrl = false
 function requestCompanionUrl()
+	if isRequestingCompanionUrl then
+		return
+	end
+
+	isRequestingCompanionUrl = true
+
 	sendToServer("get-companion-url", nil, nil, function (success, response)
 		if success then
 			COMPANION_URL = response
 			companionDebug("got companion url " .. COMPANION_URL)
-		else
-			requestCompanionUrl()
 		end
+		isRequestingCompanionUrl = false
 	end, true)
 end
 
@@ -5736,6 +5740,10 @@ function syncTick()
 		triggerHeartbeat()
 	elseif (tickCallCounter - lastHeartbeatTriggered) > HTTP_GET_HEARTBEAT_TIMEOUT or lastHeartbeatTriggered == 0 then
 		triggerHeartbeat()
+	end
+
+	if COMPANION_URL == "?" then
+		requestCompanionUrl()
 	end
 
 	-- send log to server
