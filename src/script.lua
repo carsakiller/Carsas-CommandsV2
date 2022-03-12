@@ -4103,8 +4103,8 @@ COMMANDS = {
 	transferOwner = {
 		func = function(caller, vehicle, target_player)
 			local owner_steam_id = vehicle.owner
-			if caller.steam_id == owner_steam_id then
-				vehicle.owner = target_player.steam_id
+			if caller.steamID == owner_steam_id then
+				vehicle.owner = target_player.steamID
 				server.notify(target_player.peerID, "OWNERSHIP TRANSFER", caller.prettyName() .. " has made you the owner of one of their vehicles:\n\n" .. vehicle.pretty_name, 9)
 			else
 				server.announce("DENIED", "You cannot transfer ownership on a vehicle you do not own", caller.peerID)
@@ -4410,7 +4410,7 @@ COMMANDS = {
 	},
 	tpv = {
 		func = function(caller, vehicle, unsafe)
-			if not vehicle.server_spawned and G_players.get(vehicle.owner).tp_blocking and vehicle.owner ~= caller.steam_id then
+			if not vehicle.server_spawned and G_players.get(vehicle.owner).tp_blocking and vehicle.owner ~= caller.steamID then
 				return false, "DENIED", "The vehicle you tried teleporting is currently blocking teleports"
 			end
 			local target_matrix, success = caller.getPosition()
@@ -4450,7 +4450,7 @@ COMMANDS = {
 				end
 
 				for k, vehicle in ipairs(nearest) do
-					if vehicle.owner == caller.steam_id then
+					if vehicle.owner == caller.steamID then
 						vehicle = nearest[k]
 						break
 					else
@@ -4472,7 +4472,7 @@ COMMANDS = {
 			elseif arg1 == "r" then
 				if caller.latest_spawn then
 					local v = G_vehicles.get(caller.latest_spawn)
-					if G_players.get(v.owner).tp_blocking and caller.steam_id ~= v.owner then
+					if G_players.get(v.owner).tp_blocking and caller.steamID ~= v.owner then
 						return false, "DENIED", "Your most recently spawned vehicle is no longer yours and is currently blocking teleports"
 					end
 					vehicle = G_vehicles.get(caller.latest_spawn)
@@ -4508,7 +4508,7 @@ COMMANDS = {
 	},
 	tp2v = {
 		func = function(caller, vehicle)
-			if not vehicle.server_spawned and G_players.get(vehicle.owner).tp_blocking and caller.steam_id ~= vehicle.owner then
+			if not vehicle.server_spawned and G_players.get(vehicle.owner).tp_blocking and caller.steamID ~= vehicle.owner then
 				return false, "DENIED", "The vehicle you tried teleporting to is currently blocking teleports"
 			end
 
