@@ -1,5 +1,5 @@
--- Stormworks Addon Lua Definitions
--- Stormworks v1.3.21 64bit
+-- Stormworks Addon Lua 
+-- Stormworks v1.4.7 64bit
 
 -- Recommended extension: https://marketplace.visualstudio.com/items?itemName=sumneko.lua
 
@@ -1553,6 +1553,64 @@ function server.setAITargetCharacter(object_id, target_object_id) end
 ---@param object_id object_id The object_id of the character to set target data for
 ---@param target_vehicle_id vehicle_id The vehicle_id of the vehicle to target
 function server.setAITargetVehicle(object_id, target_vehicle_id) end
+
+--#endregion
+
+-- Natural Disasters --
+--#region
+
+---Spawns a tsunami with it's epicenter at `matrix`. Only one tsunami/whirlpool can be active at once. A stronger event overrides a weaker one.
+---@param matrix matrix The target position for the epicenter of the tsunami
+---@param magnitude number The intensity of the tsunami
+---@return boolean is_success If the tsunami was successfully started
+function server.spawnTsunami(matrix, magnitude) return is_success end
+
+---Spawns a whirpool at the target position. If the ocean is too shallow at the target location, spawning will fail.  Only one tsunami/whirlpool can be active at once. A stronger event overrides a weaker one.
+---@param matrix matrix The target position for the epicenter of the whirlpool
+---@param magnitude number The intensity of the whirlpool
+---@return boolean is_success If the whirlpool was successfully started
+function server.spawnWhirlpool(matrix, magnitude) return is_success end
+
+---Cancels a tsunami/whirpool event
+function server.cancelGerstner() end
+
+---Spawns a tornado at the target position
+---@param matrix matrix The target spawn location for the tornado
+---@return boolean is_success If the tornado was successfully started
+function server.spawnTornado(matrix) return is_success end
+
+---Spawns a meteor that strikes the target position
+---@param matrix matrix The target location for the meteor
+---@param magnitude number The size of the meteor. Accepts values 0 - 1. Scales at a factor of `magnitude` * 20
+---@param spawns_tsunami boolean If the meteor should spawn a tsunami upon impact
+---@return boolean is_success If the meteor was successfully spawned
+function server.spawnMeteor(matrix, magnitude, spawns_tsunami) return is_success end
+
+---Spawns a meteor shower that aims for the target position
+---@param matrix matrix The target location for the shower
+---@param magnitude number The size of the main meteor. Larger values also increase the number of secondary meteors. Accepts values 0 - 1.
+---@param spawns_tsunami boolean If the main meteor should spawn a tsunami upon impact
+---@return boolean is_success If the shower was successfully started
+function server.spawnMeteorShower(matrix, magnitude, spawns_tsunami) return is_success end
+
+---Activates the closest volcano **if that tile is being simulated**. Unloaded tiles will not activate.
+---@param matrix matrix The target position for starting a volcanic event. Does not need to be exact
+---@return any
+function server.spawnVolcano(matrix) return is_success end
+
+---Gets a table of all volcanos in the world
+---@return table volcanos A list of all volcanos
+---## Example of volcanos table:
+---```
+---{
+--- x = world_x,
+--- y = world_y,
+--- z = world_z,
+--- tile_x = tile_grid_x,
+--- tile_y = tile_grid_z
+---}
+---```
+function server.getVolcanos() return volcanos end
 
 --#endregion
 
