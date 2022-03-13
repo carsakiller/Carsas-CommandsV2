@@ -1,3 +1,6 @@
 {
-    "Lua.workspace.library": ["/dev/serverDefinitions.lua"],
+    "Lua.workspace.library": [
+        "/dev/serverDefinitions.lua"
+    ],
+    "Lua.workspace.preloadFileSize": 10000
 }
