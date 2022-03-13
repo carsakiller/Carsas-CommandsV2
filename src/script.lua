@@ -385,6 +385,7 @@ end
 local invalid_version -- Flag used to notify of an outdated version
 local previous_game_settings
 local deny_tp_ui_id
+local is_dedicated_server
 
 
 --[ CONSTANTS ]--
@@ -1292,6 +1293,16 @@ local EQUIPMENT_DATA = {
 		}
 	},
 }
+
+local FLUIDS = {
+	water = 0,
+	diesel = 1,
+	jet = 2,
+	air = 3,
+	exhaust = 4,
+	oil = 5,
+	saltwater = 6
+}
 --#endregion
 
 -- [ DEFAULTS ]--
@@ -1379,11 +1390,13 @@ local DEFAULT_ROLES = {
 			banned = true,
 			cc = true,
 			ccHelp = true,
+			charge = true,
 			clearRadiation = true,
 			clearVehicle = true,
 			equip = true,
 			equipmentIDs = true,
 			equipp = true,
+			fuel = true,
 			gameSettings = true,
 			giveRole = true,
 			heal = true,
@@ -1434,11 +1447,13 @@ local DEFAULT_ROLES = {
 			banned = true,
 			cc = true,
 			ccHelp = true,
+			charge = true,
 			clearRadiation = true,
 			clearVehicle = true,
 			equip = true,
 			equipmentIDs = true,
 			equipp = true,
+			fuel = true,
 			heal = true,
 			playerPerms = true,
 			playerRoles = true,
@@ -1669,19 +1684,21 @@ end
 ---@param command_name string the name of the command to format
 ---@param include_arguments boolean if the arguments of the command should be included
 ---@param include_types boolean if the data types of the arguments should be included (include_arguments must be true)
+---@param include_arg_descriptions boolean if the descriptions for the arguments should be included (include_arguments must be true)
 ---@param include_description boolean if the description of the command should be included
 ---@return string name the name of the command
 ---@return string data the data of the command formatted for printing
-function prettyFormatCommand(command_name, include_arguments, include_types, include_description)
+function prettyFormatCommand(command_name, include_arguments, include_types, include_arg_descriptions, include_description)
 	local text = ""
 	local args = {}
+	local descriptions = {}
 
 	if not COMMANDS[command_name] then
 		return false, (command_name .. " does not exist")
 	end
 
 	if COMMANDS[command_name].args and include_arguments then
-		for command_name, command_data in ipairs(COMMANDS[command_name].args) do
+		for _, command_data in ipairs(COMMANDS[command_name].args) do
 			local s = ""
 			local optional = not command_data.required
 
@@ -1695,11 +1712,16 @@ function prettyFormatCommand(command_name, include_arguments, include_types, inc
 			s = s .. (optional and "[" or "") .. command_data.name .. (include_types and string.format("(%s)", table.concat(types, "/")) or "") .. (optional and "]" or "") -- add optional bracket symbols
 			s = s .. (command_data.repeatable and " ..." or "") -- add repeatable symbol
 			table.insert(args, s)
+
+			if include_arg_descriptions then
+				table.insert(descriptions, command_data.name .. ": " .. command_data.description)
+			end
 		end
 		text = text .. " " .. table.concat(args, ", ")
 	end
 
 	if include_description then text = text .. "\n" .. COMMANDS[command_name].description end
+	if include_arg_descriptions then text = text .. "\n" .. table.concat(descriptions, '\n') end
 	return "?" .. command_name, text
 end
 
@@ -1733,7 +1755,8 @@ function validatePlayerID(playerID, caller)
 	local as_num = tonumber(playerID)
 
 	local player = G_players.get(playerID or false)
-	if player then
+
+  if player then
 		return true, player
 	end
 
@@ -1795,7 +1818,13 @@ function dataIsOfType(data, target_type, caller)
 		end
 	elseif target_type == "steamID" then
 		if #data == #STEAM_ID_MIN then
-			return true, data
+			local player = G_players.get(data)
+			if not player then
+				-- create a new player with that steamID
+				-- used for banning players that have not yet joined
+				player = G_players.create(nil, data, "Unknown")
+			end
+			return true, player
 		else
 			return false, nil, (data .. " is not a valid steamID")
 		end
@@ -1908,6 +1937,10 @@ end
 ---Autosave the game. Cycles through multiple save file names so as to not overwrite them immediately
 function autosave()
 	local save_index
+
+	if not is_dedicated_server then
+		return
+	end
 
 	if g_savedata.autosave >= MAX_AUTOSAVES then
 		g_savedata.autosave = 1
@@ -2923,6 +2956,7 @@ function onCreate(is_new)
 
 	g_savedata.version = SaveDataVersion
 	g_savedata.autosave = g_savedata.autosave or 1
+	g_savedata.is_dedicated_server = g_savedata.is_dedicated_server or false
 	-- define if undefined
 	g_savedata.vehicles = g_savedata.vehicles or {}
 	g_savedata.objects = g_savedata.objects or {}
@@ -2943,6 +2977,8 @@ function onCreate(is_new)
 	G_preferences = g_savedata.preferences
 	G_aliases = g_savedata.aliases
 	G_companionTokens = g_savedata.companionTokens
+
+	is_dedicated_server = g_savedata.is_dedicated_server
 
 	-- deserialize data
 	for steamID, data in pairs(g_savedata.players) do
@@ -3061,6 +3097,9 @@ function onPlayerJoin(steamID, name, peerID, admin, auth)
 
 	STEAM_IDS[peerID] = steamID
 
+	if peerID == -1 then
+		is_dedicated_server = true
+	end
 
 	if player then
 		player.peerID = peerID -- update player's peerID
@@ -3569,6 +3608,7 @@ end
 COMMANDS = {
 
 	-- Moderation --
+	--#region
 	banPlayer = {
 		func = function(caller, ...)
 			local args = {...}
@@ -3576,21 +3616,22 @@ COMMANDS = {
 			local statuses = ""
 			local statusTitle, statusText
 			for _, player in ipairs(args) do
-				if not player.hasRole('Owner') then
-					local success
-					success, statusTitle, statusText = player.ban(caller.steamID)
-					if not success then
-						failed = true
-						if #statuses > 0 then statuses = statuses .. "\n" end
-						statuses = statuses .. statusText
-					end
+				if player.steamID == caller.steamID then
+					return false, "DENIED", "You cannot ban yourself"
+				end
+				local success
+				success, statusTitle, statusText = player.ban(caller.steamID)
+				if not success then
+					failed = true
+					if #statuses > 0 then statuses = statuses .. "\n" end
+					statuses = statuses .. statusText
 				end
 			end
 			return not failed, statusTitle, failed and statuses or statusText
 		end,
 		category = "Moderation",
 		args = {
-			{name = "playerID", type = {"playerID"}, required = true}
+			{name = "playerID", type = {"playerID", "steamID"}, required = true, description = "The name, peerID, or steamID of the player to ban."}
 		},
 		description = "Bans a player so that when they join they are immediately kicked. Replacement for vanilla perma-ban (?ban).",
 		syncableData = {"players"}
@@ -3615,7 +3656,7 @@ COMMANDS = {
 		end,
 		category = "Moderation",
 		args = {
-			{name = "steamID", type = {"steamID"}, required = true}
+			{name = "steamID", type = {"steamID"}, required = true, description = "The steamID of the player to unban."}
 		},
 		description = "Unbans a player from the server.",
 		syncableData = {"players"}
@@ -3673,7 +3714,7 @@ COMMANDS = {
 		end,
 		category = "Moderation",
 		args = {
-			{name = "page", type = {"number"}}
+			{name = "page", type = {"number"}, description = "The page to show."}
 		},
 		description = "Shows the list of banned players."
 	},
@@ -3685,8 +3726,10 @@ COMMANDS = {
 		category = "Moderation",
 		description = "Cleans up all irradiated areas on the map."
 	},
+	--#endregion
 
 	-- Rules --
+	--#region
 	addRule = {
 		func = function(caller, text, position)
 			-- if position could not be parsed, look for a position value at the end of the text provided
@@ -3709,8 +3752,8 @@ COMMANDS = {
 		end,
 		category = "Rules",
 		args = {
-			{name = "text", type = {"text"}, required = true},
-			{name = "position", type = {"number"}}
+			{name = "text", type = {"text"}, required = true, description = "The text of the rule to add."},
+			{name = "position", type = {"number"}, description = "The position in the rulebook to place the new rule."}
 		},
 		description = "Adds a rule to the rulebook.",
 		syncableData = {"rules"}
@@ -3728,7 +3771,7 @@ COMMANDS = {
 		end,
 		category = "Rules",
 		args = {
-			{name = "rule #", type = {"number"}, required = true}
+			{name = "rule#", type = {"number"}, required = true, description = "The rule to remove."}
 		},
 		description = "Removes a rule from the rulebook.",
 		syncableData = {"rules"}
@@ -3740,12 +3783,14 @@ COMMANDS = {
 		end,
 		category = "Rules",
 		args = {
-			{name = "page", type = {"number"}}
+			{name = "page", type = {"number"}, description = "The page to show."}
 		},
 		description = "Displays the rules of this server."
 	},
+	--#endregion
 
 	-- Roles --
+	--#region
 	addRole = {
 		func = function(caller, name)
 			if string.find(name, "%s") then
@@ -3763,7 +3808,7 @@ COMMANDS = {
 		end,
 		category = "Roles",
 		args = {
-			{name = "role_name", type = {"string"}, required = true}
+			{name = "role_name", type = {"string"}, required = true, description = "The name of the role to add."}
 		},
 		description = "Adds a role to the server that can be assigned to players.",
 		syncableData = {"roles"}
@@ -3780,7 +3825,7 @@ COMMANDS = {
 		end,
 		category = "Roles",
 		args = {
-			{name = "role_name", type = {"string"}, required = true}
+			{name = "role", type = {"string"}, required = true, description = "The name of the role to remove."}
 		},
 		description = "Removes a role from all players and deletes it.",
 		syncableData = {"roles"}
@@ -3813,9 +3858,9 @@ COMMANDS = {
 		end,
 		category = "Roles",
 		args = {
-			{name = "role_name", type = {"string"}, required = true},
-			{name = "is_admin", type = {"bool"}, required = true},
-			{name = "is_auth", type = {"bool"}, required = true}
+			{name = "role", type = {"string"}, required = true, description = "The name of the role to modify."},
+			{name = "is_admin", type = {"bool"}, required = true, description = "If this role should grant admin privileges."},
+			{name = "is_auth", type = {"bool"}, required = true, description = "If this role should be authorized."}
 		},
 		description = "Sets the permissions of a role.",
 		syncableData = {"roles"}
@@ -3852,9 +3897,9 @@ COMMANDS = {
 		end,
 		category = "Roles",
 		args = {
-			{name = "role", type = {"string"}, required = true},
-			{name = "command", type = {"string"}, required = true},
-			{name = "value", type = {"bool"}, required = true}
+			{name = "role", type = {"string"}, required = true, description = "The name of the role to modify."},
+			{name = "command", type = {"string"}, required = true, description = "The command to grant/revoke access to."},
+			{name = "value", type = {"bool"}, required = true, description = "If the role should have access to the command."}
 		},
 		description = "Sets whether a role has access to a command or not.",
 		syncableData = {"roles"}
@@ -3878,8 +3923,8 @@ COMMANDS = {
 		end,
 		category = "Roles",
 		args = {
-			{name = "role", type = {"string"}, required = true},
-			{name = "playerID", type = {"playerID"}}
+			{name = "role", type = {"string"}, required = true, description = "The name of the role to apply."},
+			{name = "playerID", type = {"playerID"}, description = "The playerID of the player to give the role to."}
 		},
 		description = "Assigns a role to a player.",
 		syncableData = {"roles"}
@@ -3916,8 +3961,8 @@ COMMANDS = {
 		end,
 		category = "Roles",
 		args = {
-			{name = "role", type = {"string"}, required = true},
-			{name = "playerID", type = {"playerID"}}
+			{name = "role", type = {"string"}, required = true, description = "The name of the role to revoke."},
+			{name = "playerID", type = {"playerID"}, description = "The playerID of the player to revoke the role from."}
 		},
 		description = "Revokes a role from a player.",
 		syncableData = {"roles"}
@@ -3981,7 +4026,7 @@ COMMANDS = {
 		end,
 		category = "Roles",
 		args = {
-			{name = "page/role_name", type = {"number", "string"}}
+			{name = "page/role", type = {"number", "string"}, description = "The page to show or the name of the role."}
 		},
 		description = "Lists all of the roles on the server. Specifying a role's name will list detailed info on it."
 	},
@@ -4008,14 +4053,16 @@ COMMANDS = {
 		end,
 		category = "Roles",
 		args = {
-			{name = "role", type = {"string"}, required = true},
-			{name = "status", type = {"bool"}}
+			{name = "role", type = {"string"}, required = true, description = "The name of the role to modify."},
+			{name = "status", type = {"bool"}, description = "If the role is enabled or disabled."}
 		},
 		description = "Gets or sets whether a role is active or not. An inactive role won't apply it's permissions to it's members",
 		syncableData = {"roles"}
 	},
+	--#endregion
 
 	-- Vehicles --
+	--#region
 	clearVehicle = {
 		func = function(caller, ...)
 			local vehicles = {...}
@@ -4050,7 +4097,7 @@ COMMANDS = {
 		end,
 		category = "Vehicles",
 		args = {
-			{name = "vehicleID", type = {"vehicleID"}, repeatable = true}
+			{name = "vehicleID", type = {"vehicleID"}, repeatable = true, description = "The vehicle to remove. If no ids are given, it will remove your nearest vehicle."}
 		},
 		description = "Removes vehicles by their id. If no ids are given, it will remove your nearest vehicle.",
 		syncableData = {"vehicles"}
@@ -4064,8 +4111,8 @@ COMMANDS = {
 		end,
 		category = "Vehicles",
 		args = {
-			{name = "vehicleID", type = {"vehicleID"}, required = true},
-			{name = "true/false", type = {"bool"}, required = true}
+			{name = "vehicleID", type = {"vehicleID"}, required = true, description = "The vehicle to modify."},
+			{name = "true/false", type = {"bool"}, required = true, description = "If the vehicle can be edited or not."}
 		},
 		description = "Sets a vehicle to either be editable or non-editable.",
 		syncableData = {"vehicles"}
@@ -4098,10 +4145,10 @@ COMMANDS = {
 		end,
 		category = "Vehicles",
 		args = {
-			{name = "page", type = {"number"}},
-			{name = "list_server", type = {"bool"}}
+			{name = "page", type = {"number"}, description = "The page to show."},
+			{name = "list_server", type = {"bool"}, description = "If vehicles spawned by the server and other addons should be listed."}
 		},
-		description = "Lists all the player vehicles that are spawned in the game. When list_server is true, vehicles that were spawned by the server will be listed"
+		description = "Lists all the vehicles that are spawned in the game."
 	},
 	vehicleIDs = {
 		func = function(caller, show_server)
@@ -4110,9 +4157,9 @@ COMMANDS = {
 		end,
 		category = "Vehicles",
 		args = {
-			{name = "list_server", type = {"bool"}}
+			{name = "list_server", type = {"bool"}, description = "If vehicles spawned by the server and other addons should be displayed."}
 		},
-		description = "Toggles displaying vehicle IDs. If list_server is true, server vehicles will be shown"
+		description = "Toggles displaying vehicle IDs."
 	},
 	vehicleInfo = {
 		func = function(caller, vehicle)
@@ -4153,29 +4200,90 @@ COMMANDS = {
 		end,
 		category = "Vehicles",
 		args = {
-			{name = "vehicleID", type={"vehicleID"}}
+			{name = "vehicleID", type={"vehicleID"}, description = "The vehicle to list info on. If no vehicleID is provided, the nearest vehicle will be used."}
 		},
-		description = "Get detailed info on a vehicle. If no vehicleID is provided, the nearest vehicle will be used"
+		description = "Get detailed info on a vehicle."
 	},
 	transferOwner = {
 		func = function(caller, vehicle, target_player)
 			local owner_steam_id = vehicle.owner
+
 			if caller.steamID == owner_steam_id then
 				vehicle.owner = target_player.steamID
 				server.notify(target_player.peerID, "OWNERSHIP TRANSFER", caller.prettyName() .. " has made you the owner of one of their vehicles:\n\n" .. vehicle.pretty_name, 9)
 			else
 				server.announce("DENIED", "You cannot transfer ownership on a vehicle you do not own", caller.peerID)
 			end
+
+			vehicle.owner = target_player.steam_id
+			server.notify(target_player.peer_id, "OWNERSHIP TRANSFER", caller.prettyName() .. " has made you the owner of one of their vehicles:\n\n" .. vehicle.pretty_name, 9)
+			return true, "OWNERSHIP TRANSFERRED", G_players.get(target_player).prettyName() .. " has been made the owner of " .. vehicle.pretty_name
 		end,
+		category = "Vehicles",
 		args = {
-			{name = "vehicleID", type = {"vehicle"}, required = true},
-			{name = "playerID", type = {"playerID"}, required = true}
+			{name = "vehicleID", type = {"vehicleID"}, required = true, description = "The vehicle to transfer ownership of."},
+			{name = "playerID", type = {"playerID"}, required = true, description = "The player to give ownership to."}
 		},
 		description = "Transfers ownership of a vehicle to another player.",
 		syncableData = {"vehicles"}
 	},
+	charge = {
+		func = function(caller, vehicle, amount, batteryName)
+			local batteryData, exists = server.getVehicleBattery(vehicle.vehicleID, batteryName or "")
+
+			if not exists then
+				return false, "BATTERY NOT FOUND", (batteryName and quote(batteryName) .. " does not exist" or "No (unnamed) batteries exist") .. " on " .. vehicle.pretty_name
+			end
+
+			local charge = amount / 100
+			local success = server.setVehicleBattery(vehicle.vehicleID, batteryName or "", charge)
+
+			return true, "BATTERY CHARGED", (batteryName and "The battery " .. quote(batteryName) or "A battery") .. " on " .. vehicle.pretty_name .. " had it's charge set to " .. clamp(amount, 0, 100) .. "%"
+		end,
+		category = "Vehicles",
+		args = {
+			{name = "vehicleID", type = {"vehicleID"}, required = true, description = "The vehicle the battery is on."},
+			{name = "amount", type = {"number"}, required = true, description = "The percentage the battery's charge will be set to from 0 to 100."},
+			{name = "batteryName", type = {"string"}, description = "The name of the battery to charge. If omitted, the first unnamed battery on the vehicle will be charged."}
+		},
+		description = "Sets the charge of a vehicle's battery."
+	},
+	fuel ={
+		func = function(caller, vehicle, fluidType, amount, tankName)
+			local tankData
+
+			local exists
+			tankData, exists = server.getVehicleTank(vehicle.vehicleID, tankName)
+
+			if not exists then
+				return false, "TANK NOT FOUND", (tankName and quote(tankName) .. " does not exist" or "There are no (unnamed) tanks") .. " on " .. vehicle.pretty_name
+			end
+
+			local fluidNames = getTableKeys(FLUIDS, true)
+			local fluid = fuzzyStringInTable(fluidType, fluidNames)
+
+			if not fluid then
+				return false, "INVALID FLUID", quote(fluidType) .. " is not a valid fluid type. Options:\n" .. table.concat(fluidNames, ', ')
+			end
+
+			local fluidAmount = tankData.capacity * (amount / 100)
+			server.setVehicleTank(vehicle.vehicleID, tankName, fluidAmount, FLUIDS[fluid])
+
+			return true, "TANK REFILLED", (tankName and "The tank " .. quote(tankName) or "A tank") .. " on " .. vehicle.pretty_name .. " had it's fluid set to " .. tostring(fluid) .. " and was filled to " .. string.format("%0.1fL(%0.1f%%)", fluidAmount, amount)
+		end,
+		category = "Vehicles",
+		args = {
+			{name = "vehicleID", type = {"vehicleID"}, required = true, description = "The vehicle the fluid tank is on."},
+			{name = "fluidType", type = {"string"}, required = true, description = "The type of fluid to use."},
+			{name = "amount", type = {"number"}, required = true, description = "The percentage filled the tank should be set to from 0 to 100."},
+			{name = "tankName", type = {"string"}, description = "The name of the tank to fill. If omitted, the first unnamed tank on the vehicle will be filled."}
+		},
+		description = "Sets the type and amount of fluid in a vehicle's fluid tank. Does not support custom tanks."
+	},
+	--#endregion
 
 	-- Player --
+	--#region
 	kill = {
 		func = function(caller, target_player)
 			local character_id = server.getPlayerCharacterID(target_player.peerID)
@@ -4184,7 +4292,7 @@ COMMANDS = {
 		end,
 		category = "Players",
 		args = {
-			{name = "playerID", type = {"playerID"}, required = true}
+			{name = "playerID", type = {"playerID"}, required = true, description = "The player to kill."}
 		},
 		description = "Kills another player."
 	},
@@ -4213,9 +4321,9 @@ COMMANDS = {
 		end,
 		category = "Players",
 		args = {
-			{name = "playerID", type = {"playerID"}}
+			{name = "playerID", type = {"playerID"}, description = "The player to show the roles of. If omitted, your roles are shown."}
 		},
-		description = "Lists the roles of the specified player. If no player is specified, your own roles are shown."
+		description = "Lists the roles of a player."
 	},
 	playerPerms = {
 		func = function(caller, target_player)
@@ -4231,9 +4339,9 @@ COMMANDS = {
 		end,
 		category = "Players",
 		args = {
-			{name = "playerID", type = {"playerID"}}
+			{name = "playerID", type = {"playerID"}, description = "The player to get the permissions of. If omitted, your permissions are shown."}
 		},
-		description = "Lists the permissions of the specified player. If no player is specified, your own permissions are shown."
+		description = "Lists the permissions of the specified player."
 	},
 	heal = {
 		func = function(caller, target_player, amount)
@@ -4271,10 +4379,10 @@ COMMANDS = {
 		end,
 		category = "Players",
 		args = {
-			{name = "playerID", type = {"playerID"}},
-			{name = "amount", type = {"number"}}
+			{name = "playerID", type = {"playerID"}, description = "The player to heal. If omitted, heals you fully"},
+			{name = "amount", type = {"number"}, description = "The percentage to heal from 0 to 100. Defaults to 100"}
 		},
-		description = "Heals the target player by the specified amount. If no amount is specified, the target will be healed to full. If no amount and no player is specified then you will be healed to full."
+		description = "Heals players."
 	},
 	equip = {
 		func = function(caller, ...)
@@ -4282,14 +4390,14 @@ COMMANDS = {
 		end,
 		category = "Players",
 		args = {
-			{name = "item_id", type = {"number"}, required = true},
-			{name = "slot", type = {"letter"}},
+			{name = "itemID", type = {"number"}, required = true, description = "The id of the item to give yourself."},
+			{name = "slot", type = {"letter"}, description = "The slot to put the item in (A, B, C, D, E, F)."},
 
-			{name = "data1", type = {"number"}},
-			{name = "data2", type = {"number"}},
-			{name = "is_active", type = {"bool"}}
+			{name = "data1", type = {"number"}, description = "The first data slot of the item."},
+			{name = "data2", type = {"number"}, description = "The second data slot of the item."},
+			{name = "active", type = {"bool"}, description = "If the item is active."}
 		},
-		description = "Equips you with the requested item. The slot is a letter (A, B, C, D, E, F) and can appear in any position within the command. You can find an item's ID and data info using ?equipmentIDs"
+		description = "Equips you with the requested item."
 	},
 	equipp = {
 		func = function(caller, target_player, ...)
@@ -4297,15 +4405,15 @@ COMMANDS = {
 		end,
 		category = "Players",
 		args = {
-			{name = "playerID", type = {"playerID"}, required = true},
-			{name = "item_id", type = {"number"}, required = true},
-			{name = "slot", type = {"letter"}},
+			{name = "playerID", type = {"playerID"}, required = true, description = "The player to give the item to."},
+			{name = "itemID", type = {"number"}, required = true, description = "The id of the item to give."},
+			{name = "slot", type = {"letter"}, description = "The slot to put the item in (A, B, C, D, E, F)."},
 
-			{name = "data1", type = {"number"}},
-			{name = "data2", type = {"number"}},
-			{name = "is_active", type = {"bool"}}
+			{name = "data1", type = {"number"}, description = "The first data slot of the item."},
+			{name = "data2", type = {"number"}, description = "The second data slot of the item."},
+			{name = "active", type = {"bool"}, description = "If the item is active."}
 		},
-		description = "Equips the specified player with the requested item. The slot is a letter (A, B, C, D, E, F) and can appear in any position within the command. You can find an item's ID and data info using ?equipmentIDs"
+		description = "Equips the specified player with the requested item."
 	},
 	position = {
 		func = function(caller, target_player)
@@ -4321,10 +4429,10 @@ COMMANDS = {
 			return true
 		end,
 		category = "Players",
-		description = "Get the 3D coordinates of the target player, or yourself.",
 		args = {
-			{name = "playerID", type = {"playerID"}}
-		}
+			{name = "playerID", type = {"playerID"}, description = "The player to get the position of. If omitted, your position will be shown."}
+		},
+		description = "Get the 3D coordinates of a player."
 	},
 	steamID = {
 		func = function(caller, target_player)
@@ -4333,12 +4441,14 @@ COMMANDS = {
 		end,
 		category = "Players",
 		args = {
-			{name = "playerID", type={"playerID"}}
+			{name = "playerID", type={"playerID"}, description = "The player to get the steamID of. If omitted, your steamID will be shown."}
 		},
-		description = "Displays the steamID of the requested player. Displays your steamID if no player is specified."
+		description = "Displays the steamID of a player."
 	},
+	--#endregion
 
 	-- Teleport --
+	--#region
 	tpb = {
 		func = function(caller)
 			caller.setTpBlocking()
@@ -4365,9 +4475,9 @@ COMMANDS = {
 		end,
 		category = "Teleporting",
 		args = {
-			{name = "x", type = {"number"}, required = true},
-			{name = "y", type = {"number"}, required = true},
-			{name = "z", type = {"number"}, required = true}
+			{name = "x", type = {"number"}, required = true, description = "The x (East/West) coordinate to teleport to."},
+			{name = "y", type = {"number"}, required = true, description = "The y (North/South) coordinate to teleport to."},
+			{name = "z", type = {"number"}, required = true, description = "The z (Up/Down) coordinate to teleport to."}
 		},
 		description = "Teleports the player to the specified x, y, z coordinates."
 	},
@@ -4407,9 +4517,9 @@ COMMANDS = {
 		end,
 		category = "Teleporting",
 		args = {
-			{name = "location name", type = {"text"}, required = true}
+			{name = "location", type = {"text"}, required = true, description = "The name of the location to teleport to."}
 		},
-		description = "Teleports the player to the specified location. You can use ?tpLocations to see what locations are available."
+		description = "Teleports the player to the specified location."
 	},
 	tpp = {
 		func = function(caller, target_player)
@@ -4428,9 +4538,9 @@ COMMANDS = {
 		end,
 		category = "Teleporting",
 		args = {
-			{name = "playerID", type = {"playerID"}, required = true}
+			{name = "playerID", type = {"playerID"}, required = true, description = "The player to teleport to."}
 		},
-		description = "Teleports the player to the specified player's position."
+		description = "Teleports to the specified player's position."
 	},
 	tp2me = {
 		func = function(caller, ...)
@@ -4461,9 +4571,9 @@ COMMANDS = {
 		end,
 		category = "Teleporting",
 		args = {
-			{name = "playerID", type = {"playerID", "string"}, required = true, repeatable = true}
+			{name = "playerID", type = {"playerID", "string"}, required = true, repeatable = true, description = "The player(s) to teleport to you. * teleports all players to you."}
 		},
-		description = "Teleports specified player(s) to you. Use * to teleport all players to you. Overrides teleport blocking."
+		description = "Teleports player(s) to you. Overrides teleport blocking."
 	},
 	tpv = {
 		func = function(caller, vehicle, unsafe)
@@ -4490,10 +4600,10 @@ COMMANDS = {
 		end,
 		category = "Teleporting",
 		args = {
-			{name = "vehicleID", type = {"vehicleID"}, required = true},
-			{name = "unsafe", type = {"bool"}}
+			{name = "vehicleID", type = {"vehicleID"}, required = true, description = "The vehicle to teleport to your position."},
+			{name = "unsafe", type = {"bool"}, description = "If the vehicle should be teleported to your exact location, ignoring surroundings."}
 		},
-		description = "Teleports the specified vehicle to your position. Specifying an unsafe teleport will not account for other vehicles at the destination."
+		description = "Teleports a vehicle to you."
 	},
 	tps = {
 		func = function(caller, arg1, seat_name)
@@ -4558,10 +4668,10 @@ COMMANDS = {
 		end,
 		category = "Teleporting",
 		args = {
-			{name = "r/n/vehicleID", type = {"vehicleID", "string"}},
-			{name = "seat name", type = {"text"}}
+			{name = "r/n/vehicleID", type = {"vehicleID", "string"}, description = "The vehicle with the seat to teleport to. r is your most recently spawned vehicle. n is your nearest vehicle."},
+			{name = "seat_name", type = {"text"}, description = "The name of the seat to teleport to. If omitted, you will be sat in the first unnamed seat on the vehicle."}
 		},
-		description = "Teleports you to a seat on a vehicle. You can use \"r\" (vehicle you last spawned) or \"n\" (nearest vehicle) for the first argument. If no vehicle and seat name is specified, you will be teleported to the nearest seat."
+		description = "Teleports you to a seat on a vehicle. If no vehicle and seat name is specified, you will be teleported to the nearest seat."
 	},
 	tp2v = {
 		func = function(caller, vehicle)
@@ -4583,12 +4693,14 @@ COMMANDS = {
 		end,
 		category = "Teleporting",
 		args = {
-			{name = "vehicleID", type = {"vehicleID"}, required = true}
+			{name = "vehicleID", type = {"vehicleID"}, required = true, description = "The vehicle to teleport to."}
 		},
 		description = "Teleports you to a vehicle."
 	},
+	--#endregion
 
 	-- General --
+	--#region
 	bailout = {
 		func = function(caller, amount)
 			local money = server.getCurrency()
@@ -4600,9 +4712,9 @@ COMMANDS = {
 		end,
 		category = "General",
 		args = {
-			{name = "$ amount", type = {"number"}, required = true}
+			{name = "$ amount", type = {"number"}, required = true, description = "The amount of money to receive."}
 		},
-		description = "Gives the \"player\" the specified amount of money."
+		description = "Gives the \"player\" money."
 	},
 	cc = {
 		func = function(caller)
@@ -4640,7 +4752,7 @@ COMMANDS = {
 					return false, "NOT FOUND", quote(command_name) .. " does not exist"
 				end
 
-				local title, message = prettyFormatCommand(command_name, true, true, true)
+				local title, message = prettyFormatCommand(command_name, true, true, true, true)
 				-- 🥚
 				if command_name == "ccHelp" and math.random(10) == 2 then
 					message = message .. "\n\nAre you really using the help command to see how to use the help command?"
@@ -4676,9 +4788,9 @@ COMMANDS = {
 		end,
 		category = "General",
 		args = {
-			{name = "page/command", type = {"number", "string"}}
+			{name = "page/command", type = {"number", "string"}, description = "The page to show or the name of the command to get detailed info on."}
 		},
-		description = "Lists the help info for Carsa's Commands. You can provide a command's name to get detailed info on a specific command."
+		description = "Lists the help info for Carsa's Commands."
 	},
 	companionInfo = {
 		func = function(caller, ...)
@@ -4746,9 +4858,9 @@ COMMANDS = {
 		end,
 		category = "General",
 		args = {
-			{name = "equipment_type", type = {"string"}}
+			{name = "equipment_type", type = {"string"}, description = "The type of equipment to list (small, large, outfit). If omitted, all equipment is listed."}
 		},
-		description = "List the IDs of the equipment in the game. Equipment types are: small, large, outfit. If the type is omitted, all IDs will be listed."
+		description = "List the IDs of the equipment in the game."
 	},
 	tpLocations = {
 		func = function(caller)
@@ -4768,13 +4880,15 @@ COMMANDS = {
 		end,
 		category = "General",
 		args = {
-			{name = "playerID", type = {"playerID"}, required = true},
-			{name = "message", type = {"text"}, required = true}
+			{name = "playerID", type = {"playerID"}, required = true, description = "The player to whisper to."},
+			{name = "message", type = {"text"}, required = true, description = "The message to whisper."}
 		},
-		description = "Whispers your message to the specified player."
+		description = "Whispers a message to a player."
 	},
+	--#endregion
 
 	-- Preferences --
+	--#region
 	resetPreferences = {
 		func = function(caller, confirm)
 			if confirm then
@@ -4788,7 +4902,7 @@ COMMANDS = {
 		end,
 		category = "Preferences",
 		args = {
-			{name = "confirm", type = {"bool"}, required = true}
+			{name = "confirm", type = {"bool"}, required = true, description = "Confirms this action."}
 		},
 		description = "Resets all server preferences back to their default states. Be very careful with this command as it can drastically change how the server behaves.",
 		syncableData = {"preferences"}
@@ -4882,10 +4996,12 @@ COMMANDS = {
 			return true
 		end,
 		category = "Preferences",
-		description = "Lists the preferences and their states for you."
+		description = "Lists all of the preferences and their states."
 	},
+	--#endregion
 
 	-- Aliases --
+	--#region
 	addAlias = {
 		func = function(caller, alias, command)
 			if COMMANDS[alias] then
@@ -4901,10 +5017,10 @@ COMMANDS = {
 		end,
 		category = "Aliases",
 		args = {
-			{name = "alias", type = {"string"}, required = true},
-			{name = "command", type = {"string"}, required = true}
+			{name = "alias", type = {"string"}, required = true, description = "The alias to add."},
+			{name = "command", type = {"string"}, required = true, description = "The name of the command to add the alias to."}
 		},
-		description = "Adds an alias for a pre-existing command. For example, you can add an alias so ccHelp becomes just help"
+		description = "Adds an alias for a pre-existing command. For example, you can add an alias so ccHelp becomes just help."
 	},
 	aliases = {
 		func = function(caller, page)
@@ -4931,9 +5047,9 @@ COMMANDS = {
 		end,
 		category = "Aliases",
 		args = {
-			{name = "page", type={"number"}}
+			{name = "page", type={"number"}, description = "The page to show."}
 		},
-		description = "Lists the aliases that can be used instead of the full command names"
+		description = "Lists the aliases that can be used instead of the full command names."
 	},
 	removeAlias = {
 		func = function(caller, alias)
@@ -4946,12 +5062,14 @@ COMMANDS = {
 		end,
 		category = "Aliases",
 		args = {
-			{name = "alias", type={"string"}, required = true}
+			{name = "alias", type={"string"}, required = true, description = "The alias to remove."}
 		},
-		description = "Removes an alias for a command"
+		description = "Removes an alias for a command."
 	},
+	--#endregion
 
 	-- Game Settings
+	--#region
 	setGameSetting = {
 		func = function(caller, setting_name, value)
 			local nearest = fuzzyStringInTable(setting_name, GAME_SETTING_OPTIONS, false)
@@ -4970,8 +5088,8 @@ COMMANDS = {
 		end,
 		category = "Game Settings",
 		args = {
-			{name = "setting_name", type = {"string"}, required = true},
-			{name = "value", type = {"bool"}, required = true}
+			{name = "setting_name", type = {"string"}, required = true, description = "The name of the setting to change."},
+			{name = "value", type = {"bool"}, required = true, description = "The new value of the setting."}
 		},
 		description = "Sets the specified game setting to the requested value.",
 		syncableData = {"gamesettings"}
@@ -4993,6 +5111,7 @@ COMMANDS = {
 		category = "Game Settings",
 		description = "Lists all of the game settings and their states.",
 	},
+	--#endregion
 }
 
 function getTilePositions()
@@ -5146,7 +5265,7 @@ function switch(caller, command, args)
 
 	-- if an argument was required by this function, but the player gave no args, print the usage
 	if requiredDivide > 1 and #args == 0 then
-		local name, data = prettyFormatCommand(command, true, true, false)
+		local name, data = prettyFormatCommand(command, true, true, true, false)
 		return false, name .. " USAGE", name .. " " .. data
 	end
 
