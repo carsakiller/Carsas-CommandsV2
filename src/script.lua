@@ -1346,7 +1346,11 @@ local PREFERENCE_DEFAULTS = {
 		type = "text"
 	},
 	companion = {
-		value = "",
+		value = false,
+		type = "bool"
+	},
+	companionInformationOnJoin = {
+		value = false,
 		type = "bool"
 	}
 }
@@ -1498,7 +1502,8 @@ local DEFAULT_ROLES = {
 			transferOwner = true,
 			cc = true,
 			ccHelp = true,
-			companionToken = true,
+			companionInfo = true,
+			newCompanionToken = true,
 			equipmentIDs = true,
 			tpLocations = true,
 			whisper = true,
@@ -3001,6 +3006,39 @@ function onCreate(is_new)
 	autosave()
 end
 
+function onChatMessage(peerID, senderName, message)
+
+	for key, player in pairs(G_players.players) do
+
+		if player.peerID == peerID then
+			chatLogAppendMessage(player.steamID, message)
+			return
+		end
+	end
+
+	companionError("unable to find player for peerID " .. peerID)
+end
+
+
+local chatBuffer = {}
+local ticksSinceLastChatLogSent = 0
+function chatLogAppendMessage(steamID, message)
+
+	if G_preferences.companion.value then
+		table.insert(chatBuffer, {author = steamID, message = message})
+
+		if #chatBuffer >= 20 then
+			triggerChatLogSend()
+		end
+	end
+end
+
+function triggerChatLogSend()
+	sendToServer("stream-chat", chatBuffer)
+	chatBuffer = {}
+	ticksSinceLastChatLogSent = 0
+end
+
 function onDestroy()
 	if invalid_version then return end
 
@@ -3246,6 +3284,7 @@ function onTick()
 	-- stuff for web companion
 	if G_preferences.companion.value == true then
 		syncTick()
+
 		if initialize then
 			initialize = false
 
@@ -3270,6 +3309,19 @@ function onTick()
 				return success, title .. ": " .. (text or "")
 			end)
 
+			registerCompanionCommandCallback("chat-write", function (token, _, content)
+				local caller = getPlayerWithToken(token)
+
+				if not caller then
+					return false, "invalid token"
+				end
+
+				server.announce(caller.name .. " (via web)", content, -1)
+				chatLogAppendMessage(caller.steamID, content)
+
+				return true, ""
+			end)
+
 			registerCompanionCommandCallback("command-sync-all", function(token, com, content)
 				for k, v in pairs(SYNCABLE_DATA) do
 					syncData(k)
@@ -3290,7 +3342,7 @@ function onTick()
 			registerCompanionCommandCallback("companion-login", function (token, _, content)
 				local steamid = getSteamIdWithToken(content)
 				if not steamid then
-					return false, "Invalid token '" .. (content or "nil") .."' Write ?companionToken into the ingame chat to display your token"
+					return false, "Invalid token '" .. (content or "nil") .."' Write ?companionInfo into the ingame chat to display your token"
 				else
 					local player = G_players.get(steamid)
 					return true, {steamId = steamid, name = player and player.name or "?"}
@@ -3407,6 +3459,11 @@ function onTick()
 							end
 						end
 					end
+
+					if G_preferences.companion.value and G_preferences.companionInformationOnJoin.value then
+						server.announce("C2 Information", "You can visit Carsa's Companion on " .. COMPANION_URL .. " and login with your token: " .. (G_companionTokens[player.steamID] or "?"), peerID)
+					end
+
 					player.save()
 					table.remove(EVENT_QUEUE, i)
 
@@ -4623,20 +4680,13 @@ COMMANDS = {
 		},
 		description = "Lists the help info for Carsa's Commands. You can provide a command's name to get detailed info on a specific command."
 	},
-	companionToken = {
+	companionInfo = {
 		func = function(caller, ...)
-			for steamid, token in pairs(G_companionTokens) do
-				if steamid == caller.steamID then
-					return true, "Your token: " .. token
-				end
-			end
-
-			tellSupervisors("Error", "player " .. caller.name .. " has no token assigned to him!")
-			return false, "You have no token, contact an admin"
+			return true, "You can visit Carsa's Companion on " .. COMPANION_URL .. " and login with your token: " .. (G_companionTokens[caller.steamID] or "?")
 		end,
 		category = "General",
 		args = {},
-		description = "Display the token required to login on the companion website"
+		description = "Display the url and token for the companion website"
 	},
 	newCompanionToken = {
 		func = function(caller, ...)
@@ -5634,6 +5684,23 @@ function triggerHeartbeat()
 	end
 end
 
+COMPANION_URL = "?"
+isRequestingCompanionUrl = false
+function requestCompanionUrl()
+	if isRequestingCompanionUrl then
+		return
+	end
+
+	isRequestingCompanionUrl = true
+
+	sendToServer("get-companion-url", nil, nil, function (success, response)
+		if success then
+			COMPANION_URL = response
+			companionDebug("got companion url " .. COMPANION_URL)
+		end
+		isRequestingCompanionUrl = false
+	end, true)
+end
 
 local LIVESTREAM_TIME_BETWEEN = 60 * 2
 local lastLiveStreamSentTick = 0
@@ -5676,12 +5743,21 @@ function syncTick()
 		triggerHeartbeat()
 	end
 
+	if COMPANION_URL == "?" then
+		requestCompanionUrl()
+	end
+
 	-- send log to server
 	if ticksSinceLastCompanionLogSent >= 300 and #logBuffer > 0 then
 		triggerCompanionLogSend()
 	end
-
 	ticksSinceLastCompanionLogSent = ticksSinceLastCompanionLogSent + 1
+
+	-- send chat to server
+	if ticksSinceLastChatLogSent >= 180 and #chatBuffer > 0 then
+		triggerChatLogSend()
+	end
+	ticksSinceLastChatLogSent = ticksSinceLastChatLogSent + 1
 
 	-- stream live data
 	if (tickCallCounter - lastLiveStreamSentTick) > LIVESTREAM_TIME_BETWEEN then
