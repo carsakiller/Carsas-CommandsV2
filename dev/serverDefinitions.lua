@@ -1,4 +1,4 @@
--- Stormworks Addon Lua 
+-- Stormworks Addon Lua Definitions
 -- Stormworks v1.4.7 64bit
 
 -- Recommended extension: https://marketplace.visualstudio.com/items?itemName=sumneko.lua
