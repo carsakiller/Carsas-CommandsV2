@@ -1349,7 +1349,7 @@ local PREFERENCE_DEFAULTS = {
 		type = "number"
 	},
 	welcomeNew = {
-		value = false,
+		value = "",
 		type = "text"
 	},
 	welcomeReturning = {
