@@ -4964,8 +4964,8 @@ COMMANDS = {
 		end,
 		category = "Preferences",
 		args = {
-			{name = "preference_name", type = {"string"}, required = true},
-			{name = "value", type = {"bool", "number", "text"}, required = true}
+			{name = "preference_name", type = {"string"}, required = true, description = "The name of the preference to edit"},
+			{name = "value", type = {"bool", "number", "text"}, required = true, description = "The new value of the preference"}
 		},
 		description = "Sets the specified preference to the requested value. Use ?preferences to see all of the preferences.",
 		syncableData = {"preferences"}
