@@ -3676,7 +3676,7 @@ COMMANDS = {
 		end,
 		category = "Moderation",
 		args = {
-			{name = "playerID", type = {"playerID"}, required = true}
+			{name = "playerID", type = {"playerID"}, required = true, description = "The playerID of the player to kick"}
 		},
 		description = "Kicks a player from the server.",
 		syncableData = {"players"}
