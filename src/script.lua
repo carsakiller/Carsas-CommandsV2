@@ -3384,6 +3384,11 @@ function onTick()
 					return false, "Invalid token '" .. (content or "nil") .."' Write ?companionInfo into the ingame chat to display your token"
 				else
 					local player = G_players.get(steamid)
+
+					if player.banned then
+						return false, "Invalid token", "You are banned"
+					end
+
 					return true, {steamId = steamid, name = player and player.name or "?"}
 				end
 			end)
@@ -5162,6 +5167,10 @@ function handleCompanion(token, command, argstring)
 	if not caller then
 		triggerSyncForCommand(command)
 		return false, "Invalid token", "'" .. (token or "nil") .. "' Did you login correctly?"
+	end
+
+	if caller.banned then
+		return false, "Invalid token", "You are banned"
 	end
 
 	if not COMMANDS[command] then
