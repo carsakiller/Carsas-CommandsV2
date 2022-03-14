@@ -4797,7 +4797,6 @@ COMMANDS = {
 			return true, "You can visit Carsa's Companion on " .. COMPANION_URL .. " and login with your token: " .. (G_companionTokens[caller.steamID] or "?")
 		end,
 		category = "General",
-		args = {},
 		description = "Display the url and token for the companion website"
 	},
 	newCompanionToken = {
@@ -4810,7 +4809,6 @@ COMMANDS = {
 			return true, "Your new token: " .. newToken
 		end,
 		category = "General",
-		args = {},
 		description = "Generates a new token for you to use on the companion website"
 	},
 	equipmentIDs = {
