@@ -2,8 +2,8 @@
 This version two of Carsa's Commands marks the end of a very long journey.
 
 ## Quick Links
-[Steam Workshop Page]()
-[Carsa's Commands Website](/)
+[Steam Workshop Page]()\
+[Carsa's Commands Website](/)\
 [Carsa's Companion](https://github.com/carsakiller/Carsas-Companion)
 
 ## About Carsa's Commands
@@ -12,7 +12,7 @@ This version two of Carsa's Commands marks the end of a very long journey.
 - `?equip` - Gives you specific equipment
 - `?tpl` - Teleports you to named locations around the map
 - `?charge` - Lets you set the charge of a battery on a vehicle
-- `?heal` - Heals you or another player by a certain percentage
+- `?heal` - Heals you or another player by a certain percentage\
 *[+53 more!](https://c2.carsakiller.com/cc-website/docs/commands)*
 
 ## Install
