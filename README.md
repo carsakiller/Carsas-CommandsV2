@@ -2,12 +2,12 @@
 This version two of Carsa's Commands marks the end of a very long journey.
 
 ## Quick Links
-[Steam Workshop Page]()\
-[Carsa's Commands Website](/)\
+[Steam Workshop Page](https://steamcommunity.com/sharedfiles/filedetails/?id=2780335340)\
+[Carsa's Commands Website](https://c2.carsakiller.com/cc-website)\
 [Carsa's Companion](https://github.com/carsakiller/Carsas-Companion)
 
 ## About Carsa's Commands
-[Carsa's Commands](/) is an addon for Stormworks that adds **over 50 commands** that implement everything from a better ban command to a command that teleports you to the nearest seat. To list a few, there is:
+[Carsa's Commands](https://c2.carsakiller.com/cc-website) is an addon for Stormworks that adds **over 50 commands** that implement everything from a better ban command to a command that teleports you to the nearest seat. To list a few, there is:
 
 - `?equip` - Gives you specific equipment
 - `?tpl` - Teleports you to named locations around the map
@@ -16,7 +16,7 @@ This version two of Carsa's Commands marks the end of a very long journey.
 *[+53 more!](https://c2.carsakiller.com/cc-website/docs/commands)*
 
 ## Install
-Carsa's Commands v2 can be subscribed to on the [Steam Workshop]. Carsa's Companion can be found on [GitHub](https://github.com/carsakiller/Carsas-Companion/releases).
+Carsa's Commands v2 can be subscribed to on the [Steam Workshop](https://steamcommunity.com/sharedfiles/filedetails/?id=2780335340). Carsa's Companion can be found on [GitHub](https://github.com/carsakiller/Carsas-Companion/releases).
 
 ## What's New?
 [New to v2](https://c2.carsakiller.com/cc-website/#news) is a new [companion webapp](https://github.com/carsakiller/Carsas-Companion) that makes your life much easier by providing a nice graphical interface so you don't have to use the in-game chat to execute `?giveRole Admin Leopard` or `?equipp CrazyFluffyPony 21 4 20`.
