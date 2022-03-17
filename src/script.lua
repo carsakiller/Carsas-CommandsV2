@@ -3647,10 +3647,15 @@ COMMANDS = {
 			local failed = false
 			local statuses = ""
 			local statusTitle, statusText
-			for _, steamID in ipairs(args) do
+			for _, player in ipairs(args) do
 				local success
-				local player = G_players.get(steamID)
+
+				if not player then
+					return false, "INVALID INPUT", "Invalid steamID given"
+				end
+
 				success, statusTitle, statusText = player.unban(caller.steamID)
+				
 				if not success then
 					failed = true
 					if #statuses > 0 then statuses = statuses .. "\n" end
