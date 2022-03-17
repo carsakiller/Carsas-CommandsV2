@@ -3655,7 +3655,7 @@ COMMANDS = {
 				end
 
 				success, statusTitle, statusText = player.unban(caller.steamID)
-				
+
 				if not success then
 					failed = true
 					if #statuses > 0 then statuses = statuses .. "\n" end
@@ -4626,13 +4626,13 @@ COMMANDS = {
 					return false, err, errText
 				end
 
-				for k, vehicle in ipairs(nearest) do
-					if vehicle.owner == caller.steamID then
-						vehicle = nearest[k]
+				for k, v in ipairs(nearest) do
+					if v.owner == caller.steamID then
+						v = nearest[k]
 						break
 					else
-						if vehicle.server_spawned or not G_players.get(vehicle.owner).tp_blocking then
-							vehicle = nearest[k]
+						if v.server_spawned or not G_players.get(v.owner).tp_blocking then
+							v = nearest[k]
 							break
 						end
 					end
