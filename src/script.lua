@@ -3449,6 +3449,13 @@ function onTick()
 				end
 				return sendToServer("test-performance-game-backend", content)
 			end)
+
+			registerCompanionCommandCallback("set-companion-url", function (token, _, content)
+				COMPANION_URL = content
+				companionDebug("updated companion url " .. COMPANION_URL)
+
+				return true
+			end)
 		end
 	end
 
@@ -5544,7 +5551,7 @@ function syncData(name)
 			end
 		end)
 		if not sent then
-			companionError("@syncData sync-" .. name .. ": " .. (err or "nil"))
+			companionDebug("Error @syncData sync-" .. name .. ": " .. (err or "nil"))
 		end
 	else
 		companionError("@syncData unknown syncable: " .. name)
