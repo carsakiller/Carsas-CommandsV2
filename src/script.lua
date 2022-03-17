@@ -4628,11 +4628,11 @@ COMMANDS = {
 
 				for k, v in ipairs(nearest) do
 					if v.owner == caller.steamID then
-						v = nearest[k]
+						vehicle = v
 						break
 					else
 						if v.server_spawned or not G_players.get(v.owner).tp_blocking then
-							v = nearest[k]
+							vehicle = v
 							break
 						end
 					end
