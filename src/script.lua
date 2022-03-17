@@ -13,6 +13,8 @@
 local OWNER_STEAM_ID = "0"
 
 
+local DEBUG = false
+
 local ScriptVersion = "2.0.0"
 local SaveDataVersion = "2.0.0"
 
@@ -1486,7 +1488,8 @@ local DEFAULT_ROLES = {
 	},
 	Auth = {
 		commands = {
-			setEditable = true
+			setEditable = true,
+			tpv = true,
 		},
 		active = true,
 		admin = false,
@@ -1511,7 +1514,6 @@ local DEFAULT_ROLES = {
 			tpc = true,
 			tpl = true,
 			tpp = true,
-			tpv = true,
 			tps = true,
 			tp2v = true,
 			transferOwner = true,
@@ -5331,7 +5333,9 @@ function switch(caller, command, args)
 			local is_correct_type, converted_value, err
 
 			-- DEBUG:
-			server.announce(pArgIndex .. " " .. arg.data.name, quote((pArgValue or "nil")), caller)
+			if DEBUG then
+				server.announce(pArgIndex .. " " .. arg.data.name, quote((pArgValue or "nil")), caller)
+			end
 
 			if not accepted or arg.data.repeatable then
 
@@ -5339,10 +5343,12 @@ function switch(caller, command, args)
 
 					is_correct_type, converted_value, err = dataIsOfType(pArgValue, accepted_type, caller)
 					-- DEBUG: announce what value this is looking for and what it is attempting to match
-					server.announce((is_correct_type and "Correct" or "Incorrect") .. (arg.data.required and " Required" or " Optional"),
-					"Arg Position: " .. pArgIndex .. "\n    |Target Type: " .. accepted_type .. "\n    | Given Value: " .. tostring(pArgValue) .. "\n    | Converted Value: " .. tostring(converted_value) .. "\n    | Err: " .. ((not is_correct_type and err) or ""),
-					caller.peerID
-					)
+					if DEBUG then
+						server.announce((is_correct_type and "Correct" or "Incorrect") .. (arg.data.required and " Required" or " Optional"),
+						"Arg Position: " .. pArgIndex .. "\n    |Target Type: " .. accepted_type .. "\n    | Given Value: " .. tostring(pArgValue) .. "\n    | Converted Value: " .. tostring(converted_value) .. "\n    | Err: " .. ((not is_correct_type and err) or ""),
+						caller.peerID
+						)
+					end
 
 					-- if the argument is a segment of text and the rest of the arguments need to be captured and concatenated
 					if accepted_type == "text" and pArgValue ~= nil and pArgValue ~= "" then
@@ -5371,13 +5377,15 @@ function switch(caller, command, args)
 		end
 
 		-- DEBUG: announce a failed argument matching
-		if not accepted and arg.data.required then
-			server.notify(caller.peerID, "Arg Match Not Found", arg.data.name, 8)
-			local accepted_types = {}
-			for _, type_name in ipairs(arg.data.type) do
-				table.insert(accepted_types, TYPE_ABBREVIATIONS[type_name])
+		if DEBUG then
+			if not accepted and arg.data.required then
+				server.notify(caller.peerID, "Arg Match Not Found", arg.data.name, 8)
+				local accepted_types = {}
+				for _, type_name in ipairs(arg.data.type) do
+					table.insert(accepted_types, TYPE_ABBREVIATIONS[type_name])
+				end
+				return false, "ARG REQUIRED", "Argument #" .. arg.index .. " : " .. arg.data.name .. " must be of type " .. table.concat(accepted_types, ", ")
 			end
-			return false, "ARG REQUIRED", "Argument #" .. arg.index .. " : " .. arg.data.name .. " must be of type " .. table.concat(accepted_types, ", ")
 		end
 	end
 	server.notify(caller.peerID, "EXECUTING " .. command, " ", 7)
