@@ -394,7 +394,7 @@ local is_dedicated_server
 local SAVE_NAME = "CC_Autosave"
 local MAX_AUTOSAVES = 5
 local STEAM_ID_MIN = "76561197960265729"
-local BUTTON_PREFIX = "?cc"
+local BUTTON_PREFIX = "?cc:"
 
 
 local LINE = "---------------------------------------------------------------------------"
@@ -3285,17 +3285,17 @@ function onVehicleDespawn(vehicleID, peerID)
 end
 
 --- This triggers for both press and release events, but not while holding.
-function onButtonPress(vehicleID, peerID, button_name)
+function onButtonPress(vehicleID, peerID, buttonName)
 	if invalid_version then return end
 
-	local prefix = string.sub(button_name, 1, 3)
+	local prefix = string.sub(buttonName, 1, string.len(BUTTON_PREFIX))
 	if prefix ~= BUTTON_PREFIX then return end
 
-	local content = string.sub(button_name, 4)
+	local content = string.sub(buttonName, string.len(BUTTON_PREFIX) + 1)
 	local command
 	local separated = {}
 
-	-- separate button_name at each space
+	-- separate buttonName at each space
 	for arg in string.gmatch(content, "([^ ]+)") do
 		table.insert(separated, arg)
 	end
@@ -3306,12 +3306,25 @@ function onButtonPress(vehicleID, peerID, button_name)
 		return
 	end
 
-	local stateTable, success = server.getVehicleButton(vehicleID, button_name)
-	local state = stateTable.on == 1 -- Why?
+	local stateTable, success = server.getVehicleButton(vehicleID, buttonName)
+	local state = stateTable.on == true
+
+	local player
+	for _, p in pairs(G_players.players) do
+		if p.peerID == peerID then
+			player = p
+			break
+		end
+	end
+
+	if player == nil then
+		tellSupervisors("Error handling button command", "Unable to find player for peerID: " .. peerID)
+		return
+	end
 
 	if success and state then
-		separated[1] = "?"..separated[1]
-		onCustomCommand(nil, peerID, nil, nil, table.unpack(separated))
+		separated[1] = "?" .. command
+		onCustomCommand(content, player.peerID, player.admin, player.auth, table.unpack(separated))
 	end
 end
 
