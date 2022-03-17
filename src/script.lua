@@ -2299,7 +2299,7 @@ end
 ---@return string errText Explanation for why the operation succeeded/failed
 function Player.unban(self, admin_steamID)
 	local admin = G_players.get(admin_steamID)
-	self.banned = false
+	self.banned = nil
 	self.save()
 
 	local message = self.prettyName(true) .. " has been unbanned"
