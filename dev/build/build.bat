@@ -12,9 +12,12 @@ SET SOURCE="%ABSPATH%"
 
 SET TARGET="%TARGET_DIR:"=%\%ADDON_NAME:"=%"
 
-XCOPY /s/v/i/y %SOURCE% %TARGET%
+XCOPY /s/v/i/y %SOURCE% %TARGET% && (
+  ECHO [7m[92m SUCCESS [0m
+) || (
+  ECHO [7m[91m FAILED [0m
+)
 
-ECHO [7m[92mSUCCESS[0m
 
 ENDLOCAL
 TIMEOUT 3
