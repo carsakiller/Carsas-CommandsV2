@@ -1,0 +1,72 @@
+name : Bug Report
+description : "File a bug report to help Carsa's Commands improve"
+labels : ["bug"]
+
+body:
+  - type : markdown
+    attributes :
+      value : |
+        "If this is an issue with Carsa's Companion, please file a bug report over on the [correct repository](https://github.com/carsakiller/Carsas-Companion/issues)"
+  - type : dropdown
+    id : issue-type
+    attributes :
+      label : This is an issue with:
+      description : Which of the provided options best describes the issue you are experiencing? You may choose more than one.
+      multiple : true
+      options :
+        - Roles (creating, editing, removing)
+        - Players (teleporting, equipping)
+        - Vehicles (teleporting, despawning)
+        - Preferences
+        - A callback (when a vehicle is spawned, a player joins, etc.)
+        - Persistent data (g_savedata)
+        - Other
+      validations :
+        required : true
+  - type : textarea
+      id : issue-description
+      attributes :
+        label : Issue Description
+        description : Please describe the issue you are experiencing as clearly as possible.
+      validations :
+        required : true
+  - type : textarea
+    id : reproduction-steps
+    attributes :
+      label : Reproduction Steps
+      description : Please provide steps to reproduce the issue.
+      value : |
+        1. 
+        2. 
+        3. 
+      render : markdown
+    validations :
+      required : true
+  - type : markdown
+    value : "To find the save data for Carsa's Commands, you will first need to navigate to the following path: `%AppData%/Stormworks/saves/SAVE_NAME/script_data`. If you have multiple addons enabled in your save, you may have multiple files in this directory. Please open the files to find which one looks similar to the below. When this file is found, please copy it's contents and paste it below."
+  - type : textarea
+    id : save-data
+    attributes :
+        label : Script Save Data
+        description : If your issue persists when re-loading your save or involves g_savedata, please upload your script save data.
+        placeholder : |
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>
+            <g_savedata>
+	            <var>
+                    <v name=\"unique_players\" value=\"1\"/>
+                    <v type=\"2\" name=\"version\" value=\"2.0.0\"/>
+                    <v type=\"3\" name=\"is_dedicated_server\" value=\"false\"/>
+                    <v name=\"autosave\" value=\"1\"/>
+	            </var>
+            </g_savedata>
+        "
+        render : xml
+  - type : textarea
+    id : additional-notes
+    attributes :
+      label : Additional Info
+      description : If you have any additional info, please feel free to provide it here.
+  - type: markdown
+    attributes :
+      value : |
+        "Thank you for contributing to Carsa's Commands v2!"
