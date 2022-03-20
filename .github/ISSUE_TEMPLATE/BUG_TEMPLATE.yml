@@ -23,6 +23,16 @@ body:
         - Other
       validations :
         required : true
+  - type : dropdown
+    id : game-hosting-mode
+    attributes :
+      label : "How was the game being hosted?"
+      options :
+        - It was a dedicated server
+        - It was being hosted from the main menu
+        - I was playing singleplayer
+    validations :
+      required : true
   - type : input
     id : issue-priority
     attributes :
