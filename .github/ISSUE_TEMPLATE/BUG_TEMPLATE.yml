@@ -42,12 +42,12 @@ body:
     validations :
       required : true
   - type : textarea
-      id : issue-description
-      attributes :
-        label : Issue Description
-        description : Please describe the issue you are experiencing as clearly as possible.
-      validations :
-        required : true
+    id : issue-description
+    attributes :
+      label : Issue Description
+      description : Please describe the issue you are experiencing as clearly as possible.
+    validations :
+      required : true
   - type : textarea
     id : reproduction-steps
     attributes :
