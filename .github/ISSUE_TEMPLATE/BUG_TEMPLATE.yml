@@ -81,7 +81,7 @@ body:
         To find the save data for Carsa's Commands, you will first need to navigate to the following path:
         `%AppData%/Stormworks/saves/SAVE_NAME/script_data`. If you have multiple addons enabled in your save,
         you may have multiple files in this directory. Please open the files to find which one looks similar
-        to the below. When this file is found, please copy it's contents and paste it below.
+        to the above. When this file is found, please copy it's contents and paste it above.
   - type : textarea
     id : additional-notes
     attributes :
