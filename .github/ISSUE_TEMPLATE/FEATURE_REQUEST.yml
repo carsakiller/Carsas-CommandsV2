@@ -4,7 +4,8 @@ labels : ["request"]
 
 body :
   - type : markdown
-    attributes : "Please note that v2 of Carsa's Commands is intended to the final version. It is unlikely that features will be added but we are still open to ideas."
+    attributes :
+      value : "Please note that v2 of Carsa's Commands is intended to the final version. It is unlikely that features will be added but we are still open to ideas."
   - type : textarea
     id : feature-description
     attributes :
