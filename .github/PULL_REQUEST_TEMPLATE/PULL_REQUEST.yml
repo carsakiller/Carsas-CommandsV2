@@ -1,0 +1,30 @@
+name : Pull Request
+description : "Open a pull request to help Carsa's Commands improve."
+
+body :
+  - type : input
+    id : issue-number
+    attributes :
+      label : "Addresses Issue #"
+      description : "The issue that this pull request addresses."
+    validations :
+      required : true
+  - type : textarea
+    id : changes
+    attributes :
+      label : "Changes Performed"
+      description : "Please summarize the changes you have made."
+      placeholder : "I fixed issues with players teleporting to the wrong vehicle when using `?tps`"
+    validations :
+      required : true
+  - type : checkboxes
+    id : confirm-testing
+    attributes :
+      label : I have tested my changes in the latest version of Stormworks
+      options :
+        - label : I Confirm
+          required : true
+  - type : markdown
+    attributes :
+      value : |
+        "Thank you for helping improve Carsa's Commands!"
