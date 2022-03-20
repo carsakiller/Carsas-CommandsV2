@@ -6,7 +6,7 @@ body :
   - type : markdown
     attributes :
       value : |
-      Please note that v2 of Carsa's Commands is intended to be the final version. It is unlikely that features will be added but we are still open to ideas.
+        Please note that v2 of Carsa's Commands is intended to be the final version. It is unlikely that features will be added but we are still open to ideas.
   - type : textarea
     id : feature-description
     attributes :
