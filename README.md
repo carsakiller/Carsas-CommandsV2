@@ -18,6 +18,16 @@ This version two of Carsa's Commands marks the end of a very long journey.
 ## Install
 Carsa's Commands v2 can be subscribed to on the [Steam Workshop](https://steamcommunity.com/sharedfiles/filedetails/?id=2780335340). Carsa's Companion can be found on [GitHub](https://github.com/carsakiller/Carsas-Companion/releases).
 
+## Dedicated Server Setup
+1. Navigate to `%appdata%\Stormworks\data\missions\` and copy the whole `Carsa's Commands` folder
+2. Assuming your dedicated server is installed here: `C:\Server\server64.exe`, paste the mission folder into `C:\Server\` (one level up from the directory where `server64.exe` is)
+3. If your dedicated server has not been started before, make sure you start it at least once so it can generate some configuration files
+4. Open `%appdata%\Stormworks\server_config.xml` in a text editor
+5. Under the `<playlists>` tag, add the following:
+```xml
+<path path="Carsa's Commands"/>
+```
+
 ## What's New?
 [New to v2](https://c2.carsakiller.com/cc-website/#news) is a new [companion webapp](https://github.com/carsakiller/Carsas-Companion) that makes your life much easier by providing a nice graphical interface so you don't have to use the in-game chat to execute `?giveRole Admin Leopard` or `?equipp CrazyFluffyPony 21 4 20`.
 
