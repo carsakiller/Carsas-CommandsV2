@@ -1,0 +1,33 @@
+name : Command Request
+description : "Request a command be added."
+labels : ["command", "request"]
+
+body:
+  - type : input
+    id : suggested-name
+    attributes :
+      label : Suggested Name
+      description : |
+        Do you have a suggested name for the command?
+      placeholder: "?myCommandName"
+  - type : textarea
+    id : purpose-description
+    attributes :
+      label : Command Purpose
+      description : |
+        Please describe the purpose/functionality of the command you would like to see added.
+    validations :
+      required : true
+  - type : checkboxes
+    id : default-access
+    attributes :
+      label : Which roles do you think should have access by default?
+      options :
+        - label : "Admin"
+        - label : "Moderator"
+        - label : "Auth"
+        - label : "Everyone"
+  - type: markdown
+    attributes :
+      value : |
+        Thank you for contributing to Carsa's Commands v2!
