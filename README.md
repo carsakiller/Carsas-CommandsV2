@@ -19,14 +19,39 @@ This version two of Carsa's Commands marks the end of a very long journey.
 Carsa's Commands v2 can be subscribed to on the [Steam Workshop](https://steamcommunity.com/sharedfiles/filedetails/?id=2780335340). Carsa's Companion can be found on [GitHub](https://github.com/carsakiller/Carsas-Companion/releases).
 
 ## Dedicated Server Setup
+> **Important Note:** The first player to join the server will be made an owner. To override this, please look at [Setting an Owner](#setting-an-owner)
 1. Navigate to `%appdata%\Stormworks\data\missions\` and copy the whole `Carsa's Commands` folder
-2. Assuming your dedicated server is installed here: `C:\Server\server64.exe`, paste the mission folder into `C:\Server\` (one level up from the directory where `server64.exe` is)
+2. Assuming your dedicated server is installed here: `C:\Server\server64.exe`, paste the mission folder into `C:\Server\`
 3. If your dedicated server has not been started before, make sure you start it at least once so it can generate some configuration files
 4. Open `%appdata%\Stormworks\server_config.xml` in a text editor
 5. Under the `<playlists>` tag, add the following:
 ```xml
 <path path="Carsa's Commands"/>
 ```
+### Setting an Owner
+To override the automatic assigning of an owner when the very first unique player joins, you can do the following:
+1. Open `script.lua` (can be found in the location from step 2 of [the setup](#dedicated-server-setup))
+2. On line 13, you should find the following:
+```lua
+local OWNER_STEAM_ID = "0"
+```
+3. Please enter your steamID where the `0` is, leaving the quotes around it.
+#### How to Find Your SteamID
+Using the Steam desktop client:
+1. Select `Steam` in the top right
+2. Select `Settings`
+3. Select `Interface`
+4. Make sure that `Display web address bars when available` is checked.
+5. Close the settings window and mouse over your username at the top
+6. Select `Profile`
+7. You should now see your steamID in the URL bar in between the final two slashes `https://steamcommunity.com/profiles/<steamID>/`
+![image](https://user-images.githubusercontent.com/61925890/163575767-d96c416c-39c2-4177-b550-923a5bfeca64.png)
+
+**Note:** If you have set a custom URL, you will not see your steamID in the url but rather your custom URL. To find your steamID, do the following:
+1. Copy URL from profile screen
+2. Visit [Steam ID Lookup](https://steamid.io/lookup)
+3. Paste the link in the search box and submit
+4. Copy the `steamID64` value, this is your steamID
 
 ## What's New?
 [New to v2](https://c2.carsakiller.com/cc-website/#news) is a new [companion webapp](https://github.com/carsakiller/Carsas-Companion) that makes your life much easier by providing a nice graphical interface so you don't have to use the in-game chat to execute `?giveRole Admin Leopard` or `?equipp CrazyFluffyPony 21 4 20`.
