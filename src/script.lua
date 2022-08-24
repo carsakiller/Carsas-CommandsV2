@@ -1,5 +1,5 @@
 -- CARSA'S COMMANDS
----@version 2.0.0
+---@version 2.0.1
 
 ---@alias peerID number
 ---@alias steamID string
@@ -15,8 +15,8 @@ local OWNER_STEAM_ID = "0"
 
 local DEBUG = false
 
-local ScriptVersion = "2.0.0"
-local SaveDataVersion = "2.0.0"
+local ScriptVersion = "2.0.1"
+local SaveDataVersion = "2.0.1"
 
 --[ LIBRARIES ]--
 --#region
