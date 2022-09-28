@@ -2937,18 +2937,18 @@ end
 --#region
 
 g_savedata.version = SaveDataVersion
-g_savedata.autosave = g_savedata.autosave or 1
-g_savedata.is_dedicated_server = g_savedata.is_dedicated_server or false
+g_savedata.autosave = 1
+g_savedata.is_dedicated_server = false
 -- define if undefined
-g_savedata.vehicles = g_savedata.vehicles or {}
-g_savedata.objects = g_savedata.objects or {}
-g_savedata.players = g_savedata.players or {}
-g_savedata.roles = g_savedata.roles or deepCopyTable(DEFAULT_ROLES)
-g_savedata.unique_players = g_savedata.unique_players or 0
-g_savedata.preferences = g_savedata.preferences or deepCopyTable(PREFERENCE_DEFAULTS)
-g_savedata.rules = g_savedata.rules or {}
-g_savedata.aliases = g_savedata.aliases or deepCopyTable(DEFAULT_ALIASES)
-g_savedata.companionTokens = g_savedata.companionTokens or {}
+g_savedata.vehicles = {}
+g_savedata.objects = {}
+g_savedata.players = {}
+g_savedata.roles = deepCopyTable(DEFAULT_ROLES)
+g_savedata.unique_players = 0
+g_savedata.preferences = deepCopyTable(PREFERENCE_DEFAULTS)
+g_savedata.rules = {}
+g_savedata.aliases = deepCopyTable(DEFAULT_ALIASES)
+g_savedata.companionTokens = {}
 
 -- create references to shorten code
 G_vehicles = G_vehicles or new(VehicleContainer) ---@type VehicleContainer
@@ -2980,6 +2980,29 @@ function onCreate(is_new)
 	if invalid_version then return end
 
 	is_dedicated_server = g_savedata.is_dedicated_server
+	g_savedata.version = SaveDataVersion
+	g_savedata.autosave = g_savedata.autosave or 1
+	g_savedata.is_dedicated_server = g_savedata.is_dedicated_server or false
+	-- define if undefined
+	g_savedata.vehicles = g_savedata.vehicles or {}
+	g_savedata.objects = g_savedata.objects or {}
+	g_savedata.players = g_savedata.players or {}
+	g_savedata.roles = g_savedata.roles or deepCopyTable(DEFAULT_ROLES)
+	g_savedata.unique_players = g_savedata.unique_players or 0
+	g_savedata.preferences = g_savedata.preferences or deepCopyTable(PREFERENCE_DEFAULTS)
+	g_savedata.rules = g_savedata.rules or {}
+	g_savedata.aliases = g_savedata.aliases or deepCopyTable(DEFAULT_ALIASES)
+	g_savedata.companionTokens = g_savedata.companionTokens or {}
+
+	-- create references to shorten code
+	G_vehicles = G_vehicles or new(VehicleContainer) ---@type VehicleContainer
+	G_objects = g_savedata.objects -- Not in use yet
+	G_players = new(PlayerContainer) ---@type PlayerContainer
+	G_roles = new(RoleContainer) ---@type RoleContainer
+	G_rules = new(Rules) ---@type Rules
+	G_preferences = g_savedata.preferences
+	G_aliases = g_savedata.aliases
+	G_companionTokens = g_savedata.companionTokens
 
 	-- deserialize data
 	for steamID, data in pairs(g_savedata.players) do
