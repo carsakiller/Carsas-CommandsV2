@@ -4948,12 +4948,14 @@ COMMANDS = {
 			end
 
 			if equipmentPreferences[preference_name] then
-				local data = EQUIPMENT_DATA[tonumber(args[1])]
-				if not data then
-					return false, "INVALID EQUIPMENT ID", args[1] .. " is not a valid equipment ID"
-				end
-				if data.dlc and not DLC[data.dlc] then
-					return false, "DLC DISABLED", "The requested item " .. quote(data.name) .. " requires the " .. data.dlc .. " DLC"
+				if args[1] ~= 0 then
+					local data = EQUIPMENT_DATA[tonumber(args[1])]
+					if not data then
+						return false, "INVALID EQUIPMENT ID", args[1] .. " is not a valid equipment ID"
+					end
+					if data.dlc and not DLC[data.dlc] then
+						return false, "DLC DISABLED", "The requested item " .. quote(data.name) .. " requires the " .. data.dlc .. " DLC"
+					end
 				end
 			end
 
