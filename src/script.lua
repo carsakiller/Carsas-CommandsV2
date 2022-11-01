@@ -5812,6 +5812,7 @@ function checkPacketSendingQueue()
 		for packetType, count in pairs(typeCounts) do
 			if count > maxCount and packetType ~= "heartbeat" then
 				maxCountType = packetType
+				maxCount = count
 			end
 		end
 
