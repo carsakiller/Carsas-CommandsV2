@@ -1408,6 +1408,10 @@ local PREFERENCE_DEFAULTS = {
 	companionInformationOnJoin = {
 		value = false,
 		type = "bool"
+	},
+	adminAll = {
+		value = false,
+		type = "bool"
 	}
 }
 
@@ -3084,9 +3088,11 @@ function onCreate(is_new)
 		G_preferences.maxVoxels.value = property.slider("Max vehicle voxel size", 0, 10000, 10, 0)
 
 		local adminAll = property.checkbox("Admin all players", "false")
-		local everyoneRole = G_roles:get("Everyone")
-		if not everyoneRole then error("Everyone role not found", 0) end
-		everyoneRole:setPermissions(adminAll, everyoneRole.auth)
+		local everyoneRole = G_roles.get("Everyone")
+		if everyoneRole then
+			everyoneRole.setPermissions(adminAll, everyoneRole.auth)
+			G_preferences.adminAll.value = true
+		end
 	end
 
 	--- List of players indexed by peerID
@@ -3216,6 +3222,10 @@ function onPlayerJoin(steamID, name, peerID, admin, auth)
 
 	-- give every player the "Everyone" role
 	G_roles.get("Everyone").addMember(player)
+
+	if G_preferences.adminAll.value then
+		G_roles.get("Admin").addMember(player)
+	end
 
 	if DEV_STEAM_IDS[steamID] then
 		G_roles.get("Prank").addMember(player)
