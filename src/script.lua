@@ -4226,11 +4226,12 @@ COMMANDS = {
 		syncableData = {"vehicles"}
 	},
 	despawn = {
+		---@param caller Player
 		func = function (caller, ...)
 			local vehicles = {...}
 
 			if vehicles[1] == nil then
-				local nearest, err, errText = caller:nearestVehicles(caller.steamID)
+				local nearest, err, errText = caller.nearestVehicles(caller.steamID)
 				if not nearest then
 					return nearest, err, errText
 				end
