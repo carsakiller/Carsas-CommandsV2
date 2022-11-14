@@ -1410,6 +1410,14 @@ local PREFERENCE_DEFAULTS = {
 	}
 }
 
+---@class DefaultRoleDefinition
+---@field active boolean
+---@field admin? boolean
+---@field auth? boolean
+---@field no_delete? boolean
+---@field members table
+
+---@type DefaultRoleDefinition[]
 local DEFAULT_ROLES = {
 	Owner = {
 		active = true,
