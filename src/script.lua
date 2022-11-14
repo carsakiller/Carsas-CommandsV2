@@ -1350,6 +1350,7 @@ local FLUIDS = {
 
 -- [ DEFAULTS ]--
 --#region
+---@type { [string]: { value: any, type: type } }
 local PREFERENCE_DEFAULTS = {
 	equipOnRespawn = {
 		value = true,
