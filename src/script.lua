@@ -499,16 +499,22 @@ local SLOT_LETTER_TO_NUMBER = {
 	F = 6,
 }
 
---- @type table<number, table>
----# Example:
----```
----{
----	name = String,
----	size = Number,
----	dlc = String,
----	data = Table
----}
----```
+---@class Equipment
+---@field name string
+---@field size integer 1 = Large, 2 = Small, 3 = Outfit
+---@field data? EquipmentDataFloat|EquipmentDataInt
+
+---@class EquipmentDataFloat
+---@field name string Name of data entry
+---@field type "float"
+---@field default string|number
+
+---@class EquipmentDataInt
+---@field name string Name of data entry
+---@field type "int"|"bool"
+---@field default string|number
+
+--- @type Equipment[]
 local EQUIPMENT_DATA = {
 	{ -- 1
 		name = "diving suit",
