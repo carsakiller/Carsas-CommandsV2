@@ -1310,7 +1310,31 @@ local EQUIPMENT_DATA = {
 				default = 12
 			}
 		}
-	}
+	},
+	{ -- 73
+		name = "Dog Whistle",
+		size = 2,
+	},
+	{ -- 74
+		name = "Bomb Disposal",
+		size = 3,
+	},
+	{ -- 75
+		name = "Chest Rig",
+		size = 3,
+	},
+	{ -- 76
+		name = "Black Hawk Vest",
+		size = 3,
+	},
+	{ -- 77
+		name = "Plate Vest",
+		size = 3,
+	},
+	{ -- 78
+		name = "Armor Vest",
+		size = 3,
+	},
 }
 
 local FLUIDS = {
