@@ -470,6 +470,7 @@ local GAME_SETTING_OPTIONS = {
 	"despawn_on_leave",
 	"unlock_all_components",
 	"ceasefire",
+	"lightning",
 	-- day/night length
 	-- sunrise
 	-- sunset
