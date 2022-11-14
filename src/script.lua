@@ -1300,6 +1300,17 @@ local EQUIPMENT_DATA = {
 			}
 		}
 	},
+	{ -- 72
+		name = "Glowstick",
+		size = 2,
+		data = {
+			int = {
+				name = "ammo",
+				type = "int",
+				default = 12
+			}
+		}
+	}
 }
 
 local FLUIDS = {
