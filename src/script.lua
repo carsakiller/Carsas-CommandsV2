@@ -1446,6 +1446,7 @@ local DEFAULT_ROLES = {
 			charge = true,
 			clearRadiation = true,
 			clearVehicle = true,
+			despawn = true,
 			equip = true,
 			equipmentIDs = true,
 			equipp = true,
@@ -1503,6 +1504,7 @@ local DEFAULT_ROLES = {
 			charge = true,
 			clearRadiation = true,
 			clearVehicle = true,
+			despawn = true,
 			equip = true,
 			equipmentIDs = true,
 			equipp = true,
@@ -1552,6 +1554,7 @@ local DEFAULT_ROLES = {
 			aliases = true,
 			rules = true,
 			roles = true,
+			despawn = true,
 			vehicleList = true,
 			vehicleIDs = true,
 			vehicleInfo = true,
@@ -4210,6 +4213,48 @@ COMMANDS = {
 			{name = "vehicleID", type = {"vehicleID"}, repeatable = true, description = "The vehicle to remove. If no ids are given, it will remove your nearest vehicle."}
 		},
 		description = "Removes vehicles by their id. If no ids are given, it will remove your nearest vehicle.",
+		syncableData = {"vehicles"}
+	},
+	despawn = {
+		func = function (caller, ...)
+			local vehicles = {...}
+
+			if vehicles[1] == nil then
+				local nearest, err, errText = caller:nearestVehicles(caller.steamID)
+				if not nearest then
+					return nearest, err, errText
+				end
+
+				local prettyName = nearest[1].pretty_name
+				local success = server.despawnVehicle(nearest[1].vehicleID, true)
+				return success, success and "VEHICLE REMOVED" or "ERROR", prettyName .. (success and " has been removed" or " could not be despawned due to an error")
+			end
+
+			local failed = {}
+			local succeeded = {}
+			for _, vehicle in ipairs(vehicles) do
+				local success = false
+				if G_vehicles:get(vehicle).owner == caller.steamID then
+					success = server.despawnVehicle(vehicle.vehicleID, true)
+				end
+				if success then
+					table.insert(succeeded, vehicle.vehicleID)
+				else
+					table.insert(failed, vehicle.vehicleID)
+				end
+			end
+
+			if #failed > 0 then
+				return false, "ERROR", "The following vehicles could not be despawned: " .. table.concat(failed, ", ")
+			end
+
+			return true, "VEHICLES DESPAWNED", "The following vehicles were despawned: " .. table.concat(succeeded, ", ")
+		end,
+		category = "Vehicles",
+		args = {
+			{name = "vehicleID", type = {"vehicleID"}, repeatable = true, description = "The vehicle to remove. If no ids are given, it will remove your nearest vehicle."}
+		},
+		description = "Removes your vehicles by their id. If no ids are given, it will remove your nearest vehicle.",
 		syncableData = {"vehicles"}
 	},
 	setEditable = {
