@@ -2793,10 +2793,9 @@ end
 ---@field cost number the cost of the vehicle
 ---@field ui_id integer the id of the user interface element assigned to this object.
 ---@field static boolean is the vehicle made static.
----@field invulnerable boolean is the vehicle invulnerable.
----@field x number for static vehicle, the latest position.
----@field y number for static vehicle, the latest position.
----@field z number for static vehicle, the latest position.
+---@field x number
+---@field y number
+---@field z number
 ---@field needsSync boolean the vehicle state needs to be synced.
 local Vehicle = {}
 --#region
@@ -3402,12 +3401,11 @@ function onVehicleSpawn(vehicleID, peerID, x, y, z, cost)
 		G_vehicles.create(vehicleID, -1, cost)
 	end
 
-	local data, is_success = server.getVehicleData(vehicle_id)
+	local data, is_success = server.getVehicleData(vehicleID)
 	local veh = G_vehicles.get(vehicleID, true)
 
 	if is_success and data and veh then
 		veh.static = data.static
-		veh.invulnerable = data.invulnerable
 
 		veh.needsSync = true
 		veh.x = x
