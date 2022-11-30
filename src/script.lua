@@ -3532,7 +3532,9 @@ function onTick()
 
 			registerCompanionCommandCallback("command-sync-all", function(token, com, content)
 				for k, v in pairs(SYNCABLE_DATA) do
-					syncData(k)
+					if k ~= 'TILE_POSITIONS' or content == "FORCE_TILES!" then-- do not sync tiles, unless servers asks to (for caching)
+						syncData(k)
+					end
 				end
 
 				triggerTokenSync()
@@ -6114,7 +6116,7 @@ function triggerMapStream()
 			}
 		end
 	end
-	//TODO: from time to time to a full sync, so new clients get all data too
+
 	for vehicleID, vehicle in pairs(G_vehicles.vehicles) do
 
 		if vehicle.static then
