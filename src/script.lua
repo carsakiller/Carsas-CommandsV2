@@ -1,5 +1,8 @@
+-- DO NOT use the in-game text editor, it WILL break the script!
+
+
 -- CARSA'S COMMANDS
----@version 2.1.0
+---@version 2.1.1
 
 ---@alias peerID number
 ---@alias steamID string
@@ -15,8 +18,8 @@ local OWNER_STEAM_ID = "0"
 
 local DEBUG = false
 
-local ScriptVersion = "2.0.3"
-local SaveDataVersion = "2.0.3"
+local ScriptVersion = "2.1.1"
+local SaveDataVersion = "2.1.1"
 
 --[ LIBRARIES ]--
 --#region
@@ -1355,15 +1358,15 @@ local FLUIDS = {
 local PREFERENCE_DEFAULTS = {
 	equipOnRespawn = {
 		value = true,
-		type = "bool"
+		type = "boolean"
 	},
 	keepInventory = {
 		value = false,
-		type = "bool"
+		type = "boolean"
 	},
 	removeVehicleOnLeave = {
 		value = true,
-		type = "bool"
+		type = "boolean"
 	},
 	maxVoxels = {
 		value = 0,
@@ -1403,15 +1406,15 @@ local PREFERENCE_DEFAULTS = {
 	},
 	companion = {
 		value = false,
-		type = "bool"
+		type = "boolean"
 	},
 	companionInformationOnJoin = {
 		value = false,
-		type = "bool"
+		type = "boolean"
 	},
 	adminAll = {
 		value = false,
-		type = "bool"
+		type = "boolean"
 	}
 }
 
@@ -1701,7 +1704,7 @@ end
 ---@param s string the string to be comparing against strings from table
 ---@param t table the table of strings to be comparing against s
 ---@param case_sensitive? boolean if the fuzzy search should be case sensitive or not
----@return string most_similar the most similar string from t
+---@return string|false most_similar the most similar string from t
 function fuzzyStringInTable(s, t, case_sensitive)
 	local match_exists = false
 	local scores = {}
@@ -1746,7 +1749,7 @@ end
 ---@param include_types boolean if the data types of the arguments should be included (include_arguments must be true)
 ---@param include_arg_descriptions boolean if the descriptions for the arguments should be included (include_arguments must be true)
 ---@param include_description boolean if the description of the command should be included
----@return string name the name of the command
+---@return string|false name the name of the command
 ---@return string data the data of the command formatted for printing
 function prettyFormatCommand(command_name, include_arguments, include_types, include_arg_descriptions, include_description)
 	local text = ""
@@ -1808,7 +1811,7 @@ end
 ---@param playerID string This could be a peerID, name, or "me" but it comes here as a string
 ---@param caller Player The player that called this function. Used for translating "me"
 ---@return boolean is_valid If the provided playerID is valid
----@return number|nil Player The instance of the player
+---@return Player|nil Player The instance of the player
 ---@return string|nil err Why the provided playerID is invalid
 function validatePlayerID(playerID, caller)
 	playerID = tostring(playerID)
@@ -1892,7 +1895,7 @@ function dataIsOfType(data, target_type, caller)
 		return validatePlayerID(as_num, caller)
 	elseif target_type == "number" then
 		return as_num ~= nil, as_num, not as_num and ((data or "nil") .. " is not a valid number")
-	elseif target_type == "bool" then
+	elseif --[[todo: bool is not correct ]] target_type == "bool" or target_type == "boolean" then
 		local as_bool = toBool(data)
 		return as_bool ~= nil, as_bool, as_bool == nil and (tostring(data) .. " is not a valid boolean value") or nil
 	elseif target_type == "letter" then
@@ -1910,7 +1913,9 @@ end
 ---@param target Player The player to run equip on
 ---@param notify boolean If the players involved should be notified of anything
 ---@param ... any equip args
----@return any results The results of `caller.equip()`
+---@return boolean success
+---@return string err Why the succeeded/failed
+---@return string errText An explanation for why the operation succeeded/failed
 function equipArgumentDecode(caller, target, notify, ...)
 	local args = {...}
 	local args_to_pass = {}
@@ -1944,7 +1949,7 @@ function paginate(page, data_table, entries_per_page)
 end
 
 ---Quotes text
----@param text string The text to put in quotes
+---@param text string|number|boolean The text to put in quotes
 ---@return string quoted_text The text in quotes
 function quote(text)
 	return string.format("\"%s\"", tostring(text))
@@ -2259,6 +2264,12 @@ end
 
 ---Class that defines the object for each player
 ---@class Player
+---@field peerID peerID
+---@field steamID steamID
+---@field name string
+---@field banned steamID|nil
+---@field tp_blocking boolean
+---@field show_vehicleIDs boolean
 local Player = {}
 --#region
 
@@ -2731,6 +2742,7 @@ end
 
 ---Class that defines the object that contains all of the player objects
 ---@class PlayerContainer
+---@field players table<steamID, Player>
 local PlayerContainer = {}
 --#region
 
@@ -2767,6 +2779,22 @@ end
 
 ---Class that defines the object for each vehicle
 ---@class Vehicle
+---@field vehicleID vehicleID the server unique ID for this vehicle.
+---@field owner steamID the owner of the vehicle, could be -1 for server/addon spawned.
+---@field server_spawned boolean true if the server spawned the vehicle.
+---@field name string the name of the vehicle according to the server.
+---@field pretty_name string the name of the vehicle if it has one or it's Vehicle ID.
+---@field cost number the cost of the vehicle
+---@field ui_id integer the id of the user interface element assigned to this object.
+---@field is_static boolean is the vehicle made static.
+---@field is_invulnerable boolean is the vehicle invulnerable.
+---@field position_x number for static vehicle, the latest position.
+---@field position_y number for static vehicle, the latest position.
+---@field position_z number for static vehicle, the latest position.
+---@field static_position_dirty boolean the vehicles static position is not synced.
+---@field last_sync_x number the last synced position of the vehicle.
+---@field last_sync_y number the last synced position of the vehicle.
+---@field last_sync_z number the last synced position of the vehicle.
 local Vehicle = {}
 --#region
 
@@ -2835,6 +2863,7 @@ end
 
 ---Class that defines the object that contains all of the vehicle objects
 ---@class VehicleContainer
+---@field vehicles table<vehicleID, Vehicle>
 local VehicleContainer = {}
 --#region
 
@@ -2993,7 +3022,7 @@ end
 
 --[ CALLBACK FUNCTIONS ]--
 --#region
-
+--todo: g_savedata is not defined during initialization!
 g_savedata.version = SaveDataVersion
 g_savedata.autosave = 1
 g_savedata.is_dedicated_server = false
@@ -3089,10 +3118,9 @@ function onCreate(is_new)
 
 		local adminAll = property.checkbox("Admin all players", "false")
 		local everyoneRole = G_roles.get("Everyone")
-		if everyoneRole then
-			everyoneRole.setPermissions(adminAll, everyoneRole.auth)
-			G_preferences.adminAll.value = true
-		end
+		if not everyoneRole then companionError("Everyone role not found") end
+		everyoneRole.setPermissions(adminAll, everyoneRole.auth)
+		G_preferences.adminAll.value = true
 	end
 
 	--- List of players indexed by peerID
@@ -3366,7 +3394,39 @@ function onVehicleSpawn(vehicleID, peerID, x, y, z, cost)
 		G_vehicles.create(vehicleID, -1, cost)
 	end
 
-	syncData('vehicles')
+	local data, is_success = server.getVehicleData(vehicle_id)
+	local veh = G_vehicles.get(vehicleID, true)
+
+	if is_success and data and veh then
+		veh.is_static = data.static
+		veh.is_invulnerable = data.invulnerable
+
+		-- todo: additional properties?
+
+		veh.static_position_dirty = true
+		veh.position_x = x
+		veh.position_y = y
+		veh.position_z = z
+	end
+
+
+	-- todo: [easy] do not send full update for every event in case a script operates on many vehicles at once.
+	--syncData('vehicles')
+end
+
+function onVehicleTeleport(vehicleID, peerID, x, y, z)
+	local vehicle = G_vehicles.get(vehicleID, true)
+
+	if not vehicle then return end
+
+	vehicle.position_x = x
+	vehicle.position_y = y
+	vehicle.position_z = z
+
+	vehicle.static_position_dirty = true
+
+	-- todo: [easy] do not send full update for every event in case a script operates on many vehicles at once.
+	--syncData('vehicles')
 end
 
 function onVehicleDespawn(vehicleID, peerID)
@@ -3374,7 +3434,8 @@ function onVehicleDespawn(vehicleID, peerID)
 
 	G_vehicles.remove(vehicleID)
 
-	syncData('vehicles')
+	-- todo: [easy] do not send full update for every event in case a script operates on many vehicles at once.
+	--syncData('vehicles')
 end
 
 --- This triggers for both press and release events, but not while holding.
@@ -4245,7 +4306,7 @@ COMMANDS = {
 			local succeeded = {}
 			for _, vehicle in ipairs(vehicles) do
 				local success = false
-				if G_vehicles:get(vehicle).owner == caller.steamID then
+				if G_vehicles.get(vehicle).owner == caller.steamID then
 					success = server.despawnVehicle(vehicle.vehicleID, true)
 				end
 				if success then
@@ -5095,7 +5156,7 @@ COMMANDS = {
 			end
 
 			local target_type = preference.type
-			if target_type == "bool" then
+			if target_type == "bool" or target_type == "boolean" then
 				local val = toBool(args[1])
 				if val ~= nil then
 					preference.value = val
@@ -5127,7 +5188,7 @@ COMMANDS = {
 				return true, "PREFERENCE EDITED", preference_name .. " has been set to " .. tostring(preference.value)
 			else
 				-- there was an incorrect type
-				return false, "INVALID ARG", preference_name .. " only accepts a " .. preference.type .. " as its value"
+				return false, "INVALID ARG", preference_name .. " only accepts a " .. preference.type .. " as its value, '"..tostring(args[1]).."' could not be converted to " .. preference.type .."."
 			end
 		end,
 		category = "Preferences",
@@ -5722,14 +5783,36 @@ local packetToServerIdCounter = 0
 local pendingPacketParts = {}
 local lastSentPacketPartHasBeenRespondedTo = false
 local lastSentPacketIdent = nil
--- @data: table, string, number, bool (can be multidimensional tables; circular references not allowed!)
--- @meta: a table of additional fields to be send to the server
--- @callback: called once server responds callback(success, response)
--- @ignoreServerNotAvailable: only used by heartbeat!
---
---
--- returns true --if your data will be sent
--- returns false, "error message" --if not
+
+---@alias MessageType
+---|"stream-chat"
+---|"test-performance-game-backend"
+---|"token-sync"
+---|"stream-log"
+---|"check-notifications"
+---|"heartbeat"
+---|"get-companion-url"
+---|"stream-map"
+---|"command-response"
+---|"players"
+---|"rules"
+---|"roles"
+---|"vehicles"
+---|"gameSettings"
+---|"preferences"
+---|"commands"
+---|"TILE_POSITIONS"
+---|"SCRIPT_VERSION"
+
+
+---@param datatype MessageType
+---@param data table|string|number|boolean Nested tables allowed, but no reference identity is not preserved and loops are not allowed.
+---@param meta table|nil a table of additional fields to be send to the server
+---@param callback fun(success: boolean, response: table) | nil called once server responds
+---@param ignoreServerNotAvailable boolean|nil only used by heartbeat!
+---@param prioritizeMessageInQueue boolean|nil 
+---@return boolean success Data will be sent
+---@return string? errorInfo Error message when not `success`
 function sendToServer(datatype, data, meta --[[optional]], callback--[[optional]], ignoreServerNotAvailable--[[optional]], prioritizeMessageInQueue--[[optional]])
 	--[[
 
@@ -5754,7 +5837,7 @@ function sendToServer(datatype, data, meta --[[optional]], callback--[[optional]
 	packetToServerIdCounter = packetToServerIdCounter + 1
 
 	if callback and not (type(callback) == "function") then
-		return false, "callback must be a function"
+		return false, "callback must be a function or nil"
 	end
 
 	if not ignoreServerNotAvailable and not serverIsAvailable then
@@ -5857,6 +5940,9 @@ end
 companionCommandCallbacks = {}
 -- @callback: this function must return: success (boolean), message (string, optional)
 --            callback() is called like this: function (playertoken, commandname, commandcontent)
+---@param commandname any
+---@param callback fun(playerToken: any, commandName: string, commandContent: any): boolean, string
+---@return nil
 function registerCompanionCommandCallback(commandname, callback)
 	if not (type(callback) == "function") then
 		return companionError("@registerCompanionCommandCallback: callback must be a function")
@@ -5884,6 +5970,7 @@ end
 local lastPacketSentTickCallCount = 0
 local tickCallCounter = 0
 local HTTP_MAX_TIME_NECESSARY_BETWEEN_REQUESTS = 60 --in case we have a problem inside httpReply, and don't detect that the last sent message was replied to, then allow another request after this time
+local delay_between_packet_queue_complaints = 60 * 20 -- seconds
 function checkPacketSendingQueue()
 	tickCallCounter = tickCallCounter + 1
 	if (#packetSendingQueue > 0) and (lastSentPacketPartHasBeenRespondedTo or (lastPacketSentTickCallCount == 0) or (tickCallCounter -  lastPacketSentTickCallCount > HTTP_MAX_TIME_NECESSARY_BETWEEN_REQUESTS) ) then
@@ -5907,7 +5994,8 @@ function checkPacketSendingQueue()
 		end
 	end
 
-	if tickCallCounter % 60 * 5 == 0 and #packetSendingQueue > 500 then
+	if tickCallCounter % delay_between_packet_queue_complaints == 0
+	and #packetSendingQueue > 500 then
 		local typeCounts = {}
 
 		for _, packet in pairs(packetSendingQueue) do
@@ -5998,10 +6086,27 @@ function requestCompanionUrl()
 	end, true)
 end
 
-local LIVESTREAM_TIME_BETWEEN = 60 * 2
-local lastLiveStreamSentTick = 0
+--- Aim to send updates this often.
+local MapStreamIntervalTicks    = 60 * 2
+--- If we don't receive success, send anyway after this interval.
+local MapStreamHardTimeoutTicks = 60 * 60
+--- Tick when last sent.
+local MapStreamLastSentTick     = 0
+--- Last sending was succesfull.
+local MapStreamSuccess = true
+
+
+---@param success boolean
+---@param data table
+local function mapStreamCallback(success, data)
+	MapStreamSuccess = success
+	if not success then
+		companionError("mapStreamCallback success: false.\n"..tostring(data))
+	end
+end
+
 function triggerMapStream()
-	lastLiveStreamSentTick = tickCallCounter
+	MapStreamLastSentTick = tickCallCounter
 
 	local streamData = {
 		playerPositions = {},
@@ -6016,13 +6121,19 @@ function triggerMapStream()
 	end
 
 	for vehicleID, vehicle in pairs(G_vehicles.vehicles) do
-		local matrix, success = server.getVehiclePos(vehicleID)
-		if success and matrix then
-			streamData.vehiclePositions[vehicleID] = {x = matrix[13], y = matrix[15], alt = matrix[14]}
+		-- todo: change the API to allow not seding unchanged vehicles.
+		if vehicle.is_static --[[and vehicle.static_position_dirty]] then
+			-- Static vehicle's position is stored in a table for performance reasons.
+			streamData.vehiclePositions[vehicleID] = {x = vehicle.position_x, y = vehicle.position_z, alt = vehicle.position_y}
+		elseif not vehicle.is_static then
+			local matrix, success = server.getVehiclePos(vehicleID)
+			if success and matrix then
+				streamData.vehiclePositions[vehicleID] = {x = matrix[13], y = matrix[15], alt = matrix[14]}
+			end
 		end
 	end
 
-	sendToServer("stream-map", streamData, nil, nil, true)
+	sendToServer("stream-map", streamData, nil, mapStreamCallback, true)
 end
 
 -- must be called every onTick()
@@ -6056,7 +6167,12 @@ function syncTick()
 	ticksSinceLastChatLogSent = ticksSinceLastChatLogSent + 1
 
 	-- stream live data
-	if (tickCallCounter - lastLiveStreamSentTick) > LIVESTREAM_TIME_BETWEEN then
+	if MapStreamSuccess
+	and	(tickCallCounter - MapStreamLastSentTick) > MapStreamIntervalTicks
+	then
+		triggerMapStream()
+	elseif (tickCallCounter - MapStreamLastSentTick) > MapStreamHardTimeoutTicks then
+		companionDebug("Triggering MapStream due to hard timeout!")
 		triggerMapStream()
 	end
 end
