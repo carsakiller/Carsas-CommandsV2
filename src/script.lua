@@ -382,6 +382,12 @@ urldecode = function(url)
 end
 --#endregion
 
+-- extend math library
+
+math.round = function(val)
+	return math.floor(val + 0.5)
+end
+
 --#endregion
 
 
@@ -2786,15 +2792,12 @@ end
 ---@field pretty_name string the name of the vehicle if it has one or it's Vehicle ID.
 ---@field cost number the cost of the vehicle
 ---@field ui_id integer the id of the user interface element assigned to this object.
----@field is_static boolean is the vehicle made static.
----@field is_invulnerable boolean is the vehicle invulnerable.
----@field position_x number for static vehicle, the latest position.
----@field position_y number for static vehicle, the latest position.
----@field position_z number for static vehicle, the latest position.
----@field static_position_dirty boolean the vehicles static position is not synced.
----@field last_sync_x number the last synced position of the vehicle.
----@field last_sync_y number the last synced position of the vehicle.
----@field last_sync_z number the last synced position of the vehicle.
+---@field static boolean is the vehicle made static.
+---@field invulnerable boolean is the vehicle invulnerable.
+---@field x number for static vehicle, the latest position.
+---@field y number for static vehicle, the latest position.
+---@field z number for static vehicle, the latest position.
+---@field needsSync boolean the vehicle state needs to be synced.
 local Vehicle = {}
 --#region
 
@@ -3022,7 +3025,6 @@ end
 
 --[ CALLBACK FUNCTIONS ]--
 --#region
---todo: g_savedata is not defined during initialization!
 g_savedata.version = SaveDataVersion
 g_savedata.autosave = 1
 g_savedata.is_dedicated_server = false
@@ -3118,9 +3120,13 @@ function onCreate(is_new)
 
 		local adminAll = property.checkbox("Admin all players", "false")
 		local everyoneRole = G_roles.get("Everyone")
-		if not everyoneRole then companionError("Everyone role not found") end
-		everyoneRole.setPermissions(adminAll, everyoneRole.auth)
-		G_preferences.adminAll.value = true
+
+		if everyoneRole then
+			everyoneRole.setPermissions(adminAll, everyoneRole.auth)
+			G_preferences.adminAll.value = true
+		else
+			companionError("Everyone role not found, can not admin everyone!")
+		end
 	end
 
 	--- List of players indexed by peerID
@@ -3187,9 +3193,11 @@ function chatLogAppendMessage(steamID, message)
 end
 
 function triggerChatLogSend()
-	sendToServer("stream-chat", chatBuffer)
-	chatBuffer = {}
-	ticksSinceLastChatLogSent = 0
+	local success = sendToServer("stream-chat", chatBuffer)
+	if success then
+		chatBuffer = {}
+		ticksSinceLastChatLogSent = 0
+	end
 end
 
 function onDestroy()
@@ -3398,20 +3406,15 @@ function onVehicleSpawn(vehicleID, peerID, x, y, z, cost)
 	local veh = G_vehicles.get(vehicleID, true)
 
 	if is_success and data and veh then
-		veh.is_static = data.static
-		veh.is_invulnerable = data.invulnerable
+		veh.static = data.static
+		veh.invulnerable = data.invulnerable
 
-		-- todo: additional properties?
-
-		veh.static_position_dirty = true
-		veh.position_x = x
-		veh.position_y = y
-		veh.position_z = z
+		veh.needsSync = true
+		veh.x = x
+		veh.y = y
+		veh.z = z
 	end
 
-
-	-- todo: [easy] do not send full update for every event in case a script operates on many vehicles at once.
-	--syncData('vehicles')
 end
 
 function onVehicleTeleport(vehicleID, peerID, x, y, z)
@@ -3419,23 +3422,22 @@ function onVehicleTeleport(vehicleID, peerID, x, y, z)
 
 	if not vehicle then return end
 
-	vehicle.position_x = x
-	vehicle.position_y = y
-	vehicle.position_z = z
+	vehicle.needsSync = true
+	vehicle.x = x
+	vehicle.y = y
+	vehicle.z = z
 
-	vehicle.static_position_dirty = true
-
-	-- todo: [easy] do not send full update for every event in case a script operates on many vehicles at once.
-	--syncData('vehicles')
 end
+
+-- holds all despawned vehicles, so stream-map can send this info to the clients
+despawnedVehicles = {}
 
 function onVehicleDespawn(vehicleID, peerID)
 	if invalid_version then return end
 
-	G_vehicles.remove(vehicleID)
+	table.insert(despawnedVehicles, vehicleID)
 
-	-- todo: [easy] do not send full update for every event in case a script operates on many vehicles at once.
-	--syncData('vehicles')
+	G_vehicles.remove(vehicleID)
 end
 
 --- This triggers for both press and release events, but not while holding.
@@ -5683,9 +5685,11 @@ function companionLogAppendMessage(msg)
 end
 
 function triggerCompanionLogSend()
-	sendToServer("stream-log", logBuffer)
-	logBuffer = {}
-	ticksSinceLastCompanionLogSent = 0
+	local success = sendToServer("stream-log", logBuffer)
+	if success then
+		logBuffer = {}
+		ticksSinceLastCompanionLogSent = 0
+	end
 end
 
 
@@ -5810,7 +5814,7 @@ local lastSentPacketIdent = nil
 ---@param meta table|nil a table of additional fields to be send to the server
 ---@param callback fun(success: boolean, response: table) | nil called once server responds
 ---@param ignoreServerNotAvailable boolean|nil only used by heartbeat!
----@param prioritizeMessageInQueue boolean|nil 
+---@param prioritizeMessageInQueue boolean|nil
 ---@return boolean success Data will be sent
 ---@return string? errorInfo Error message when not `success`
 function sendToServer(datatype, data, meta --[[optional]], callback--[[optional]], ignoreServerNotAvailable--[[optional]], prioritizeMessageInQueue--[[optional]])
@@ -6087,26 +6091,13 @@ function requestCompanionUrl()
 end
 
 --- Aim to send updates this often.
-local MapStreamIntervalTicks    = 60 * 2
---- If we don't receive success, send anyway after this interval.
-local MapStreamHardTimeoutTicks = 60 * 60
+local mapStreamIntervalTicks = 60 * 2
+
 --- Tick when last sent.
-local MapStreamLastSentTick     = 0
---- Last sending was succesfull.
-local MapStreamSuccess = true
-
-
----@param success boolean
----@param data table
-local function mapStreamCallback(success, data)
-	MapStreamSuccess = success
-	if not success then
-		companionError("mapStreamCallback success: false.\n"..tostring(data))
-	end
-end
+local mapStreamLastSentTick = 0
 
 function triggerMapStream()
-	MapStreamLastSentTick = tickCallCounter
+	mapStreamLastSentTick = tickCallCounter
 
 	local streamData = {
 		playerPositions = {},
@@ -6116,24 +6107,47 @@ function triggerMapStream()
 	for _, player in pairs(server.getPlayers()) do
 		local matrix, success = server.getPlayerPos(player.id)
 		if success and matrix then
-			streamData.playerPositions[player.steam_id] = {x = matrix[13], y = matrix[15], alt = matrix[14]}
+			streamData.playerPositions[player.steam_id] = {
+				x = math.round(matrix[13]),
+				y = math.round(matrix[15]),
+				alt = math.round(matrix[14])
+			}
 		end
 	end
-
+	//TODO: from time to time to a full sync, so new clients get all data too
 	for vehicleID, vehicle in pairs(G_vehicles.vehicles) do
-		-- todo: change the API to allow not seding unchanged vehicles.
-		if vehicle.is_static --[[and vehicle.static_position_dirty]] then
-			-- Static vehicle's position is stored in a table for performance reasons.
-			streamData.vehiclePositions[vehicleID] = {x = vehicle.position_x, y = vehicle.position_z, alt = vehicle.position_y}
-		elseif not vehicle.is_static then
+
+		if vehicle.static then
+			if vehicle.needsSync then
+
+				streamData.vehiclePositions[vehicleID] = {
+					x = math.round(vehicle.x),
+					y = math.round(vehicle.z),
+					alt = math.round(vehicle.y),
+					static = true
+				}
+			end
+		else
 			local matrix, success = server.getVehiclePos(vehicleID)
 			if success and matrix then
-				streamData.vehiclePositions[vehicleID] = {x = matrix[13], y = matrix[15], alt = matrix[14]}
+				streamData.vehiclePositions[vehicleID] = {
+					x = math.round(matrix[13]),
+					y = math.round(matrix[15]),
+					alt = math.round(matrix[14])
+				}
 			end
 		end
 	end
 
-	sendToServer("stream-map", streamData, nil, mapStreamCallback, true)
+	if #despawnedVehicles > 0 then
+		streamData.deletedVehicles = despawnedVehicles
+	end
+
+	local success = sendToServer("stream-map", streamData)
+
+	if success then
+		despawnedVehicles = {}
+	end
 end
 
 -- must be called every onTick()
@@ -6167,12 +6181,8 @@ function syncTick()
 	ticksSinceLastChatLogSent = ticksSinceLastChatLogSent + 1
 
 	-- stream live data
-	if MapStreamSuccess
-	and	(tickCallCounter - MapStreamLastSentTick) > MapStreamIntervalTicks
+	if (tickCallCounter - mapStreamLastSentTick) > mapStreamIntervalTicks
 	then
-		triggerMapStream()
-	elseif (tickCallCounter - MapStreamLastSentTick) > MapStreamHardTimeoutTicks then
-		companionDebug("Triggering MapStream due to hard timeout!")
 		triggerMapStream()
 	end
 end
