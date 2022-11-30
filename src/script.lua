@@ -2793,10 +2793,13 @@ end
 ---@field cost number the cost of the vehicle
 ---@field ui_id integer the id of the user interface element assigned to this object.
 ---@field static boolean is the vehicle made static.
----@field x number
----@field y number
----@field z number
+---@field x number gpsX
+---@field y number gpsY
+---@field z number gpsAlt
 ---@field needsSync boolean the vehicle state needs to be synced.
+---@field lastSyncX number last value that was synced for x
+---@field lastSyncY number last value that was synced for y
+---@field lastSyncAlt number last value that was synced for z
 local Vehicle = {}
 --#region
 
@@ -6119,6 +6122,7 @@ function triggerMapStream()
 
 		if vehicle.static then
 			if vehicle.needsSync then
+				vehicle.needsSync = false
 
 				streamData.vehiclePositions[vehicleID] = {
 					x = math.round(vehicle.x),
@@ -6130,11 +6134,24 @@ function triggerMapStream()
 		else
 			local matrix, success = server.getVehiclePos(vehicleID)
 			if success and matrix then
-				streamData.vehiclePositions[vehicleID] = {
-					x = math.round(matrix[13]),
-					y = math.round(matrix[15]),
-					alt = math.round(matrix[14])
-				}
+
+				local newX = math.round(matrix[13])
+				local newY = math.round(matrix[15])
+				local newAlt = math.round(matrix[14])
+
+				-- only sync when position has changed at least 1 meter in any direction
+				if newX ~= vehicle.lastSyncX or newY ~= vehicle.lastSyncY or newAlt ~= vehicle.lastSyncAlt then
+
+					vehicle.lastSyncX = newX
+					vehicle.lastSyncY = newY
+					vehicle.lastSyncAlt = newAlt
+
+					streamData.vehiclePositions[vehicleID] = {
+						x = newX,
+						y = newY,
+						alt = newAlt
+					}
+				end
 			end
 		end
 	end
