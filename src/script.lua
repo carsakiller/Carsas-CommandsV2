@@ -1901,7 +1901,7 @@ function dataIsOfType(data, target_type, caller)
 		return validatePlayerID(as_num, caller)
 	elseif target_type == "number" then
 		return as_num ~= nil, as_num, not as_num and ((data or "nil") .. " is not a valid number")
-	elseif --[[todo: bool is not correct ]] target_type == "bool" or target_type == "boolean" then
+	elseif target_type == "boolean" then
 		local as_bool = toBool(data)
 		return as_bool ~= nil, as_bool, as_bool == nil and (tostring(data) .. " is not a valid boolean value") or nil
 	elseif target_type == "letter" then
