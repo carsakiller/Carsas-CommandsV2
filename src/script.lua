@@ -2820,6 +2820,8 @@ function Vehicle.constructor(self, vehicleID, owner_steamID, cost)
 	self.name = success and (name ~= "Error" and name or "Unknown") or "Unknown"
 	self.pretty_name = string.format("%s(%d)", self.name, self.vehicleID)
 	self.cost = exploreTable(g_savedata.vehicles, {vehicleID, "cost"}) or cost
+	local data, success = server.getVehicleData(vehicleID)
+	self.static = success and data.static or false
 
 	self.ui_id = exploreTable(g_savedata.vehicles, {vehicleID, "ui_id"}) or server.getMapID()
 
@@ -3404,16 +3406,13 @@ function onVehicleSpawn(vehicleID, peerID, x, y, z, cost)
 		G_vehicles.create(vehicleID, -1, cost)
 	end
 
-	local data, is_success = server.getVehicleData(vehicleID)
-	local veh = G_vehicles.get(vehicleID, true)
-
-	if is_success and data and veh then
-		veh.static = data.static
-
-		veh.needsSync = true
-		veh.x = x
-		veh.y = y
-		veh.z = z
+	-- Assign position for companion map tracking
+	local vehicle = G_vehicles.get(vehicleID, true)
+	if vehicle then
+		vehicle.needsSync = true
+		vehicle.x = x
+		vehicle.y = y
+		vehicle.z = z
 	end
 
 end
