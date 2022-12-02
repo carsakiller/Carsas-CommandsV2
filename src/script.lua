@@ -3,11 +3,10 @@
 
 -- CARSA'S COMMANDS
 ---@version 2.1.1
-
----@alias peerID number
----@alias steamID string
----@alias vehicleID number
----@alias matrix table<number, number>
+---@authors carsakiller, CrazyFluffyPony, Dargino, CodeLeopard
+---@source https://github.com/carsakiller/Carsas-CommandsV2
+---@license MIT License
+--- Copyright (c) 2022 carsakiller
 
 
 -- Used to define a owner's steamID
@@ -25,11 +24,10 @@ local SaveDataVersion = "2.1.1"
 --#region
 
 --[ lua implementation of fzy library ]--
---#region
--- @author Seth Warn
--- @source https://github.com/swarn/fzy-lua
--- @license
--- The MIT License (MIT)
+--#region 
+---@author Seth Warn
+---@source https://github.com/swarn/fzy-lua
+---@license The MIT License (MIT)
 
 -- Copyright (c) 2020 Seth Warn
 
@@ -65,6 +63,11 @@ local fzy = {
 	MATCH_MAX_LENGTH = 1024
 }
 
+---String comparison
+---@param needle string
+---@param haystack string
+---@param case_sensitive? boolean
+---@return boolean
 function fzy.has_match(needle, haystack, case_sensitive)
 	if not case_sensitive then
 		needle = string.lower(needle)
@@ -83,15 +86,22 @@ function fzy.has_match(needle, haystack, case_sensitive)
 
 	return true
 end
-
+---is lowercase
+---@param c string
+---@return boolean
 function fzy.is_lower(c)
 	return c:match("%l")
 end
-
+---is uppercase
+---@param c string
+---@return boolean
 function fzy.is_upper(c)
 	return c:match("%u")
 end
 
+---Compute the bonus for the search space.
+---@param haystack string
+---@return table
 function fzy.precompute_bonus(haystack)
 	local match_bonus = {}
 
@@ -116,6 +126,12 @@ function fzy.precompute_bonus(haystack)
 	return match_bonus
 end
 
+
+---@param needle string
+---@param haystack string
+---@param D table
+---@param M table
+---@param case_sensitive? boolean
 function fzy.compute(needle, haystack, D, M, case_sensitive)
 	-- Note that the match bonuses must be computed before the arguments are
 	-- converted to lowercase, since there are bonuses for camelCase.
@@ -165,6 +181,11 @@ function fzy.compute(needle, haystack, D, M, case_sensitive)
 	end
 end
 
+---Assign a score based on the match quality.
+---@param needle string
+---@param haystack string
+---@param case_sensitive? boolean
+---@return number
 function fzy.score(needle, haystack, case_sensitive)
 	local n = string.len(needle)
 	local m = string.len(haystack)
@@ -195,6 +216,9 @@ json = {}
 
 -- Internal functions.
 
+---Check what SCOOP type the object is.
+---@param obj any
+---@return "boolean"|"function"|"nil"|"number"|"string"|"table"|"array"|"thread"|"userdata"
 function kind_of(obj)
 	if type(obj) ~= 'table' then return type(obj) end
 	local i = 1
@@ -204,6 +228,9 @@ function kind_of(obj)
 	if i == 1 then return 'table' else return 'array' end
 end
 
+---Escape the string by prepending \
+---@param s string
+---@return string
 function escape_str(s)
 	local in_char  = {'\\', '"', '/', '\b', '\f', '\n', '\r', '\t'}
 	local out_char = {'\\', '"', '/',  'b',  'f',  'n',  'r',  't'}
@@ -217,6 +244,12 @@ end
 -- 1. Delimiter found: pos = pos after leading space + delim; did_find = true.
 -- 2. Delimiter not found: pos = pos after leading space;     did_find = false.
 -- This throws an error if err_if_missing is true and the delim is not found.
+---@param str string
+---@param pos integer
+---@param delim string
+---@param err_if_missing? boolean
+---@return integer pos
+---@return boolean did_find
 function skip_delim(str, pos, delim, err_if_missing)
 	pos = pos + #str:match('^%s*', pos)
 	if str:sub(pos, pos) ~= delim then
@@ -230,6 +263,12 @@ end
 
 -- Expects the given pos to be the first character after the opening quote.
 -- Returns val, pos; the returned pos is after the closing quote character.
+---Parses the string value at the position from Json. 
+---@param str string Json string
+---@param pos integer Position of the first character of the value to be parsed (so after the opening quote).
+---@param val? string Value, in case the string was ssplit.
+---@return string result 
+---@return integer pos The position in the Json string after reading (past the closing quote).
 function parse_str_val(str, pos, val)
 	val = val or ''
 	local early_end_error = 'End of input found while parsing string.'
@@ -245,6 +284,11 @@ function parse_str_val(str, pos, val)
 end
 
 -- Returns val, pos; the returned pos is after the number's final character.
+---parse a number from Json string.
+---@param str string Full Json string.
+---@param pos integer Position of the first character of the number-as-a-string.
+---@return number|nil Result number or nil
+---@return integer pos Position after reading.
 function parse_num_val(str, pos)
 	local num_str = str:match('^-?%d+%.?%d*[eE]?[+-]?%d*', pos)
 	local val = tonumber(num_str)
@@ -294,6 +338,12 @@ end
 
 json.null = {}  -- This is a one-off table to represent the null value.
 
+---Parse Json string to Lua table.
+---@param str string|nil
+---@param pos integer|nil
+---@param end_delim string?
+---@return table|number|boolean|string|nil result.
+---@return integer|nil position in the input string.
 function json.parse(str, pos, end_delim)
 	-- safety in case someone tries to parse something that is not a string
 	if str == nil then
@@ -306,25 +356,32 @@ function json.parse(str, pos, end_delim)
 
 	pos = pos or 1
 	if pos > #str then companionError('Reached unexpected end of input.') end
-	local pos = pos + #str:match('^%s*', pos)  -- Skip whitespace.
+	pos = pos + #str:match('^%s*', pos)  -- Skip whitespace.
 	local first = str:sub(pos, pos)
 	if first == '{' then  -- Parse an object.
-		local obj, key, delim_found = {}, true, true
+		local obj = {}
+		---@type any
+		local key = true
+		local delim_found = true
 		pos = pos + 1
 		while true do
 			key, pos = json.parse(str, pos, '}')
+			---@cast pos integer
 			if key == nil then return obj, pos end
 			if not delim_found then companionError('Comma missing between object items.') end
 			pos = skip_delim(str, pos, ':', true)  -- true -> error if missing.
 			obj[key], pos = json.parse(str, pos)
+			---@cast pos integer
 			pos, delim_found = skip_delim(str, pos, ',')
 		end
 	elseif first == '[' then  -- Parse an array.
-		local arr, val, delim_found = {}, true, true
+		local arr = {}
+		local val, delim_found
 		pos = pos + 1
 		while true do
 			val, pos = json.parse(str, pos, ']')
 			if val == nil then return arr, pos end
+			---@cast pos integer
 			if not delim_found then companionError('Comma missing between array items.') end
 			arr[#arr + 1] = val
 			pos, delim_found = skip_delim(str, pos, ',')
@@ -339,10 +396,13 @@ function json.parse(str, pos, end_delim)
 		local literals = {['true'] = true, ['false'] = false, ['null'] = json.null}
 		for lit_str, lit_val in pairs(literals) do
 			local lit_end = pos + #lit_str - 1
-			if str:sub(pos, lit_end) == lit_str then return lit_val, lit_end + 1 end
+			if str:sub(pos, lit_end) == lit_str then
+				return lit_val, lit_end + 1
+			end
 		end
 		local pos_info_str = 'position ' .. pos .. ': ' .. str:sub(pos, pos + 10)
 		companionError('Invalid json syntax starting at ' .. pos_info_str)
+		return nil, nil
 	end
 end
 
@@ -358,8 +418,12 @@ local char_to_hex = function(c)
 	return string.format("%%%02X", string.byte(c))
 end
 
+---@param url string
+---@return string
 function urlencode(url)
 	if url == nil then
+-- Justification: Error condition.
+---@diagnostic disable-next-line: missing-return-value
 		return
 	end
 	url = url:gsub("\n", "\r\n")
@@ -401,6 +465,17 @@ local is_dedicated_server
 
 --[ CONSTANTS ]--
 --#region
+
+
+---@alias DLC_Name
+---|'weapons'
+---|'arid'
+
+
+---@alias PreferenceType type
+---|"text"
+
+
 
 local SAVE_NAME = "CC_Autosave"
 local MAX_AUTOSAVES = 5
@@ -513,6 +588,7 @@ local SLOT_LETTER_TO_NUMBER = {
 ---@field name string
 ---@field size integer 1 = Large, 2 = Small, 3 = Outfit
 ---@field data? EquipmentDataFloat|EquipmentDataInt
+---@field dlc DLC_Name
 
 ---@class EquipmentDataFloat
 ---@field name string Name of data entry
@@ -1360,7 +1436,7 @@ local FLUIDS = {
 
 -- [ DEFAULTS ]--
 --#region
----@type { [string]: { value: any, type: type } }
+---@type { [string]: { value: any, type: PreferenceType } }
 local PREFERENCE_DEFAULTS = {
 	equipOnRespawn = {
 		value = true,
@@ -1814,7 +1890,7 @@ function checkTp(target_matrix)
 end
 
 ---Checks if the provided "playerID" is actually valid
----@param playerID string This could be a peerID, name, or "me" but it comes here as a string
+---@param playerID string|Peer_ID This could be a peerID, name, or "me" but it comes here as a string
 ---@param caller Player The player that called this function. Used for translating "me"
 ---@return boolean is_valid If the provided playerID is valid
 ---@return Player|nil Player The instance of the player
@@ -1844,6 +1920,7 @@ function validatePlayerID(playerID, caller)
 
 			for peerID, steamID in pairs(STEAM_IDS) do
 				local player = G_players.get(steamID)
+				---@cast player Player
 				if peerIDs[player.name] then
 					return false, nil, "Two players have the name " .. quote(playerID) .. ". Please use peerIDs instead"
 				end
@@ -1874,7 +1951,7 @@ function dataIsOfType(data, target_type, caller)
 
 	if target_type == "playerID" then
 		local success, player = validatePlayerID(data, caller)
-		return success, player, not success and " invalid playerID " .. tostring(data)
+		return success, player, not success and " invalid playerID " .. tostring(data) or nil
 	elseif target_type == "vehicleID" then
 		if not as_num then
 			return false, nil, (tostring(data) .. " is not a number and therefor not a valid vehicleID")
@@ -1900,7 +1977,7 @@ function dataIsOfType(data, target_type, caller)
 	elseif target_type == "peerID" then
 		return validatePlayerID(as_num, caller)
 	elseif target_type == "number" then
-		return as_num ~= nil, as_num, not as_num and ((data or "nil") .. " is not a valid number")
+		return as_num ~= nil, as_num, not as_num and ((data or "nil") .. " is not a valid number") or nil
 	elseif target_type == "boolean" then
 		local as_bool = toBool(data)
 		return as_bool ~= nil, as_bool, as_bool == nil and (tostring(data) .. " is not a valid boolean value") or nil
@@ -1908,7 +1985,7 @@ function dataIsOfType(data, target_type, caller)
 		local is_letter = isLetter(data)
 		return is_letter, is_letter and data or nil, not is_letter and ((data or "nil") .. " is not a letter") or nil
 	elseif target_type == "string" or target_type == "text" then
-		return data ~= nil, data or nil, data == nil and "nil is not a string"
+		return data ~= nil, data or nil, data == nil and "nil is not a string" or nil
 	end
 
 	return false, nil, ((data or "nil") .. " is not of a recognized data type")
@@ -1955,17 +2032,19 @@ function paginate(page, data_table, entries_per_page)
 end
 
 ---Quotes text
----@param text string|number|boolean The text to put in quotes
+---@param text string|number|boolean|nil The text to put in quotes
 ---@return string quoted_text The text in quotes
 function quote(text)
 	return string.format("\"%s\"", tostring(text))
 end
 
 ---Get the keys from a table and optionally sort them
----@param t table The table to get the keys from
----@param sort boolean If the keys should be sorted. Else, order is not guaranteed
----@param reverse_sort boolean If the keys should be sorted in ascending order rather than descending order
----@return table keys The keys from the table
+---@generic K
+---@generic V
+---@param t table<K,V> The table to get the keys from
+---@param sort? boolean If the keys should be sorted. Else, order is not guaranteed
+---@param reverse_sort? boolean If the keys should be sorted in ascending order rather than descending order
+---@return table<integer, K> keys The keys from the table
 function getTableKeys(t, sort, reverse_sort)
 	local keys = {}
 
@@ -2270,10 +2349,10 @@ end
 
 ---Class that defines the object for each player
 ---@class Player
----@field peerID peerID
----@field steamID steamID
+---@field peerID Peer_ID
+---@field steamID Steam_ID
 ---@field name string
----@field banned steamID|nil
+---@field banned Steam_ID|nil
 ---@field tp_blocking boolean
 ---@field show_vehicleIDs boolean
 local Player = {}
@@ -2281,10 +2360,10 @@ local Player = {}
 
 ---Creates a player object
 ---@param self Player This player object's instance
----@param peerID peerID The `peerID` of the player
----@param steamID steamID The `steamID` of the Player
+---@param peerID Peer_ID The `peerID` of the player
+---@param steamID Steam_ID The `steamID` of the Player
 ---@param name string The name of the player
----@param banned? steamID The steam_if of the admin that banned them or nil
+---@param banned? Steam_ID The steam_if of the admin that banned them or nil
 function Player.constructor(self, peerID, steamID, name, banned)
 	self.peerID = peerID
 	self.steamID = steamID
@@ -2348,7 +2427,7 @@ end
 
 ---Bans this player from the server
 ---@param self Player This player object's instance
----@param admin_steamID steamID The steam id of the admin banning this player
+---@param admin_steamID Steam_ID The steam id of the admin banning this player
 ---@return boolean success If the operation succeeded or failed
 ---@return string err Why the operation succeeded/failed
 ---@return string errText Explanation for why the operation succeeded/failed
@@ -2370,7 +2449,7 @@ end
 
 ---Unbans a player from the server
 ---@param self Player This player object's instance
----@param admin_steamID steamID The steam id of the admin banning this player
+---@param admin_steamID Steam_ID The steam id of the admin banning this player
 ---@return boolean success If the operation succeeded or failed
 ---@return string err Why the operation succeeded/failed
 ---@return string errText Explanation for why the operation succeeded/failed
@@ -2390,7 +2469,7 @@ end
 
 ---Gets the position of this player
 ---@param self Player This player object's instance
----@return matrix matrix The position of this player
+---@return Transform matrix The position of this player
 ---@return boolean is_success If the position was retrieved successfully
 function Player.getPosition(self)
 	return server.getPlayerPos(self.peerID)
@@ -2398,7 +2477,7 @@ end
 
 ---Sets the position of this player
 ---@param self Player This player object's instance
----@param position matrix The target position of the player
+---@param position Transform The target position of the player
 ---@return boolean success If the operation succeeded or failed
 ---@return string|nil err Why the operation failed, if it did
 ---@return string|nil errText Explanation for why the operation failed, if it did
@@ -2425,7 +2504,9 @@ function Player.getInventory(self)
 		return false, "ERROR", "Could not get the inventory of " .. self.prettyName() .. "\n::characterID could not be found"
 	end
 
+	---@type SLOT_NUMBER
 	for i=1, #EQUIPMENT_SLOTS do
+		
 		local equipment_id, success = server.getCharacterItem(character_id, i)
 		inventory[i] = (success and equipment_id) or 0
 		if inventory[i] ~= 0 then
@@ -2470,8 +2551,8 @@ end
 ---@param data2? number The second data of the item to insert
 ---@param is_active? boolean If the item should be active
 ---@return boolean success If the equip operation succeeded
----@return string err Why the succeeded/failed
----@return string errText An explanation for why the operation succeeded/failed
+---@return string? err Why the succeeded/failed
+---@return string? errText An explanation for why the operation succeeded/failed
 function Player.equip(self, notify, slot, item_id, data1, data2, is_active)
 	local character_id, success = server.getPlayerCharacterID(self.peerID)
 
@@ -2479,22 +2560,23 @@ function Player.equip(self, notify, slot, item_id, data1, data2, is_active)
 		return false, "ERROR", "Could not find the character for " .. self.prettyName() .. ". This should never happen"
 	end
 
-	item_id = tonumber(item_id)
+	local parsed_item_id = tonumber(item_id)
 	slot = slot and string.upper(slot) or nil
 
+	---@type SLOT_NUMBER
 	local slot_number = SLOT_LETTER_TO_NUMBER[slot]
 
-	if not item_id then
-		return false, "INVALID ARG", "Could not convert argument " .. quote(item_id) .. " to an equipment_id (number)"
+	if not parsed_item_id then
+		return false, "INVALID ARG", "Could not convert argument " .. quote(parsed_item_id) .. " to an equipment_id (number)"
 	end
 
-	if item_id == 0 then
+	if parsed_item_id == 0 then
 		return server.setCharacterItem(character_id, slot_number or 1, 0, false, 0, 0)
 	end
 
-	local item_data = EQUIPMENT_DATA[item_id]
+	local item_data = EQUIPMENT_DATA[parsed_item_id]
 	if not item_data then
-		return false, "INVALID ARG", "There is no equipment with the id of " .. tostring(item_id)
+		return false, "INVALID ARG", "There is no equipment with the id of " .. tostring(parsed_item_id)
 	end
 	if item_data.dlc and not DLC[item_data.dlc] then
 		return false, "DLC DISABLED", "The requested item " .. quote(item_data.name) .. " requires the " .. item_data.dlc .. " DLC"
@@ -2505,10 +2587,11 @@ function Player.equip(self, notify, slot, item_id, data1, data2, is_active)
 	local item_size = item_data.size
 	local item_params = item_data.data
 	local item_size_name = EQUIPMENT_SIZE_NAMES[item_size]
-	local item_pretty_name = string.format("\"%s\" (%d)", item_name, item_id)
+	local item_pretty_name = string.format("\"%s\" (%d)", item_name, parsed_item_id)
 	local caller_pretty_name = notify and notify.prettyName() or nil
 	local target_pretty_name = self.prettyName()
 
+	-- Todo: must be a string, but function parameter suggests it will be supplied as boolean here.
 	is_active = toBool(is_active) or false
 
 	-- Apply default charge etc.
@@ -2544,10 +2627,10 @@ function Player.equip(self, notify, slot, item_id, data1, data2, is_active)
 			if item_size == v.size then
 				table.insert(available_slots, v.letter)
 				if inventory[k] == 0 -- give player requested item in open slot
-				or inventory[k] == item_id -- replace an existing item, presumably to recharge it.
+				or inventory[k] == parsed_item_id -- replace an existing item, presumably to recharge it.
 				or item_size ~= 2 -- item is not a small item, there is only one slot, replace the item
 				then
-					if inventory[k] == item_id then isRecharge = true end
+					if inventory[k] == parsed_item_id then isRecharge = true end
 					slot_number = k
 					success = true
 					break
@@ -2567,7 +2650,7 @@ function Player.equip(self, notify, slot, item_id, data1, data2, is_active)
 		end
 	end
 
-	success = server.setCharacterItem(character_id, slot_number, item_id, is_active, data1, data2)
+	success = server.setCharacterItem(character_id, slot_number, parsed_item_id, is_active, data1, data2)
 	if success then
 		local slot_name = EQUIPMENT_SLOTS[slot_number].letter
 		if notify then
@@ -2748,7 +2831,7 @@ end
 
 ---Class that defines the object that contains all of the player objects
 ---@class PlayerContainer
----@field players table<steamID, Player>
+---@field players table<Steam_ID, Player>
 local PlayerContainer = {}
 --#region
 
@@ -2760,8 +2843,8 @@ end
 
 ---Creates a new player object and adds it to this container
 ---@param self PlayerContainer This player container's object instance
----@param peerID peerID The peerID of the player
----@param steamID steamID The steamID of the player
+---@param peerID Peer_ID The peerID of the player
+---@param steamID Steam_ID The steamID of the player
 ---@param name string The name of the player
 ---@param banned? boolean If the player should be banned immediately
 ---@return Player self The new player object
@@ -2785,8 +2868,8 @@ end
 
 ---Class that defines the object for each vehicle
 ---@class Vehicle
----@field vehicleID vehicleID the server unique ID for this vehicle.
----@field owner steamID the owner of the vehicle, could be -1 for server/addon spawned.
+---@field vehicleID Vehicle_ID the server unique ID for this vehicle.
+---@field owner Steam_ID the owner of the vehicle, could be -1 for server/addon spawned.
 ---@field server_spawned boolean true if the server spawned the vehicle.
 ---@field name string the name of the vehicle according to the server.
 ---@field pretty_name string the name of the vehicle if it has one or it's Vehicle ID.
@@ -2839,7 +2922,7 @@ end
 ---@param voxel_x number Voxel x axis offset
 ---@param voxel_y number Voxel y axis offset
 ---@param voxel_z number Voxel z axis offset
----@return matrix|boolean matrix The matrix of the vehicle or false if the position could not be found
+---@return Transform|boolean matrix The matrix of the vehicle or false if the position could not be found
 function Vehicle.getPosition(self, voxel_x, voxel_y, voxel_z)
 	local position, success = server.getVehiclePos(self.vehicleID, voxel_x, voxel_y, voxel_z)
 	return success and position or false
@@ -2847,7 +2930,7 @@ end
 
 ---Sets the position of the vehicle
 ---@param self Vehicle This vehicle's object instance
----@param position matrix The new position to set for the vehicle
+---@param position Transform The new position to set for the vehicle
 ---@param unsafe boolean If the vehicle should be teleported to the exact position, not accounting for any obstacles
 ---@return boolean success If the vehicle was successfully teleported
 function Vehicle.setPosition(self, position, unsafe)
@@ -2870,7 +2953,7 @@ end
 
 ---Class that defines the object that contains all of the vehicle objects
 ---@class VehicleContainer
----@field vehicles table<vehicleID, Vehicle>
+---@field vehicles table<Vehicle_ID, Vehicle>
 local VehicleContainer = {}
 --#region
 
@@ -2882,8 +2965,8 @@ end
 
 ---Creates a new vehicle object and adds it to this container
 ---@param self VehicleContainer This vehicle container's object instance
----@param vehicleID vehicleID The vehicleID of the vehicle
----@param owner_steamID steamID The steamID of the player that owns the vehicle
+---@param vehicleID Vehicle_ID The vehicleID of the vehicle
+---@param owner_steamID Steam_ID The steamID of the player that owns the vehicle
 ---@param cost number The cost of the vehicle
 ---@return Vehicle vehicle The new vehicle object
 function VehicleContainer.create(self, vehicleID, owner_steamID, cost)
@@ -2893,7 +2976,7 @@ end
 
 ---Removes a vehicle object from this vehicle container object
 ---@param self VehicleContainer This vehicle container's object instance
----@param vehicleID vehicleID The vehicleID of the vehicle to remove
+---@param vehicleID Vehicle_ID The vehicleID of the vehicle to remove
 function VehicleContainer.remove(self, vehicleID)
 	local vehicle = self.get(vehicleID)
 	if not vehicle then return end
@@ -2916,7 +2999,7 @@ end
 
 ---Gets a vehicle from this container
 ---@param self VehicleContainer This vehicle container's object instance
----@param vehicleID? vehicleID The vehicleID of the vehicle to get
+---@param vehicleID? Vehicle_ID The vehicleID of the vehicle to get
 ---@param list_server? boolean If vehicles spawned by the server should be returned
 ---@return Vehicle|table|nil vehicle The vehicle you were looking for or nil if the vehicle could not be found. If the `vehicleID` argument is not provided, a table containing all vehicles in this container will be returned
 function VehicleContainer.get(self, vehicleID, list_server)
@@ -2992,7 +3075,7 @@ end
 
 ---Prints the list of rules to a player
 ---@param self Rules This rule container object's instance
----@param steamID steamID The steamID of the player to print the rules to
+---@param steamID Steam_ID The steamID of the player to print the rules to
 ---@param page number The page of the rulebook to print. If 0, all rules are printed
 ---@param silent boolean If there are no rules, nothing will be announced
 function Rules.print(self, steamID, page, silent)
@@ -3164,7 +3247,12 @@ function onCreate(is_new)
 
 	TILE_POSITIONS = getTilePositions()
 
-	DLC = {weapons = server.dlcWeapons()}
+	---@type table<DLC_Name, boolean>
+	DLC =
+	{
+		weapons = server.dlcWeapons(),
+		arid = server.dlcArid(),
+	}
 
 	autosave()
 end
@@ -3346,7 +3434,8 @@ end
 
 function onPlayerRespawn(peerID)
 	if invalid_version then
-		server.announce("WARNING", "Your code is older than your save data. To prevent data loss/corruption, no data will be processed. Please update Carsa's Commands to the latest version.")
+		server.announce("WARNING", "Your code is older than your save data. To prevent data loss/corruption, no data will be processed. Please update Carsa's Commands to the latest version.\n"
+			.."Script data version: "..ScriptVersion.." save data version: "..(g_savedata.version or "unknown"))
 		return
 	end
 
@@ -3557,6 +3646,7 @@ function onTick()
 					local player = G_players.get(steamid)
 
 					if player.banned then
+						--Todo: Returns don't match signature.
 						return false, "Invalid token", "You are banned"
 					end
 
@@ -5943,11 +6033,17 @@ function sendToServer(datatype, data, meta --[[optional]], callback--[[optional]
 	return true
 end
 
+
+---@alias CompanionCommandCallbackFunction
+---|fun(playerToken: any, commandName: string, commandContent: any): boolean, string
+---|fun(playerToken: any, commandName: string, commandContent: any): true
+
+
 companionCommandCallbacks = {}
 -- @callback: this function must return: success (boolean), message (string, optional)
 --            callback() is called like this: function (playertoken, commandname, commandcontent)
 ---@param commandname any
----@param callback fun(playerToken: any, commandName: string, commandContent: any): boolean, string
+---@param callback CompanionCommandCallbackFunction
 ---@return nil
 function registerCompanionCommandCallback(commandname, callback)
 	if not (type(callback) == "function") then
@@ -6083,6 +6179,8 @@ function requestCompanionUrl()
 
 	isRequestingCompanionUrl = true
 
+-- Justification: Special case: suppressing the error for this one case is better than changing the type to allow it everywhere (where it would likely be wrong).
+---@diagnostic disable-next-line: param-type-mismatch
 	sendToServer("get-companion-url", nil, nil, function (success, response)
 		if success then
 			COMPANION_URL = response
