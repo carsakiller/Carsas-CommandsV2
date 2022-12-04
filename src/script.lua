@@ -510,7 +510,7 @@ local TYPE_ABBREVIATIONS = {
 	string = "text",
 	number = "num",
 	table = "tbl",
-	bool = "bool",
+	boolean = "bool",
 	playerID = "text/num",
 	vehicle = "num",
 	steamID = "num",
@@ -597,7 +597,7 @@ local SLOT_LETTER_TO_NUMBER = {
 
 ---@class EquipmentDataInt
 ---@field name string Name of data entry
----@field type "int"|"bool"
+---@field type "int"|"boolean"
 ---@field default string|number
 
 --- @type Equipment[]
@@ -738,7 +738,7 @@ local EQUIPMENT_DATA = {
 		data = {
 			int = {
 				name = "on/off",
-				type = "bool",
+				type = "boolean",
 				default = 0
 			}
 		}
@@ -818,7 +818,7 @@ local EQUIPMENT_DATA = {
 		data = {
 			int = {
 				name = "on/off",
-				type = "bool",
+				type = "boolean",
 				default = 0
 			},
 			float = {
@@ -834,7 +834,7 @@ local EQUIPMENT_DATA = {
 		data = {
 			int = {
 				name = "on/off",
-				type = "bool",
+				type = "boolean",
 				default = 0
 			},
 			float = {
@@ -850,7 +850,7 @@ local EQUIPMENT_DATA = {
 		data = {
 			int = {
 				name = "on/off",
-				type = "bool",
+				type = "boolean",
 				default = 0
 			},
 			float = {
@@ -1744,8 +1744,8 @@ function clamp(v, low, high)
 end
 
 --- converts strings to boolean values
----@param value string The string to convert to a bool
---- @return boolean value The input value as a bool
+---@param value string The string to convert to a boolean
+--- @return boolean value The input value as a boolean
 function toBool(value)
 	local lookup = {["true"] = true, ["false"] = false}
 	return lookup[string.lower(tostring(value))]
@@ -2729,7 +2729,7 @@ end
 
 ---Sets the state of tp blocking for this player
 ---@param self Player This player object's instance
----@param state? boolean The new state of tp blocking for this player. Toggles if no bool is provided
+---@param state? boolean The new state of tp blocking for this player. Toggles if no boolean is provided
 ---@return boolean new_state The new state of tp blocking for this player
 function Player.setTpBlocking(self, state)
 	if state == nil then
@@ -2756,7 +2756,7 @@ end
 
 ---Set the new state for the vehicleID UI for this player
 ---@param self Player This player object's instance
----@param state? boolean The new state of the UI, enabled or disabled. Toggles if no bool is provided
+---@param state? boolean The new state of the UI, enabled or disabled. Toggles if no boolean is provided
 ---@param show_server? boolean If server vehicles should be shown. Defaults to false
 ---@return boolean new_state The new state of the UI for this player
 function Player.setVehicleUIState(self, state, show_server)
@@ -4137,8 +4137,8 @@ COMMANDS = {
 		category = "Roles",
 		args = {
 			{name = "role", type = {"string"}, required = true, description = "The name of the role to modify."},
-			{name = "is_admin", type = {"bool"}, required = true, description = "If this role should grant admin privileges."},
-			{name = "is_auth", type = {"bool"}, required = true, description = "If this role should be authorized."}
+			{name = "is_admin", type = {"boolean"}, required = true, description = "If this role should grant admin privileges."},
+			{name = "is_auth", type = {"boolean"}, required = true, description = "If this role should be authorized."}
 		},
 		description = "Sets the permissions of a role.",
 		syncableData = {"roles"}
@@ -4177,7 +4177,7 @@ COMMANDS = {
 		args = {
 			{name = "role", type = {"string"}, required = true, description = "The name of the role to modify."},
 			{name = "command", type = {"string"}, required = true, description = "The command to grant/revoke access to."},
-			{name = "value", type = {"bool"}, required = true, description = "If the role should have access to the command."}
+			{name = "value", type = {"boolean"}, required = true, description = "If the role should have access to the command."}
 		},
 		description = "Sets whether a role has access to a command or not.",
 		syncableData = {"roles"}
@@ -4332,7 +4332,7 @@ COMMANDS = {
 		category = "Roles",
 		args = {
 			{name = "role", type = {"string"}, required = true, description = "The name of the role to modify."},
-			{name = "status", type = {"bool"}, description = "If the role is enabled or disabled."}
+			{name = "status", type = {"boolean"}, description = "If the role is enabled or disabled."}
 		},
 		description = "Gets or sets whether a role is active or not. An inactive role won't apply it's permissions to it's members",
 		syncableData = {"roles"}
@@ -4433,7 +4433,7 @@ COMMANDS = {
 		category = "Vehicles",
 		args = {
 			{name = "vehicleID", type = {"vehicleID"}, required = true, description = "The vehicle to modify."},
-			{name = "true/false", type = {"bool"}, required = true, description = "If the vehicle can be edited or not."}
+			{name = "true/false", type = {"boolean"}, required = true, description = "If the vehicle can be edited or not."}
 		},
 		description = "Sets a vehicle to either be editable or non-editable.",
 		syncableData = {"vehicles"}
@@ -4467,7 +4467,7 @@ COMMANDS = {
 		category = "Vehicles",
 		args = {
 			{name = "page", type = {"number"}, description = "The page to show."},
-			{name = "list_server", type = {"bool"}, description = "If vehicles spawned by the server and other addons should be listed."}
+			{name = "list_server", type = {"boolean"}, description = "If vehicles spawned by the server and other addons should be listed."}
 		},
 		description = "Lists all the vehicles that are spawned in the game."
 	},
@@ -4478,7 +4478,7 @@ COMMANDS = {
 		end,
 		category = "Vehicles",
 		args = {
-			{name = "list_server", type = {"bool"}, description = "If vehicles spawned by the server and other addons should be displayed."}
+			{name = "list_server", type = {"boolean"}, description = "If vehicles spawned by the server and other addons should be displayed."}
 		},
 		description = "Toggles displaying vehicle IDs."
 	},
@@ -4716,7 +4716,7 @@ COMMANDS = {
 
 			{name = "data1", type = {"number"}, description = "The first data slot of the item."},
 			{name = "data2", type = {"number"}, description = "The second data slot of the item."},
-			{name = "active", type = {"bool"}, description = "If the item is active."}
+			{name = "active", type = {"boolean"}, description = "If the item is active."}
 		},
 		description = "Equips you with the requested item."
 	},
@@ -4732,7 +4732,7 @@ COMMANDS = {
 
 			{name = "data1", type = {"number"}, description = "The first data slot of the item."},
 			{name = "data2", type = {"number"}, description = "The second data slot of the item."},
-			{name = "active", type = {"bool"}, description = "If the item is active."}
+			{name = "active", type = {"boolean"}, description = "If the item is active."}
 		},
 		description = "Equips the specified player with the requested item."
 	},
@@ -4922,7 +4922,7 @@ COMMANDS = {
 		category = "Teleporting",
 		args = {
 			{name = "vehicleID", type = {"vehicleID"}, required = true, description = "The vehicle to teleport to your position."},
-			{name = "unsafe", type = {"bool"}, description = "If the vehicle should be teleported to your exact location, ignoring surroundings."}
+			{name = "unsafe", type = {"boolean"}, description = "If the vehicle should be teleported to your exact location, ignoring surroundings."}
 		},
 		description = "Teleports a vehicle to you."
 	},
@@ -5221,7 +5221,7 @@ COMMANDS = {
 		end,
 		category = "Preferences",
 		args = {
-			{name = "confirm", type = {"bool"}, required = true, description = "Confirms this action."}
+			{name = "confirm", type = {"boolean"}, required = true, description = "Confirms this action."}
 		},
 		description = "Resets all server preferences back to their default states. Be very careful with this command as it can drastically change how the server behaves.",
 		syncableData = {"preferences"}
@@ -5250,7 +5250,7 @@ COMMANDS = {
 			end
 
 			local target_type = preference.type
-			if target_type == "bool" or target_type == "boolean" then
+			if target_type == "boolean" then
 				local val = toBool(args[1])
 				if val ~= nil then
 					preference.value = val
@@ -5288,7 +5288,7 @@ COMMANDS = {
 		category = "Preferences",
 		args = {
 			{name = "preference_name", type = {"string"}, required = true, description = "The name of the preference to edit"},
-			{name = "value", type = {"bool", "number", "text"}, required = true, description = "The new value of the preference"}
+			{name = "value", type = {"boolean", "number", "text"}, required = true, description = "The new value of the preference"}
 		},
 		description = "Sets the specified preference to the requested value. Use ?preferences to see all of the preferences.",
 		syncableData = {"preferences"}
@@ -5410,7 +5410,7 @@ COMMANDS = {
 		category = "Game Settings",
 		args = {
 			{name = "setting_name", type = {"string"}, required = true, description = "The name of the setting to change."},
-			{name = "value", type = {"bool"}, required = true, description = "The new value of the setting."}
+			{name = "value", type = {"boolean"}, required = true, description = "The new value of the setting."}
 		},
 		description = "Sets the specified game setting to the requested value.",
 		syncableData = {"gamesettings"}
