@@ -31,7 +31,7 @@ Carsa's Commands v2 can be subscribed to on the [Steam Workshop](https://steamco
 ### Setting an Owner
 To override the automatic assigning of an owner when the very first unique player joins, you can do the following:
 1. Open `script.lua` (can be found in the location from step 2 of [the setup](#dedicated-server-setup))
-2. On line 13, you should find the following:
+2. On line 16, you should find the following:
 ```lua
 local OWNER_STEAM_ID = "0"
 ```
