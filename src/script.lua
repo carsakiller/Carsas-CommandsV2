@@ -572,7 +572,11 @@ local EQUIPMENT_SLOTS = {
 	{size = 2, letter = "C"},
 	{size = 2, letter = "D"},
 	{size = 2, letter = "E"},
-	{size = 3, letter = "F"}
+	{size = 2, letter = "F"},
+	{size = 2, letter = "G"},
+	{size = 2, letter = "H"},
+	{size = 2, letter = "I"},
+	{size = 3, letter = "J"}
 }
 
 local SLOT_LETTER_TO_NUMBER = {
@@ -582,6 +586,10 @@ local SLOT_LETTER_TO_NUMBER = {
 	D = 4,
 	E = 5,
 	F = 6,
+	G = 7,
+	H = 8,
+	I = 9,
+	J = 10
 }
 
 ---@class Equipment
