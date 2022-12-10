@@ -24,7 +24,7 @@ local SaveDataVersion = "2.1.1"
 --#region
 
 --[ lua implementation of fzy library ]--
---#region 
+--#region
 ---@author Seth Warn
 ---@source https://github.com/swarn/fzy-lua
 ---@license The MIT License (MIT)
@@ -267,7 +267,7 @@ end
 ---@param str string Json string
 ---@param pos integer Position of the first character of the value to be parsed (so after the opening quote).
 ---@param val? string Value, in case the string was ssplit.
----@return string result 
+---@return string result
 ---@return integer pos The position in the Json string after reading (past the closing quote).
 function parse_str_val(str, pos, val)
 	val = val or ''
@@ -2514,7 +2514,7 @@ function Player.getInventory(self)
 
 	---@type SLOT_NUMBER
 	for i=1, #EQUIPMENT_SLOTS do
-		
+
 		local equipment_id, success = server.getCharacterItem(character_id, i)
 		inventory[i] = (success and equipment_id) or 0
 		if inventory[i] ~= 0 then
