@@ -263,7 +263,7 @@ end
 
 -- Expects the given pos to be the first character after the opening quote.
 -- Returns val, pos; the returned pos is after the closing quote character.
----Parses the string value at the position from Json. 
+---Parses the string value at the position from Json.
 ---@param str string Json string
 ---@param pos integer Position of the first character of the value to be parsed (so after the opening quote).
 ---@param val? string Value, in case the string was ssplit.
@@ -1036,7 +1036,7 @@ local EQUIPMENT_DATA = {
 	},
 	{ -- 42
 		name = "MG ammo box",
-		size = 2,
+		size = 1,
 		dlc = 'weapons',
 		data = {
 			int = {
@@ -1048,7 +1048,7 @@ local EQUIPMENT_DATA = {
 	},
 	{ -- 43
 		name = "MG HE ammo box",
-		size = 2,
+		size = 1,
 		dlc = 'weapons',
 		data = {
 			int = {
@@ -1060,7 +1060,7 @@ local EQUIPMENT_DATA = {
 	},
 	{ -- 44
 		name = "MG HE Frag ammo box",
-		size = 2,
+		size = 1,
 		dlc = 'weapons',
 		data = {
 			int = {
@@ -1072,7 +1072,7 @@ local EQUIPMENT_DATA = {
 	},
 	{ -- 45
 		name = "MG AP ammo box",
-		size = 2,
+		size = 1,
 		dlc = 'weapons',
 		data = {
 			int = {
@@ -1084,7 +1084,7 @@ local EQUIPMENT_DATA = {
 	},
 	{ -- 46
 		name = "MG Incendiary ammo box",
-		size = 2,
+		size = 1,
 		dlc = 'weapons',
 		data = {
 			int = {
@@ -1096,7 +1096,7 @@ local EQUIPMENT_DATA = {
 	},
 	{ -- 47
 		name = "Light ammo box",
-		size = 2,
+		size = 1,
 		dlc = 'weapons',
 		data = {
 			int = {
@@ -1108,7 +1108,7 @@ local EQUIPMENT_DATA = {
 	},
 	{ -- 48
 		name = "Light HE ammo box",
-		size = 2,
+		size = 1,
 		dlc = 'weapons',
 		data = {
 			int = {
@@ -1120,7 +1120,7 @@ local EQUIPMENT_DATA = {
 	},
 	{ -- 49
 		name = "Light HE Frag ammo box",
-		size = 2,
+		size = 1,
 		dlc = 'weapons',
 		data = {
 			int = {
@@ -1132,7 +1132,7 @@ local EQUIPMENT_DATA = {
 	},
 	{ -- 50
 		name = "Light AP ammo box",
-		size = 2,
+		size = 1,
 		dlc = 'weapons',
 		data = {
 			int = {
@@ -1144,7 +1144,7 @@ local EQUIPMENT_DATA = {
 	},
 	{ -- 51
 		name = "Light Incendiary ammo box",
-		size = 2,
+		size = 1,
 		dlc = 'weapons',
 		data = {
 			int = {
@@ -1156,7 +1156,7 @@ local EQUIPMENT_DATA = {
 	},
 	{ -- 52
 		name = "Rotary ammo box",
-		size = 2,
+		size = 1,
 		dlc = 'weapons',
 		data = {
 			int = {
@@ -1168,7 +1168,7 @@ local EQUIPMENT_DATA = {
 	},
 	{ -- 53
 		name = "Rotary HE ammo box",
-		size = 2,
+		size = 1,
 		dlc = 'weapons',
 		data = {
 			int = {
@@ -1180,7 +1180,7 @@ local EQUIPMENT_DATA = {
 	},
 	{ -- 54
 		name = "Rotary HE Frag ammo box",
-		size = 2,
+		size = 1,
 		dlc = 'weapons',
 		data = {
 			int = {
@@ -1192,7 +1192,7 @@ local EQUIPMENT_DATA = {
 	},
 	{ -- 55
 		name = "Rotary AP ammo box",
-		size = 2,
+		size = 1,
 		dlc = 'weapons',
 		data = {
 			int = {
@@ -1204,7 +1204,7 @@ local EQUIPMENT_DATA = {
 	},
 	{ -- 56
 		name = "Rotary Incendiary ammo box",
-		size = 2,
+		size = 1,
 		dlc = 'weapons',
 		data = {
 			int = {
@@ -1216,7 +1216,7 @@ local EQUIPMENT_DATA = {
 	},
 	{ -- 57
 		name = "Heavy ammo box",
-		size = 2,
+		size = 1,
 		dlc = 'weapons',
 		data = {
 			int = {
@@ -1228,7 +1228,7 @@ local EQUIPMENT_DATA = {
 	},
 	{ -- 58
 		name = "Heavy HE ammo box",
-		size = 2,
+		size = 1,
 		dlc = 'weapons',
 		data = {
 			int = {
@@ -1240,7 +1240,7 @@ local EQUIPMENT_DATA = {
 	},
 	{ -- 59
 		name = "Heavy HE Frag ammo box",
-		size = 2,
+		size = 1,
 		dlc = 'weapons',
 		data = {
 			int = {
@@ -1252,7 +1252,7 @@ local EQUIPMENT_DATA = {
 	},
 	{ -- 60
 		name = "Heavy AP ammo box",
-		size = 2,
+		size = 1,
 		dlc = 'weapons',
 		data = {
 			int = {
@@ -1264,7 +1264,7 @@ local EQUIPMENT_DATA = {
 	},
 	{ -- 61
 		name = "Heavy Incendiary ammo box",
-		size = 2,
+		size = 1,
 		dlc = 'weapons',
 		data = {
 			int = {
@@ -1276,7 +1276,7 @@ local EQUIPMENT_DATA = {
 	},
 	{ -- 62
 		name = "Battle shell",
-		size = 2,
+		size = 1,
 		dlc = 'weapons',
 		data = {
 			int = {
@@ -1288,7 +1288,7 @@ local EQUIPMENT_DATA = {
 	},
 	{ -- 63
 		name = "Battle HE shell",
-		size = 2,
+		size = 1,
 		dlc = 'weapons',
 		data = {
 			int = {
@@ -1300,7 +1300,7 @@ local EQUIPMENT_DATA = {
 	},
 	{ -- 64
 		name = "Battle HE Frag shell",
-		size = 2,
+		size = 1,
 		dlc = 'weapons',
 		data = {
 			int = {
@@ -1312,7 +1312,7 @@ local EQUIPMENT_DATA = {
 	},
 	{ -- 65
 		name = "Battle AP shell",
-		size = 2,
+		size = 1,
 		dlc = 'weapons',
 		data = {
 			int = {
@@ -1324,7 +1324,7 @@ local EQUIPMENT_DATA = {
 	},
 	{ -- 66
 		name = "Battle Incendiary shell",
-		size = 2,
+		size = 1,
 		dlc = 'weapons',
 		data = {
 			int = {
@@ -1336,7 +1336,7 @@ local EQUIPMENT_DATA = {
 	},
 	{ -- 67
 		name = "Artillery shell",
-		size = 2,
+		size = 1,
 		dlc = 'weapons',
 		data = {
 			int = {
@@ -1348,7 +1348,7 @@ local EQUIPMENT_DATA = {
 	},
 	{ -- 68
 		name = "Artillery HE shell",
-		size = 2,
+		size = 1,
 		dlc = 'weapons',
 		data = {
 			int = {
@@ -1360,7 +1360,7 @@ local EQUIPMENT_DATA = {
 	},
 	{ -- 69
 		name = "Artillery HE Frag shell",
-		size = 2,
+		size = 1,
 		dlc = 'weapons',
 		data = {
 			int = {
@@ -1372,7 +1372,7 @@ local EQUIPMENT_DATA = {
 	},
 	{ -- 70
 		name = "Artillery AP shell",
-		size = 2,
+		size = 1,
 		dlc = 'weapons',
 		data = {
 			int = {
@@ -1384,7 +1384,7 @@ local EQUIPMENT_DATA = {
 	},
 	{ -- 71
 		name = "Artillery Incendiary shell",
-		size = 2,
+		size = 1,
 		dlc = 'weapons',
 		data = {
 			int = {
