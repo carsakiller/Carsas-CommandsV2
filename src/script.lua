@@ -2,7 +2,7 @@
 
 
 -- CARSA'S COMMANDS
----@version 2.1.1
+---@version 2.1.2
 ---@authors carsakiller, CrazyFluffyPony, Dargino, CodeLeopard
 ---@source https://github.com/carsakiller/Carsas-CommandsV2
 ---@license MIT License
@@ -17,7 +17,7 @@ local OWNER_STEAM_ID = "0"
 
 local DEBUG = false
 
-local ScriptVersion = "2.1.1"
+local ScriptVersion = "2.1.2"
 local SaveDataVersion = "2.1.1"
 
 --[ LIBRARIES ]--
