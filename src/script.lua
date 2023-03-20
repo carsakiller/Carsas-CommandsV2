@@ -14,7 +14,7 @@
 -- the auto assigning of an owner on first join
 local OWNER_STEAM_ID = "0"
 
-local defaulteditable = "true"
+local defaulteditable = false    --non functional at the moment, just go to line 2905 to change the default value 
 local DEBUG = false
 
 local ScriptVersion = "2.1.2"
@@ -1746,7 +1746,7 @@ end
 ---@param v number The value to clamp between low and high
 ---@param low number The minimum allowed value
 ---@param high number The maximum allowed value
---- @return number clamped_value The new value clamped between low and high (low ≤ v ≤ high)
+--- @return number clamped_value The new value clamped between low and high (low â‰¤ v â‰¤ high)
 function clamp(v, low, high)
 	return math.min(math.max(v,low),high)
 end
@@ -2902,7 +2902,7 @@ local Vehicle = {}
 --Update the Vehicle class constructor to accept 'editable' parameter
 function Vehicle.constructor(self, vehicleID, owner_steamID, cost, editable)
     -- ...
-    self.editable = editable or defaulteditable -- default value is true (editable)
+    self.editable = editable or true -- default value is true (editable)
     self:setEditable(self.editable) -- set the initial editable state
     -- ...
 end
@@ -2912,6 +2912,7 @@ function Vehicle.setEditable(self, state)
     state = state or self.editable -- use the default value if state is not provided
     return server.setVehicleEditable(self.vehicleID, state)
 end
+
 ---Creates a Vehicle object
 ---@param self Vehicle This vehicle's object instance
 ---@param vehicleID number The vehicle id of the vehicle
@@ -3032,10 +3033,10 @@ end
 ---@param self VehicleContainer This vehicle container's object instance
 ---@param vehicleID Vehicle_ID The vehicleID of the vehicle to get
 ---@return Vehicle vehicle The vehicle object
-function VehicleContainer.get(self, vehicleID)
-    return self.vehicles[vehicleID]
-end
-```
+function VehicleContainer.get(self, vehicleID, list_server)
+	if vehicleID then
+		return self.vehicles[vehicleID]
+	end
 
 	local vehicles = self.vehicles
 
@@ -4533,7 +4534,7 @@ COMMANDS = {
 				if vehicle.cost > 0 then
 					cost = string.format("%0.2f", vehicle.cost)
 				else
-					-- 🥚
+					-- ðŸ¥š
 					local rnd = math.random(10)
 					cost = rnd == 8 and "$Free.99" or "Free"
 				end
@@ -4713,7 +4714,7 @@ COMMANDS = {
 			server.setCharacterData(character_id, clamped_amount, false, false)
 			msg = msg .. "healed to " .. clamped_amount .. "%"
 
-			-- 🥚
+			-- ðŸ¥š
 			if character_data.hp < 1 and not (character_data.incapacitated or character_data.dead) and math.random(15) == 4 then
 				msg = "Just in time"
 			end
@@ -4859,7 +4860,7 @@ COMMANDS = {
 				})
 			end
 
-			-- 🥚
+			-- ðŸ¥š
 			if (caller.name) ~= "Leopard" and target_name == "Leopards Base" and math.random(100) == 18 then
 				server.announce(" ", "Intruder alert!", caller.peerID)
 			end
@@ -4938,7 +4939,7 @@ COMMANDS = {
 
 			local success = vehicle.setPosition(target_matrix, unsafe)
 
-			-- 🥚
+			-- ðŸ¥š
 			if unsafe and math.random(10) == 2 then
 				server.announce(
 					" ",
@@ -5104,7 +5105,7 @@ COMMANDS = {
 				end
 
 				local title, message = prettyFormatCommand(command_name, true, true, true, true)
-				-- 🥚
+				-- ðŸ¥š
 				if command_name == "ccHelp" and math.random(10) == 2 then
 					message = message .. "\n\nAre you really using the help command to see how to use the help command?"
 				end
