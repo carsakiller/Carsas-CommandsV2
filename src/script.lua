@@ -14,7 +14,7 @@
 -- the auto assigning of an owner on first join
 local OWNER_STEAM_ID = "0"
 
-local defaulteditable = false    --non functional at the moment, just go to line 2905 to change the default value 
+local defaulteditable = true 
 local DEBUG = false
 
 local ScriptVersion = "2.1.2"
@@ -2902,8 +2902,8 @@ local Vehicle = {}
 --Update the Vehicle class constructor to accept 'editable' parameter
 function Vehicle.constructor(self, vehicleID, owner_steamID, cost, editable)
     -- ...
-    self.editable = editable or true -- default value is true (editable)
-    self:setEditable(self.editable) -- set the initial editable state
+    self.editable = defaulteditable -- default value is true (editable)
+    self.setEditable(self.editable) -- set the initial editable state
     -- ...
 end
 
@@ -2935,10 +2935,10 @@ function Vehicle.constructor(self, vehicleID, owner_steamID, cost, editable)
     self.static = success and data.static or false
 
     self.ui_id = exploreTable(g_savedata.vehicles, {vehicleID, "ui_id"}) or server.getMapID()
-    self.editable = editable or true -- default value is true (editable)
-    self:setEditable(self.editable) -- set initial editable state
+    self.editable = defaulteditable -- default value is true (editable)
+    self.setEditable(self.editable) -- set initial editable state
 
-    self:save()
+    self.save()
 end
 
 ---Save this vehicle to g_savedata
