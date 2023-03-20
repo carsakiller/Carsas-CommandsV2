@@ -2912,11 +2912,6 @@ function Vehicle.setEditable(self, state)
     state = state or self.editable -- use the default value if state is not provided
     return server.setVehicleEditable(self.vehicleID, state)
 end
-```
-
-And here is the full updated code:
-
-```
 ---Creates a Vehicle object
 ---@param self Vehicle This vehicle's object instance
 ---@param vehicleID number The vehicle id of the vehicle
