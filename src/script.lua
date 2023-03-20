@@ -14,7 +14,7 @@
 -- the auto assigning of an owner on first join
 local OWNER_STEAM_ID = "0"
 
-
+local defaulteditable = "true"
 local DEBUG = false
 
 local ScriptVersion = "2.1.2"
@@ -2899,30 +2899,56 @@ local Vehicle = {}
 ---@param vehicleID number The vehicle id of the vehicle
 ---@param owner_steamID string The steam id of the owner of the vehicle
 ---@param cost number The cost of the vehicle
-function Vehicle.constructor(self, vehicleID, owner_steamID, cost)
-	self.vehicleID = vehicleID
-	self.owner = owner_steamID or exploreTable(g_savedata.vehicles, {vehicleID, "owner"})
+--Update the Vehicle class constructor to accept 'editable' parameter
+function Vehicle.constructor(self, vehicleID, owner_steamID, cost, editable)
+    -- ...
+    self.editable = editable or defaulteditable -- default value is true (editable)
+    self:setEditable(self.editable) -- set the initial editable state
+    -- ...
+end
 
-	if self.owner == -1 then
-		self.server_spawned = true
-	end
+--Update the 'setEditable' function to use default value
+function Vehicle.setEditable(self, state)
+    state = state or self.editable -- use the default value if state is not provided
+    return server.setVehicleEditable(self.vehicleID, state)
+end
+```
 
-	local name, success = server.getVehicleName(vehicleID)
-	self.name = success and (name ~= "Error" and name or "Unknown") or "Unknown"
-	self.pretty_name = string.format("%s(%d)", self.name, self.vehicleID)
-	self.cost = exploreTable(g_savedata.vehicles, {vehicleID, "cost"}) or cost
-	local data, success = server.getVehicleData(vehicleID)
-	self.static = success and data.static or false
+And here is the full updated code:
 
-	self.ui_id = exploreTable(g_savedata.vehicles, {vehicleID, "ui_id"}) or server.getMapID()
+```
+---Creates a Vehicle object
+---@param self Vehicle This vehicle's object instance
+---@param vehicleID number The vehicle id of the vehicle
+---@param owner_steamID string The steam id of the owner of the vehicle
+---@param cost number The cost of the vehicle
+---@param editable boolean Optional, the default editable state of the vehicle (default is true)
+function Vehicle.constructor(self, vehicleID, owner_steamID, cost, editable)
+    self.vehicleID = vehicleID
+    self.owner = owner_steamID or exploreTable(g_savedata.vehicles, {vehicleID, "owner"})
 
-	self.save()
+    if self.owner == -1 then
+        self.server_spawned = true
+    end
+
+    local name, success = server.getVehicleName(vehicleID)
+    self.name = success and (name ~= "Error" and name or "Unknown") or "Unknown"
+    self.pretty_name = string.format("%s(%d)", self.name, self.vehicleID)
+    self.cost = exploreTable(g_savedata.vehicles, {vehicleID, "cost"}) or cost
+    local data, success = server.getVehicleData(vehicleID)
+    self.static = success and data.static or false
+
+    self.ui_id = exploreTable(g_savedata.vehicles, {vehicleID, "ui_id"}) or server.getMapID()
+    self.editable = editable or true -- default value is true (editable)
+    self:setEditable(self.editable) -- set initial editable state
+
+    self:save()
 end
 
 ---Save this vehicle to g_savedata
 ---@param self Vehicle This vehicle's object instance
 function Vehicle.save(self)
-	g_savedata.vehicles[self.vehicleID] = serialize(self)
+    g_savedata.vehicles[self.vehicleID] = serialize(self)
 end
 
 ---Gets the position of the vehicle
@@ -2932,8 +2958,8 @@ end
 ---@param voxel_z number Voxel z axis offset
 ---@return Transform|boolean matrix The matrix of the vehicle or false if the position could not be found
 function Vehicle.getPosition(self, voxel_x, voxel_y, voxel_z)
-	local position, success = server.getVehiclePos(self.vehicleID, voxel_x, voxel_y, voxel_z)
-	return success and position or false
+    local position, success = server.getVehiclePos(self.vehicleID, voxel_x, voxel_y, voxel_z)
+    return success and position or false
 end
 
 ---Sets the position of the vehicle
@@ -2942,22 +2968,23 @@ end
 ---@param unsafe boolean If the vehicle should be teleported to the exact position, not accounting for any obstacles
 ---@return boolean success If the vehicle was successfully teleported
 function Vehicle.setPosition(self, position, unsafe)
-	if unsafe then
-		return server.setVehiclePos(self.vehicleID, position)
-	else
-		return server.setVehiclePosSafe(self.vehicleID, position)
-	end
+    if unsafe then
+        return server.setVehiclePos(self.vehicleID, position)
+    else
+        return server.setVehiclePosSafe(self.vehicleID, position)
+    end
 end
 
 ---Set whether a vehicle can be edited or not
 ---@param self Vehicle This vehicle's object instance
----@param state boolean The new edit state of the vehicle
+---@param state boolean Optional, the new edit state of the vehicle (default is nil, which uses default value from constructor)
 ---@return boolean success If the state has been set successfully
 function Vehicle.setEditable(self, state)
-	return server.setVehicleEditable(self.vehicleID, state)
+    state = state or self.editable -- use the default value if state is not provided
+    return server.setVehicleEditable(self.vehicleID, state)
 end
---#endregion
 
+--#endregion
 
 ---Class that defines the object that contains all of the vehicle objects
 ---@class VehicleContainer
@@ -2968,7 +2995,7 @@ local VehicleContainer = {}
 ---Creates a vehicle container object
 ---@param self VehicleContainer This vehicle container's object instance
 function VehicleContainer.constructor(self)
-	self.vehicles = {}
+    self.vehicles = {}
 end
 
 ---Creates a new vehicle object and adds it to this container
@@ -2976,44 +3003,44 @@ end
 ---@param vehicleID Vehicle_ID The vehicleID of the vehicle
 ---@param owner_steamID Steam_ID The steamID of the player that owns the vehicle
 ---@param cost number The cost of the vehicle
+---@param editable boolean Optional, the default editable state of the vehicle (default is true)
 ---@return Vehicle vehicle The new vehicle object
-function VehicleContainer.create(self, vehicleID, owner_steamID, cost)
-	self.vehicles[vehicleID] = new(Vehicle, vehicleID, owner_steamID, cost)
-	return self.vehicles[vehicleID]
+function VehicleContainer.create(self, vehicleID, owner_steamID, cost, editable)
+    self.vehicles[vehicleID] = new(Vehicle, vehicleID, owner_steamID, cost, editable)
+    return self.vehicles[vehicleID]
 end
 
 ---Removes a vehicle object from this vehicle container object
 ---@param self VehicleContainer This vehicle container's object instance
 ---@param vehicleID Vehicle_ID The vehicleID of the vehicle to remove
 function VehicleContainer.remove(self, vehicleID)
-	local vehicle = self.get(vehicleID)
-	if not vehicle then return end
+    local vehicle = self.get(vehicleID)
+    if not vehicle then return end
 
-	local owner
-	if not vehicle.server_spawned then
-		owner = G_players.get(vehicle.owner)
-	end
+    local owner
+    if not vehicle.server_spawned then
+        owner = G_players.get(vehicle.owner)
+    end
 
-	if owner and owner.latest_spawn and owner.latest_spawn == vehicleID then
-		-- if this vehicle being despawned is the owner's latest spawn, set latest_spawn to nil
-		owner.latest_spawn = nil
-	end
+    if owner and owner.latest_spawn and owner.latest_spawn == vehicleID then
+        -- if this vehicle being despawned is the owner's latest spawn, set latest_spawn to nil
+        owner.latest_spawn = nil
+    end
 
-	g_savedata.vehicles[vehicleID] = nil
+    g_savedata.vehicles[vehicleID] = nil
 
-	server.removeMapID(-1, self.get(vehicleID).ui_id)
-	self.vehicles[vehicleID] = nil
+    server.removeMapID(-1, self.get(vehicleID).ui_id)
+    self.vehicles[vehicleID] = nil
 end
 
----Gets a vehicle from this container
+---Gets a vehicle from this container by ID
 ---@param self VehicleContainer This vehicle container's object instance
----@param vehicleID? Vehicle_ID The vehicleID of the vehicle to get
----@param list_server? boolean If vehicles spawned by the server should be returned
----@return Vehicle|table|nil vehicle The vehicle you were looking for or nil if the vehicle could not be found. If the `vehicleID` argument is not provided, a table containing all vehicles in this container will be returned
-function VehicleContainer.get(self, vehicleID, list_server)
-	if vehicleID then
-		return self.vehicles[vehicleID]
-	end
+---@param vehicleID Vehicle_ID The vehicleID of the vehicle to get
+---@return Vehicle vehicle The vehicle object
+function VehicleContainer.get(self, vehicleID)
+    return self.vehicles[vehicleID]
+end
+```
 
 	local vehicles = self.vehicles
 
