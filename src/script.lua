@@ -1505,6 +1505,10 @@ local PREFERENCE_DEFAULTS = {
 	adminAll = {
 		value = false,
 		type = "boolean"
+	},
+	editableVehicles = {
+		value = true,
+		type = "boolean"
 	}
 }
 
@@ -3493,6 +3497,11 @@ function onVehicleSpawn(vehicleID, peerID, x, y, z, cost)
 				}
 			)
 		end
+
+		if not G_preferences.editableVehicles.value then
+			server.setVehicleEditable(vehicleID, false)
+		end
+
 		owner.latest_spawn = vehicleID
 		owner.save()
 	else
