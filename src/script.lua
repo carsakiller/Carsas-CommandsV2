@@ -1505,6 +1505,10 @@ local PREFERENCE_DEFAULTS = {
 	adminAll = {
 		value = false,
 		type = "boolean"
+	},
+	editableVehicles = {
+		value = true,
+		type = "boolean"
 	}
 }
 
@@ -3212,6 +3216,7 @@ function onCreate(is_new)
 		G_preferences.keepInventory.value = property.checkbox("Keep inventory on death", "true")
 		G_preferences.removeVehicleOnLeave.value = property.checkbox("Remove player's vehicle on leave", "true")
 		G_preferences.maxVoxels.value = property.slider("Max vehicle voxel size", 0, 10000, 10, 0)
+		G_preferences.editableVehicles.value = property.checkbox("Vehicles are editable by default", "true")
 
 		local adminAll = property.checkbox("Admin all players", "false")
 		local everyoneRole = G_roles.get("Everyone")
@@ -3493,6 +3498,11 @@ function onVehicleSpawn(vehicleID, peerID, x, y, z, cost)
 				}
 			)
 		end
+
+		if not G_preferences.editableVehicles.value then
+			server.setVehicleEditable(vehicleID, false)
+		end
+
 		owner.latest_spawn = vehicleID
 		owner.save()
 	else
