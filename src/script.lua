@@ -2,7 +2,7 @@
 
 
 -- CARSA'S COMMANDS
----@version 2.1.2
+---@version 2.1.3
 ---@authors carsakiller, CrazyFluffyPony, Dargino, CodeLeopard
 ---@source https://github.com/carsakiller/Carsas-CommandsV2
 ---@license MIT License
@@ -17,7 +17,7 @@ local OWNER_STEAM_ID = "0"
 
 local DEBUG = false
 
-local ScriptVersion = "2.1.2"
+local ScriptVersion = "2.1.3"
 local SaveDataVersion = "2.1.1"
 
 --[ LIBRARIES ]--
@@ -489,7 +489,7 @@ local ABOUT = {
 	{title = "ScriptVersion:", text = ScriptVersion},
 	{title = "SaveDataVersion:", text = SaveDataVersion},
 	{title = "Created By:", text = "Carsa, CrazyFluffyPony, Dargino, Leopard"},
-	{title = "Github:", text = "https://github.com/carsakiller/Carsas-Commands"},
+	{title = "Github:", text = "https://github.com/carsakiller/Carsas-CommandsV2"},
 	{title = "More Info:", text = "For more info, I recommend checking out the github page"},
 	{title = "For Help:", text = "Use '?ccHelp' to get more information on commands"},
 }
