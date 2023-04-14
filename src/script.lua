@@ -3499,7 +3499,7 @@ function onVehicleSpawn(vehicleID, peerID, x, y, z, cost)
 			)
 		end
 
-		if not G_preferences.editableVehicles.value then
+		if G_preferences.editableVehicles and not G_preferences.editableVehicles.value then
 			server.setVehicleEditable(vehicleID, false)
 		end
 
