@@ -18,7 +18,7 @@ local OWNER_STEAM_ID = "0"
 local DEBUG = false
 
 local ScriptVersion = "2.1.3"
-local SaveDataVersion = "2.1.1"
+local SaveDataVersion = "2.1.3"
 
 --[ LIBRARIES ]--
 --#region
