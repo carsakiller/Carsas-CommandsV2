@@ -18,7 +18,7 @@ local OWNER_STEAM_ID = "0"
 local DEBUG = false
 
 local ScriptVersion = "2.1.3"
-local SaveDataVersion = "2.1.1"
+local SaveDataVersion = "2.1.3"
 
 --[ LIBRARIES ]--
 --#region
@@ -3499,7 +3499,7 @@ function onVehicleSpawn(vehicleID, peerID, x, y, z, cost)
 			)
 		end
 
-		if not G_preferences.editableVehicles.value then
+		if G_preferences.editableVehicles and not G_preferences.editableVehicles.value then
 			server.setVehicleEditable(vehicleID, false)
 		end
 
