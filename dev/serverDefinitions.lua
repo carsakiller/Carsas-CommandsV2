@@ -8,14 +8,17 @@
 ---Persistent data table saved to the world's save file
 g_savedata = {}
 
+---@class LibAddonServer
 server = {}
+---@class LibAddonMatrix
 matrix = {}
+---@class LibAddonProperty
 property = {}
 
---#region Types Aliases
+--#region Types and Aliases
 
 ---@alias fraction number [0..1] Number between 0 and 1 (inclusive)
----@alias currency number 
+---@alias currency number
 
 ---@alias Peer_ID integer
 ---@alias Steam_ID string
@@ -23,6 +26,11 @@ property = {}
 ---@alias Object_ID integer
 ---@alias UI_ID integer
 
+
+---@class Vector3
+---@field x number
+---@field y number
+---@field z number
 
 ---@class Transform
 ---@field [ 1] number|1 Rotation and scale data
@@ -40,7 +48,7 @@ property = {}
 ---@field [13] number Position X (X on the in-game map)
 ---@field [14] number Position Y Altitude
 ---@field [15] number Position Z (Y on the in-game map)
----@field [16] 1 
+---@field [16] 1
 
 
 ---@alias NOTIFICATION_TYPE
@@ -287,6 +295,21 @@ property = {}
 ---|4 # Exhaust
 ---|5 # Oil
 ---|6 # Saltwater
+
+---@alias ORE_TYPE
+---|0 Coal
+---|1 Iron
+---|2 aluminium
+---|3 gold
+---|4 gold_dirt
+---|5 uranium
+---|6 ingot_iron
+---|7 ingot_steel
+---|8 ingot_aluminium
+---|9 ingot_gold_impure
+---|10 ingot_gold
+---|11 ingot_uranium
+
 
 ---@alias GAME_SETTING
 ---| "third_person"
@@ -700,6 +723,9 @@ function server.getAddonPath(name, is_rom) return path, is_success end
 ---@field size { x: number, y: number, z: number } The size of the zone.
 ---@field radius number The radius of the zone if the type is sphere.
 ---@field type ZONE_TYPE The type (shape) of the zone.
+---@field tags string[] The tags of the zone.
+---@field tags_full string
+---@field transform Transform the position, rotation and scale information.
 
 ---Get a table of all active ENV mod zones. You can provide tags seperated by commas to only return zones with matching tags.
 ---@vararg string Tags you want to use to filter
@@ -809,7 +835,7 @@ function server.getLocationComponentData(addon_index, location_index, component_
 ---@field dynamic_object_type OBJECT_TYPE
 ---@field vehicle_parent_component_id Vehicle_ID
 ---@field character_outfit_type OUTFIT_TYPE
- 
+
 ---@class SpawnAddonComponentResult : AddonComponentBase
 
 ---Spawn an addon's component
@@ -839,7 +865,7 @@ function server.spawnAddonComponent(matrix, addon_index, location_index, compone
 ---@param component_id number The id of the component
 ---@return Vehicle_ID|nil vehicle_id The vehicle_id of the vehicle that has spawned
 ---@return boolean is_success If the function succeeded
----@see `server.getLocationComponentData()` to get component_id
+---@see server.getLocationComponentData to get component_id
 function server.spawnAddonVehicle(matrix, addon_index, component_id) return vehicle_id, is_success end
 
 --#endregion
@@ -946,6 +972,52 @@ function server.setVehiclePosSafe(vehicle_id, matrix) return is_success end
 ---@return boolean is_success If the function succeeded and a name was returned
 function server.getVehicleName(vehicle_id) return name, is_success end
 
+---@class VehicleComponentData
+---@field name string
+---@field pos Vector3
+
+---@class ButtonData: VehicleComponentData
+---@field on boolean
+
+---@class SeatData: VehicleComponentData
+---@field seated_id integer the id of the seated character
+
+---@class SignData: VehicleComponentData
+
+---@class DialData: VehicleComponentData
+---@field value number
+---@field value2 number? The secondary value if the dial has one.
+
+---@class HopperData: VehicleComponentData
+---@field values table<ORE_TYPE, number>
+---@field capacity number
+
+---@class BatteryData: VehicleComponentData
+---@field charge number [0..1]
+
+---@class WeaponData: VehicleComponentData
+---@field ammo integer
+---@field capacity integer
+
+---@class RopeHookData: VehicleComponentData
+
+
+---@class TankData: VehicleComponentData
+---@field value number current total content
+---@field values table<FLUID_TYPE, number> mapping from FLUID_TYPE to amount.
+---@field capacity number
+---@field fluid_type FLUID_TYPE The fluid type that was set in the vehicle designer.
+
+---@class VehicleComponents
+---@field signs SignData[]
+---@field seats SeatData[]
+---@field buttons ButtonData[]
+---@field dials DialData[]
+---@field tanks TankData[]
+---@field batteries BatteryData[]
+---@field hoppers HopperData[]
+---@field guns WeaponData[]
+---@field rope_hooks RopeHookData[]
 
 ---@class VehicleData
 ---@field tags_full string Raw tags string
@@ -956,6 +1028,10 @@ function server.getVehicleName(vehicle_id) return name, is_success end
 ---@field mass number
 ---@field characters Object_ID[]
 ---@field voxels integer Voxel count
+---@field editable boolean
+---@field invulnerable boolean
+---@field static boolean Static vehicles do not move, and do not check for collision with the ground, or other static vehicles.
+---@field components VehicleComponents
 
 ---Get data on a vehicle
 ---@param vehicle_id Vehicle_ID The vehicle_id of the vehicle to get data on
@@ -1000,10 +1076,16 @@ function server.setVehicleSeat(vehicle_id, seat_name, w_axis, d_axis, up_axis, r
 ---@param button_name string The name of the button to press
 function server.pressVehicleButton(vehicle_id, button_name) end
 
+
+---@class GetVehicleButtonResult
+---@field name string
+---@field pos Vector3
+---@field on boolean is_pressed
+
 ---Get the state of a button on a vehicle
 ---@param vehicle_id Vehicle_ID The vehicle_id of the vehicle the button is a part of
 ---@param button_name string The name of the button to get the state of
----@return { on: boolean } button_data The data of the button
+---@return GetVehicleButtonResult button_data The data of the button
 ---@return boolean is_success If the function succeeded
 ---## Example Button Data
 ---```
@@ -1034,7 +1116,8 @@ function server.getVehicleSign(vehicle_id, sign_name) return sign_data, is_succe
 ---@param vehicle_id Vehicle_ID The vehicle_id of the vehicle the keypad is a part of
 ---@param keypad_name string The name of the keypad
 ---@param value number The value to set the keypad to
-function server.setVehicleKeypad(vehicle_id, keypad_name, value) end
+---@param value2? number The second value to set the keypad to, if it has one.
+function server.setVehicleKeypad(vehicle_id, keypad_name, value, value2) end
 
 ---@class GetVehicleDialResult
 ---@field value number the value displayed on the dial.
@@ -1722,38 +1805,45 @@ function server.getVolcanos() return volcanos end
 ---@param matrix1 Transform The matrix to multiply
 ---@param matrix2 Transform The matrix to multiply by
 ---@return Transform multiplied_matrix The result of multiplying the matrices
+---@nodiscard
 function matrix.multiply(matrix1, matrix2) return multiplied_matrix end
 
 ---Inverts a matrix. Used in multiplication to divide.
 ---@param matrix Transform The matrix to invert
 ---@return Transform inverted_matrix The matrix, now inverted
+---@nodiscard
 ---@see https://www.mathsisfun.com/algebra/matrix-inverse.html
 function matrix.invert(matrix) return inverted_matrix end
 
 ---Transposes a matrix. This flips a matrix, switching row and column indices
 ---@param matrix Transform The matrix to transpose
 ---@return Transform transposed_matrix The matrix, now transposed
+---@nodiscard
 ---@see https://en.wikipedia.org/wiki/Transpose
 function matrix.transpose(matrix) return transposed_matrix end
 
 ---Get an identity matrix
 ---@return Transform identity_matrix The identity matrix
+---@nodiscard
 ---@see https://en.wikipedia.org/wiki/Identity_matrix
 function matrix.identity() return identity_matrix end
 
 ---Get a new matrix, rotated the requested number of radians on the X axis
 ---@param radians number The number of radians to rotate by on the X axis
 ---@return Transform rotation_matrix A new matrix, rotated by the requested number of radians on the X axis
+---@nodiscard
 function matrix.rotationX(radians) return rotation_matrix end
 
 ---Get a new matrix, rotated the requested number of radians on the Y axis
 ---@param radians number The number of radians to rotate by on the Y axis
 ---@return Transform rotation_matrix A new matrix, rotated by the requested number of radians on the Y axis
+---@nodiscard
 function matrix.rotationY(radians) return rotation_matrix end
 
 ---Get a new matrix, rotated the requested number of radians on the Z axis
 ---@param radians number The number of radians to rotate by on the Z axis
 ---@return Transform rotation_matrix A new matrix, rotated by the requested number of radians on the Z axis
+---@nodiscard
 function matrix.rotationZ(radians) return rotation_matrix end
 
 ---Returns a new matrix, translated by the specified x, y, z
@@ -1761,6 +1851,7 @@ function matrix.rotationZ(radians) return rotation_matrix end
 ---@param y number The y value to translate by. This is the vertical axis in the game
 ---@param z number The z value to translate by. This is the y axis on the map in the game
 ---@return Transform translated_matrix The new translated matrix
+---@nodiscard
 function matrix.translation(x, y, z) return translated_matrix end
 
 ---Get the x, y, z position from a matrix
@@ -1768,12 +1859,14 @@ function matrix.translation(x, y, z) return translated_matrix end
 ---@return number x The x position of the matrix. This is the same x value that is seen on the in-game map
 ---@return number y The y position of the matrix. This is the vertical axis in the game
 ---@return number z The z position of the matrix. This is the y axis on the map in the game
+---@nodiscard
 function matrix.position(matrix) return x, y, z end
 
 ---Get the distance in meters between two matrices
 ---@param matrix1 Transform The first matrix
 ---@param matrix2 Transform The second matrix
 ---@return number distance The distance between the two matrices in meters
+---@nodiscard
 function matrix.distance(matrix1, matrix2) return distance end
 
 ---Multiply a matrix by a vec4
@@ -1786,6 +1879,7 @@ function matrix.distance(matrix1, matrix2) return distance end
 ---@return number y The y value
 ---@return number z The z value
 ---@return number w The w value
+---@nodiscard
 ---@see https://stackoverflow.com/a/2423060
 function matrix.multiplyXYZW(matrix1, x, y, z, w) return x, y, z, w end
 
@@ -1823,9 +1917,11 @@ function server.clearRadiation() end
 ---@param request string The request string
 function server.httpGet(port, request) end
 
+---@alias milliseconds integer
+
 ---Get the number of milliseconds that have passed since the world was loaded
----@return number time_since_load The number of ms since the world was loaded
-function server.getTimeMillisec() return time_since_load end
+---@return milliseconds time_since_load The number of ms since the world was loaded
+function server.getTimeMillisec() end
 
 ---Get whether or not the weapons DLC is enabled on this save
 ---@return boolean dlc_enabled If the dlc is enabled or not
