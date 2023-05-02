@@ -1504,7 +1504,16 @@ local PREFERENCE_DEFAULTS = {
 	},
 	adminAll = {
 		value = false,
-		type = "boolean"
+		type = "boolean",
+		func = function()
+
+			if G_preferences.adminAll.value then
+				for _, player in pairs(G_players.players) do
+					G_roles.get("Admin").addMember(player)
+				end
+			end
+
+		end
 	},
 	editableVehicles = {
 		value = true,
@@ -3217,16 +3226,7 @@ function onCreate(is_new)
 		G_preferences.removeVehicleOnLeave.value = property.checkbox("Remove player's vehicle on leave", "true")
 		G_preferences.maxVoxels.value = property.slider("Max vehicle voxel size", 0, 10000, 10, 0)
 		G_preferences.editableVehicles.value = property.checkbox("Vehicles are editable by default", "true")
-
-		local adminAll = property.checkbox("Admin all players", "false")
-		local everyoneRole = G_roles.get("Everyone")
-
-		if everyoneRole then
-			everyoneRole.setPermissions(adminAll, everyoneRole.auth)
-			G_preferences.adminAll.value = true
-		else
-			companionError("Everyone role not found, can not admin everyone!")
-		end
+		G_preferences.adminAll.value = property.checkbox("Admin all players", "false")
 	end
 
 	--- List of players indexed by peerID
@@ -5290,6 +5290,10 @@ COMMANDS = {
 					preference.value = table.concat(args, " ")
 				end
 				edited = true
+			end
+
+			if preference.func then
+				preference.func()
 			end
 
 			if edited then
