@@ -1,3 +1,16 @@
+**Carsa's Commands is officially end of life (EOF)**. The new changes to the addon API from the space update are the final nail in the coffin. Developing an addon of this size and complexity requires lots of work to be done to fix issues in the API and game. Many of these issues have existed since v1 of the game and there are no fixes in sight.
+
+The amount of work required to fix Carsa's Commands and get it back working the way I would like is too great for me to justify. I have not played the game in almost two years now, except to test patches for Carsa's Commands.
+
+Carsa's Commands is licensed under a [MIT license](https://github.com/carsakiller/Carsas-CommandsV2?tab=MIT-1-ov-file#readme), meaning, so long as the license is included, anyone is free to continue enjoying the freedoms that the license grants, including modification and distribution.
+
+I would like to thank everyone for their support over the years.
+
+Cheers,
+Carsa
+
+---
+
 # Caras's Commands v2: The Final Hurrah
 This version two of Carsa's Commands marks the end of a very long journey.
 
